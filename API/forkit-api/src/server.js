@@ -1,7 +1,20 @@
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
-require("dotenv").config();
+const dotenv = require("dotenv");
+
+// Load environment variables
+dotenv.config();
+
+// SSL Configuration for Node.js
+const https = require("https");
+const tls = require("tls");
+
+// Configure TLS options
+process.env.NODE_OPTIONS = "--tls-min-v1.0 --tls-max-v1.3";
+
+// Initialize Firebase (this will be done in the config file)
+require("./config/firebase");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -57,8 +70,31 @@ app.use("*", (req, res) => {
   });
 });
 
+// Test Firebase connection with more details
+const { db } = require("./config/firebase");
+console.log("Testing Firebase connection...");
+
+db.collection("test")
+  .doc("test")
+  .get()
+  .then(() => {
+    console.log("✅ Firebase connection successful");
+  })
+  .catch((error) => {
+    console.error("❌ Firebase connection failed:");
+    console.error("Error code:", error.code);
+    console.error("Error message:", error.message);
+    console.error("Full error:", error);
+
+    // Check if it's an SSL error
+    if (error.message.includes("SSL") || error.message.includes("TLS")) {
+      console.error(" This appears to be an SSL/TLS issue");
+    }
+  });
+
 app.listen(PORT, () => {
   console.log(`🚀 ForkIt API server running on port ${PORT}`);
   console.log(`🔄 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🍽️  Food endpoints: http://localhost:${PORT}/api/food`);
+  console.log(`👤  User endpoints: http://localhost:${PORT}/api/users`);
 });
