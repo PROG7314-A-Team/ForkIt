@@ -22,10 +22,10 @@ class FirebaseService {
   // Get document by ID
   async getById(id) {
     try {
-      const docSnap = await db.collection(this.collectionName).doc(id).get();
+      let docSnap = await db.collection(this.collectionName).doc(id).get();
 
       if (docSnap.exists) {
-        return { id: docSnap.id, ...docSnap.data() };
+        return docSnap;
       } else {
         return null;
       }

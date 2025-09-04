@@ -70,28 +70,6 @@ app.use("*", (req, res) => {
   });
 });
 
-// Test Firebase connection with more details
-const { db } = require("./config/firebase");
-console.log("Testing Firebase connection...");
-
-db.collection("test")
-  .doc("test")
-  .get()
-  .then(() => {
-    console.log("✅ Firebase connection successful");
-  })
-  .catch((error) => {
-    console.error("❌ Firebase connection failed:");
-    console.error("Error code:", error.code);
-    console.error("Error message:", error.message);
-    console.error("Full error:", error);
-
-    // Check if it's an SSL error
-    if (error.message.includes("SSL") || error.message.includes("TLS")) {
-      console.error(" This appears to be an SSL/TLS issue");
-    }
-  });
-
 app.listen(PORT, () => {
   console.log(`🚀 ForkIt API server running on port ${PORT}`);
   console.log(`🔄 Health check: http://localhost:${PORT}/api/health`);
