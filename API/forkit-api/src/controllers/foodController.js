@@ -1,13 +1,15 @@
 const axios = require("axios");
-
-const openFoodFactsUrl = "https://world.openfoodfacts.net/api/v2/";
+const FirebaseService = require("../services/firebaseService");
+const foodService = new FirebaseService("food");
 
 // Get food by barcode
 exports.getFoodByBarcode = async (req, res) => {
   try {
     const { code } = req.params;
 
-    const response = await axios.get(`${openFoodFactsUrl}product/${code}`);
+    const response = await axios.get(
+      `https://world.openfoodfacts.net/api/v1/product/${code}`
+    );
 
     const foodData = response.data;
 
@@ -53,7 +55,9 @@ exports.getFoodByBarcode = async (req, res) => {
 exports.getFoodByName = async (req, res) => {
   try {
     const { name } = req.params;
-    const response = await axios.get(`${openFoodFactsUrl}search?${name}`);
+    const response = await axios.get(
+      `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${name}&json=1&fields=product_name,image_small_url,nutriments`
+    );
     const foodData = response.data;
     res.json({
       success: true,
@@ -75,10 +79,10 @@ exports.createFood = async (req, res) => {
     const foodData = req.body;
 
     // Basic validation
-    if (!foodData.name) {
+    if (!foodData.name || !foodData.nutrients) {
       return res.status(400).json({
         success: false,
-        message: "Food name is required",
+        message: "Food name and nutriments are required",
       });
     }
 
@@ -89,12 +93,13 @@ exports.createFood = async (req, res) => {
       createdAt: new Date().toISOString(),
     };
 
-    // In a real app, you'd save to database here
-    mockFoodDatabase.push(newFood);
+    const foodId = await foodService.create(foodData);
+    foodData.foodId = String(foodId.id);
+    const updatedFood = await foodService.update(String(foodId.id), foodData);
 
     res.status(201).json({
       success: true,
-      data: newFood,
+      data: updatedFood,
       message: "Food item created successfully",
     });
   } catch (error) {
@@ -112,9 +117,11 @@ exports.updateFood = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    const foodIndex = mockFoodDatabase.findIndex((item) => item.id === id);
+    const foodIndex = await foodService.query([
+      { field: "foodId", operator: "==", value: id },
+    ]);
 
-    if (foodIndex === -1) {
+    if (foodIndex.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Food item not found",
@@ -122,15 +129,15 @@ exports.updateFood = async (req, res) => {
     }
 
     // Update the food item
-    mockFoodDatabase[foodIndex] = {
-      ...mockFoodDatabase[foodIndex],
+    foodIndex[0] = {
+      ...foodIndex[0],
       ...updateData,
       updatedAt: new Date().toISOString(),
     };
 
     res.json({
       success: true,
-      data: mockFoodDatabase[foodIndex],
+      data: foodIndex[0],
       message: "Food item updated successfully",
     });
   } catch (error) {
@@ -147,20 +154,22 @@ exports.deleteFood = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const foodIndex = mockFoodDatabase.findIndex((item) => item.id === id);
+    const foodIndex = await foodService.query([
+      { field: "foodId", operator: "==", value: id },
+    ]);
 
-    if (foodIndex === -1) {
+    if (foodIndex.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Food item not found",
       });
     }
 
-    const deletedFood = mockFoodDatabase.splice(foodIndex, 1)[0];
+    const deletedFood = await foodService.delete(foodIndex[0].id);
 
     res.json({
       success: true,
-      data: deletedFood,
+      data: { id: deletedFood.id } || deletedFood,
       message: "Food item deleted successfully",
     });
   } catch (error) {
