@@ -1,3 +1,21 @@
 <resources>
     <string name="app_name">ForkIt</string>
+    <string name="app_tagline">Take your calorie tracking to the next level</string>
+    <string name="login">Login</string>
+    <string name="sign_up">Sign Up</string>
+    
+    <!-- Sign Up Screen -->
+    <string name="start_tracking">Start Tracking</string>
+    <string name="create_account_here">Create your account here</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="already_have_account">Already have an account?</string>
+    <string name="sign_up_with_google">Sign up with Google</string>
+    
+    <!-- Sign In Screen -->
+    <string name="continue_tracking">Continue Tracking</string>
+    <string name="login_pickup">Login to pick up where you left</string>
+    <string name="dont_have_account">Don\'t have an account?</string>
+    <string name="continue_with_google">Continue with Google</string>
 </resources>
