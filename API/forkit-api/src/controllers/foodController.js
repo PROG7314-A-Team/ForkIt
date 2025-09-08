@@ -56,7 +56,7 @@ exports.getFoodByName = async (req, res) => {
   try {
     const { name } = req.params;
     const response = await axios.get(
-      `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${name}&json=1&fields=product_name,image_small_url,nutriments`
+      `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${name}&json=1&fields=product_name,image_small_url,nutriments&countries_tags=South_Africa`
     );
     const foodData = response.data;
     res.json({
