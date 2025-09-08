@@ -44,7 +44,7 @@ exports.getUserById = async (req, res) => {
 
     res.json({
       success: true,
-      data: users[0], // Return first match
+      data: users,
       message: "User retrieved successfully",
     });
   } catch (error) {
