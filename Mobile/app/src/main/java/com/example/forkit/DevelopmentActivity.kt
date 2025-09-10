@@ -44,6 +44,11 @@ fun DevelopmentScreen() {
     
     val screens = listOf(
         ScreenItem(
+            name = "Dashboard Screen",
+            description = "Main app dashboard with calorie tracking and nutrition overview",
+            activityClass = DashboardActivity::class.java
+        ),
+        ScreenItem(
             name = "Login Screen",
             description = "User authentication screen with login and sign up options",
             activityClass = LoginActivity::class.java
@@ -59,11 +64,6 @@ fun DevelopmentScreen() {
             activityClass = SignInActivity::class.java
         )
         // Add more screens here as you develop them
-        // ScreenItem(
-        //     name = "Home Screen",
-        //     description = "Main app dashboard",
-        //     activityClass = HomeActivity::class.java
-        // ),
         // ScreenItem(
         //     name = "Profile Screen",
         //     description = "User profile management",
