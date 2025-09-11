@@ -16,6 +16,10 @@ app.use(express.urlencoded({ extended: true }));
 const foodRoutes = require("./routes/food");
 const userRoutes = require("./routes/users");
 
+// --- ADDED: Firebase Auth Route ---
+const authRoutes = require("./routes/auth"); // <--- new route import
+app.use("/api/auth", authRoutes); // <--- new route usage
+
 app.use("/api/food", foodRoutes);
 app.use("/api/users", userRoutes);
 
@@ -37,6 +41,7 @@ app.get("/", (req, res) => {
       health: "/api/health",
       food: "/api/food",
       users: "/api/users",
+      auth_register: "/api/auth/register" // <--- optional, for reference
     },
   });
 });
@@ -61,4 +66,5 @@ app.listen(PORT, () => {
   console.log(`🚀 ForkIt API server running on port ${PORT}`);
   console.log(`🔄 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🍽️  Food endpoints: http://localhost:${PORT}/api/food`);
+  console.log(`🔑 Auth register endpoint: http://localhost:${PORT}/api/auth/register`);
 });
