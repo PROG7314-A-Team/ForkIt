@@ -1,8 +1,10 @@
+const { auth } = require("../config/firebase"); // Firebase Admin
 const FirebaseService = require("../services/firebaseService");
 const StreakService = require("../services/streakService");
 const streakService = new StreakService();
 const userService = new FirebaseService("users");
 
+// GET all users (Firestore)
 exports.getUser = async (req, res) => {
   try {
     let user = await userService.getAll();
@@ -28,6 +30,7 @@ exports.getUser = async (req, res) => {
   }
 };
 
+// GET user by ID (Firestore)
 exports.getUserById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -103,11 +106,12 @@ exports.getUserStreak = async (req, res) => {
 
 exports.createUser = async (req, res) => {
   try {
-    const userData = req.body;
-    if (!userData.email) {
+    const { email, password, ...otherData } = req.body;
+
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Email is required",
+        message: "Email and password are required",
       });
     }
 
@@ -131,9 +135,27 @@ exports.createUser = async (req, res) => {
     } else {
       res.status(400).json({
         success: false,
-        message: "Failed to create user",
+        message: "Failed to create user in Firebase Auth",
+        error: error.message,
       });
     }
+
+    // 2️⃣ Save user in Firestore
+    const userData = {
+      userId: firebaseUser.uid, // Firebase UID as userId
+      email,
+      ...otherData,
+    };
+
+    let user = await userService.create(userData);
+    userData.userId = String(user.id);
+    let updatedUser = await userService.update(String(user.id), userData);
+
+    res.status(201).json({
+      success: true,
+      data: updatedUser,
+      message: "User created successfully in Firebase Auth and Firestore",
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -143,6 +165,7 @@ exports.createUser = async (req, res) => {
   }
 };
 
+// UPDATE user (Firestore)
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
@@ -183,6 +206,7 @@ exports.updateUser = async (req, res) => {
   }
 };
 
+// DELETE user (Firestore)
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
