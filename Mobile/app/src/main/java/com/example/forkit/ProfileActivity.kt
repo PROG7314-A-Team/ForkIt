@@ -32,6 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
+import com.example.forkit.ThemeManager
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,19 +75,9 @@ fun ProfileScreen() {
         ),
         ProfileOption(
             icon = Icons.Default.Settings,
-            title = "Appearance",
-            description = "Customize app appearance"
+            title = "App Settings",
+            description = "Customize app settings"
         ),
-        ProfileOption(
-            icon = Icons.Default.Lock,
-            title = "Privacy & Security",
-            description = "Manage your privacy settings"
-        ),
-        //ProfileOption(
-         //   icon = Icons.Default.QuestionAnswer,
-          //  title = "Help & Support",
-          //  description = "Get help and contact support"
-      //  ),
         ProfileOption(
             icon = Icons.Default.Info,
             title = "About",
@@ -97,7 +88,7 @@ fun ProfileScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(ThemeManager.backgroundColor)
     ) {
         // Header
         Row(
@@ -115,7 +106,7 @@ fun ProfileScreen() {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color.Black
+                    tint = ThemeManager.onBackgroundColor
                 )
             }
             
@@ -125,7 +116,7 @@ fun ProfileScreen() {
                 text = "Profile",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF22B27D) // ForkIt Green
+                color = ThemeManager.forkItGreen // ForkIt Green
             )
         }
         
@@ -139,7 +130,26 @@ fun ProfileScreen() {
             items(profileOptions) { option ->
                 ProfileOptionCard(
                     option = option,
-                    onClick = { /* Handle option click */ }
+                    onClick = { 
+                        when (option.title) {
+                            "Account" -> {
+                                val intent = Intent(context, AccountActivity::class.java)
+                                context.startActivity(intent)
+                            }
+                            "Notifications" -> {
+                                val intent = Intent(context, NotificationsActivity::class.java)
+                                context.startActivity(intent)
+                            }
+                            "App Settings" -> {
+                                val intent = Intent(context, AppSettingsActivity::class.java)
+                                context.startActivity(intent)
+                            }
+                            "About" -> {
+                                val intent = Intent(context, AboutActivity::class.java)
+                                context.startActivity(intent)
+                            }
+                        }
+                    }
                 )
             }
             
@@ -162,7 +172,7 @@ fun ProfileOptionCard(
             .clickable { onClick() },
         shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor)
     ) {
         Row(
             modifier = Modifier
@@ -174,7 +184,7 @@ fun ProfileOptionCard(
             Icon(
                 imageVector = option.icon,
                 contentDescription = option.title,
-                tint = Color(0xFF1E9ECD), // ForkIt Blue
+                tint = ThemeManager.forkItBlue, // ForkIt Blue
                 modifier = Modifier.size(24.dp)
             )
             
@@ -188,12 +198,12 @@ fun ProfileOptionCard(
                     text = option.title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF1E9ECD) // ForkIt Blue
+                    color = ThemeManager.forkItBlue // ForkIt Blue
                 )
                 Text(
                     text = option.description,
                     fontSize = 14.sp,
-                    color = Color(0xFF666666)
+                    color = ThemeManager.onBackgroundColor
                 )
             }
             
@@ -201,7 +211,7 @@ fun ProfileOptionCard(
             Icon(
                 imageVector = Icons.Default.KeyboardArrowRight,
                 contentDescription = "Arrow",
-                tint = Color.Black,
+                tint = ThemeManager.onBackgroundColor,
                 modifier = Modifier.size(20.dp)
             )
         }

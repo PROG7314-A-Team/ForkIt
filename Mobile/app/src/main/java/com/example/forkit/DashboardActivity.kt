@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -49,6 +50,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
+import com.example.forkit.ThemeManager
 
 class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -94,22 +96,13 @@ fun DashboardScreen() {
     val fatCalories = 200
     val totalCalories = carbsCalories + proteinCalories + fatCalories
     
-    // Animated blur radius
-    val animatedBlurRadius by animateFloatAsState(
-        targetValue = if (selectedTab == 2) 8f else 0f,
-        animationSpec = tween(300)
-    )
-    
-    // Animated overlay alpha
-    val animatedOverlayAlpha by animateFloatAsState(
-        targetValue = if (selectedTab == 2) 0.3f else 0f,
-        animationSpec = tween(300)
-    )
+    // State for showing floating icons overlay
+    var showFloatingIcons by remember { mutableStateOf(false) }
     
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(ThemeManager.backgroundColor)
     ) {
         Column(
             modifier = Modifier
@@ -124,7 +117,6 @@ fun DashboardScreen() {
                         modifier = Modifier
                             .weight(1f)
                             .verticalScroll(rememberScrollState())
-                            .blur(radius = animatedBlurRadius.dp)
                     ) {
                 // Top Header with Logo and Profile
                 Row(
@@ -135,19 +127,11 @@ fun DashboardScreen() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // ForkIt Logo
-                    Card(
-                        shape = RoundedCornerShape(8.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.forkit_logo),
-                            contentDescription = "ForkIt Logo",
-                            modifier = Modifier
-                                .size(40.dp)
-                                .padding(4.dp)
-                        )
-                    }
+                    Image(
+                        painter = painterResource(id = R.drawable.forkit_logo),
+                        contentDescription = "ForkIt Logo",
+                        modifier = Modifier.size(40.dp)
+                    )
                     
                     // Profile Tab
                     Card(
@@ -156,8 +140,8 @@ fun DashboardScreen() {
                             context.startActivity(intent)
                         },
                         shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        border = BorderStroke(1.dp, Color(0xFF1E9ECD)) // ForkIt blue border
+                        colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor),
+                        border = BorderStroke(1.dp, ThemeManager.forkItBlue) // ForkIt blue border
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -167,14 +151,14 @@ fun DashboardScreen() {
                             Icon(
                                 imageVector = Icons.Default.Person,
                                 contentDescription = "Profile",
-                                tint = Color(0xFF1E9ECD), // ForkIt blue color
+                                tint = ThemeManager.forkItBlue, // ForkIt blue color
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
                                 text = "PROFILE",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1E9ECD) // ForkIt blue color
+                                color = ThemeManager.forkItBlue // ForkIt blue color
                             )
                         }
                     }
@@ -187,8 +171,8 @@ fun DashboardScreen() {
                         .padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA)),
-                    border = BorderStroke(2.dp, Color(0xFF22B27D)) // ForkIt green border
+                    colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor),
+                    border = BorderStroke(2.dp, ThemeManager.forkItGreen) // ForkIt green border
                 ) {
                     Column(
                         modifier = Modifier
@@ -200,14 +184,14 @@ fun DashboardScreen() {
                             text = "Welcome to the Dashboard",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E9ECD),
+                            color = ThemeManager.forkItBlue,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "Track your health and fitness journey",
                             fontSize = 12.sp,
-                            color = Color(0xFF666666),
+                            color = ThemeManager.onBackgroundColor,
                             textAlign = TextAlign.Center
                         )
                     }
@@ -221,7 +205,8 @@ fun DashboardScreen() {
                         .fillMaxWidth()
                         .padding(16.dp),
                     shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor)
                 ) {
                    Box(
                         modifier = Modifier
@@ -270,7 +255,7 @@ fun DashboardScreen() {
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF22B27D))
+                        colors = CardDefaults.cardColors(containerColor = ThemeManager.forkItGreen)
                     ) {
                         Column(
                             modifier = Modifier
@@ -299,7 +284,7 @@ fun DashboardScreen() {
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E9ECD))
+                        colors = CardDefaults.cardColors(containerColor = ThemeManager.forkItBlue)
                     ) {
                         Column(
                             modifier = Modifier
@@ -333,8 +318,8 @@ fun DashboardScreen() {
                         .padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(2.dp, Color(0xFF22B27D))
+                    colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor),
+                    border = BorderStroke(2.dp, ThemeManager.forkItGreen)
                 ) {
                     Column(
                         modifier = Modifier
@@ -351,13 +336,13 @@ fun DashboardScreen() {
                                 text = "Today's Goal Progress",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = Color(0xFF333333)
+                                color = ThemeManager.onSurfaceColor
                             )
                             Text(
                                 text = "$consumed / $dailyGoal kcal",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isGoalReached) Color(0xFF22B27D) else Color(0xFF666666)
+                                color = if (isGoalReached) ThemeManager.forkItGreen else ThemeManager.onBackgroundColor
                             )
                         }
                         
@@ -370,8 +355,8 @@ fun DashboardScreen() {
                                 .fillMaxWidth()
                                 .height(12.dp)
                                 .clip(RoundedCornerShape(6.dp)),
-                            color = if (isGoalReached) Color(0xFF22B27D) else Color(0xFF1E9ECD),
-                            trackColor = Color(0xFFE0E0E0)
+                            color = if (isGoalReached) ThemeManager.forkItGreen else ThemeManager.forkItBlue,
+                            trackColor = ThemeManager.borderColor
                         )
                         
                         Spacer(modifier = Modifier.height(8.dp))
@@ -384,12 +369,12 @@ fun DashboardScreen() {
                             Text(
                                 text = "${(animatedProgress * 100).toInt()}% Complete",
                                 fontSize = 12.sp,
-                                color = Color(0xFF666666)
+                                color = ThemeManager.onBackgroundColor
                             )
                             Text(
                                 text = if (isGoalReached) "Goal Reached! 🎉" else "$caloriesRemaining kcal remaining",
                                 fontSize = 12.sp,
-                                color = if (isGoalReached) Color(0xFF22B27D) else Color(0xFF666666),
+                                color = if (isGoalReached) ThemeManager.forkItGreen else ThemeManager.onBackgroundColor,
                                 fontWeight = if (isGoalReached) FontWeight.Bold else FontWeight.Normal
                             )
                         }
@@ -405,8 +390,8 @@ fun DashboardScreen() {
                         .padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(2.dp, Color(0xFF22B27D))
+                    colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor),
+                    border = BorderStroke(2.dp, ThemeManager.forkItGreen)
                 ) {
                     Row(
                         modifier = Modifier
@@ -447,7 +432,7 @@ fun DashboardScreen() {
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E9ECD))
+                        colors = CardDefaults.cardColors(containerColor = ThemeManager.forkItBlue)
                     ) {
                         Column(
                             modifier = Modifier
@@ -480,7 +465,7 @@ fun DashboardScreen() {
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF22B27D))
+                        colors = CardDefaults.cardColors(containerColor = ThemeManager.forkItGreen)
                     ) {
                         Column(
                             modifier = Modifier
@@ -518,8 +503,8 @@ fun DashboardScreen() {
                         .padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(2.dp, Color(0xFF22B27D))
+                    colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor),
+                    border = BorderStroke(2.dp, ThemeManager.forkItGreen)
                 ) {
                     Column(
                         modifier = Modifier
@@ -530,7 +515,7 @@ fun DashboardScreen() {
                             text = "Recent Meals",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF333333)
+                            color = ThemeManager.onSurfaceColor
                         )
                         
                         Spacer(modifier = Modifier.height(16.dp))
@@ -551,12 +536,12 @@ fun DashboardScreen() {
                                 Text(
                                     text = meal,
                                     fontSize = 14.sp,
-                                    color = Color(0xFF666666)
+                                    color = ThemeManager.onBackgroundColor
                                 )
                                 Text(
                                     text = "2h ago",
                                     fontSize = 12.sp,
-                                    color = Color(0xFF999999)
+                                    color = ThemeManager.onBackgroundColor
                                 )
                             }
                         }
@@ -574,7 +559,6 @@ fun DashboardScreen() {
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .blur(radius = animatedBlurRadius.dp)
                     ) {
                         MealsScreen()
                     }
@@ -588,7 +572,6 @@ fun DashboardScreen() {
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .blur(radius = animatedBlurRadius.dp)
                     ) {
                         HabitsScreen()
                     }
@@ -598,7 +581,6 @@ fun DashboardScreen() {
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .blur(radius = animatedBlurRadius.dp)
                     ) {
                         CoachScreen()
                     }
@@ -608,25 +590,24 @@ fun DashboardScreen() {
             // Bottom Navigation (always clickable)
             BottomNavigationBar(
                 selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it }
+                onTabSelected = { selectedTab = it },
+                showFloatingIcons = showFloatingIcons,
+                onAddButtonClick = { showFloatingIcons = true }
             )
         }
         
-        // Blurred overlay (only when Add tab is selected)
-        if (selectedTab == 2) {
+        // Floating Icons Overlay (when add button is clicked)
+        if (showFloatingIcons) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .alpha(animatedOverlayAlpha)
-                    .background(Color.Black)
-                    .clickable { selectedTab = 0 } // Return to Home tab
-            )
-            
-            // Add Menu Options
-            AddMenu(
-                isExpanded = true,
-                onDismiss = { selectedTab = 0 } // Return to Home tab
-            )
+                    .background(ThemeManager.onBackgroundColor.copy(alpha = 0.3f)) // Semi-transparent overlay
+            ) {
+                FloatingIcons(
+                    context = context,
+                    onDismiss = { showFloatingIcons = false } // Hide the overlay
+                )
+            }
         }
         
     }
@@ -713,12 +694,12 @@ fun CalorieWheel(
                 text = totalCalories.toString(),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF22B27D) // ForkIt Green
+                color = ThemeManager.forkItGreen // ForkIt Green
             )
             Text(
                 text = "Today's Calories",
                 fontSize = 12.sp,
-                color = Color(0xFF666666),
+                color = ThemeManager.onBackgroundColor,
                 textAlign = TextAlign.Center
             )
         }
@@ -785,13 +766,13 @@ fun MacronutrientItem(
                 text = name,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF333333)
+                color = ThemeManager.onSurfaceColor
             )
             
             Text(
                 text = "${calories}cal (${percentage}%)",
                 fontSize = 10.sp,
-                color = Color(0xFF666666)
+                color = ThemeManager.onBackgroundColor
             )
         }
     }
@@ -800,7 +781,9 @@ fun MacronutrientItem(
 @Composable
 fun BottomNavigationBar(
     selectedTab: Int,
-    onTabSelected: (Int) -> Unit
+    onTabSelected: (Int) -> Unit,
+    showFloatingIcons: Boolean,
+    onAddButtonClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -854,12 +837,12 @@ fun BottomNavigationBar(
             // Add Tab (Special styling)
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable { onTabSelected(2) }
+                modifier = Modifier.clickable { onAddButtonClick() }
             ) {
                 Card(
                     modifier = Modifier.size(48.dp),
                     shape = CircleShape,
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Box(
@@ -869,10 +852,10 @@ fun BottomNavigationBar(
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Add",
-                            tint = Color(0xFF22B27D),
+                            tint = ThemeManager.forkItGreen,
                             modifier = Modifier.rotate(
                                 animateFloatAsState(
-                                    targetValue = if (selectedTab == 2) 45f else 0f,
+                                    targetValue = if (showFloatingIcons) 45f else 0f,
                                     animationSpec = tween(300)
                                 ).value
                             )
@@ -882,7 +865,7 @@ fun BottomNavigationBar(
                 Text(
                     text = "Add",
                     fontSize = 12.sp,
-                    color = if (selectedTab == 2) Color.White else Color.White.copy(alpha = 0.7f)
+                    color = if (showFloatingIcons) Color.White else Color.White.copy(alpha = 0.7f)
                 )
             }
             
@@ -927,80 +910,97 @@ fun BottomNavigationBar(
 }
 
 @Composable
-fun AddMenu(
-    isExpanded: Boolean,
+fun FloatingIcons(
+    context: android.content.Context,
     onDismiss: () -> Unit
 ) {
     val animatedAlpha by animateFloatAsState(
-        targetValue = if (isExpanded) 1f else 0f,
+        targetValue = 1f,
+        animationSpec = tween(300)
+    )
+    
+    val animatedScale by animateFloatAsState(
+        targetValue = 1f,
         animationSpec = tween(300)
     )
     
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.BottomEnd
+            .clickable { onDismiss() } // Dismiss when clicking outside
     ) {
+        // Floating icons positioned on the right side, similar to the image
         Column(
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 24.dp, top = 200.dp)
+                .alpha(animatedAlpha),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Add Exercise
-            AddMenuItem(
-                text = "Add Exercise",
-                icon = "🏃", // Exercise emoji
-                onClick = { /* TODO: Add exercise functionality */ },
-                alpha = animatedAlpha
+            // Meal Icon
+            FloatingIcon(
+                icon = R.drawable.ic_meals,
+                label = "Meal",
+                onClick = { 
+                    val intent = Intent(context, AddMealActivity::class.java)
+                    context.startActivity(intent)
+                    onDismiss()
+                },
+                scale = animatedScale
             )
             
-            // Add Water
-            AddMenuItem(
-                text = "Add Water",
-                icon = "💧", // Water emoji
-                onClick = { /* TODO: Add water functionality */ },
-                alpha = animatedAlpha
+            // Water Icon
+            FloatingIcon(
+                icon = R.drawable.ic_water,
+                label = "Water",
+                onClick = { 
+                    val intent = Intent(context, AddWaterActivity::class.java)
+                    context.startActivity(intent)
+                    onDismiss()
+                },
+                scale = animatedScale
             )
             
-            // Add Food
-            AddMenuItem(
-                text = "Add Food",
-                icon = "🍎", // Food emoji
-                onClick = { /* TODO: Add food functionality */ },
-                alpha = animatedAlpha
+            // Workout Icon
+            FloatingIcon(
+                icon = R.drawable.ic_workout,
+                label = "Workout",
+                onClick = { 
+                    val intent = Intent(context, AddWorkoutActivity::class.java)
+                    context.startActivity(intent)
+                    onDismiss()
+                },
+                scale = animatedScale
             )
         }
     }
 }
 
 @Composable
-fun AddMenuItem(
-    text: String,
-    icon: String,
+fun FloatingIcon(
+    icon: Int,
+    label: String,
     onClick: () -> Unit,
-    alpha: Float
+    scale: Float
 ) {
     Card(
         modifier = Modifier
             .clickable { onClick() }
-            .alpha(alpha),
-        shape = RoundedCornerShape(25.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .scale(scale)
+            .size(56.dp), // Fixed size like a floating action button
+        shape = CircleShape,
+        colors = CardDefaults.cardColors(containerColor = ThemeManager.forkItGreen), // Green background like in the image
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = icon,
-                fontSize = 24.sp
-            )
-            Text(
-                text = text,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF333333)
+            Image(
+                painter = painterResource(id = icon),
+                contentDescription = label,
+                modifier = Modifier.size(24.dp),
+                colorFilter = ColorFilter.tint(Color.White) // White icon on green background
             )
         }
     }
