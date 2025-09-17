@@ -5,9 +5,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,8 +24,6 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.ui.graphics.toArgb
@@ -35,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
@@ -52,6 +54,7 @@ class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
         setContent {
             ForkItTheme {
                 DashboardScreen()
@@ -64,23 +67,14 @@ class DashboardActivity : ComponentActivity() {
 fun DashboardScreen() {
     val context = LocalContext.current
     var selectedTab by remember { mutableStateOf(0) }
-    var selectedPeriod by remember { mutableStateOf("Today") }
-    var isDropdownExpanded by remember { mutableStateOf(false) }
     
     // Daily calorie goal (user will set this later)
     val dailyGoal = 2000
     
-    // Testing data for different periods (consumed calories for progress bar)
-    val periodData = mapOf(
-        "Today" to mapOf("consumed" to 1650, "burned" to 300, "total" to 1350), // 82.5% of daily goal
-        "This Month" to mapOf("consumed" to 2500, "burned" to 1500, "total" to 1000), // 125% - Goal exceeded
-        "Last Month" to mapOf("consumed" to 1800, "burned" to 1200, "total" to 600) // 90% of daily goal
-    )
-    
-    val currentData = periodData[selectedPeriod] ?: periodData["Today"]!!
-    val consumed = currentData["consumed"]!!
-    val burned = currentData["burned"]!!
-    val total = currentData["total"]!!
+    // Today's data only
+    val consumed = 1650
+    val burned = 300
+    val total = 1350
     val remaining = consumed - burned
     
     // Progress bar calculations
@@ -118,7 +112,9 @@ fun DashboardScreen() {
             .background(Color.White)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
         ) {
             // Screen Content based on selected tab
             when (selectedTab) {
@@ -130,35 +126,94 @@ fun DashboardScreen() {
                             .verticalScroll(rememberScrollState())
                             .blur(radius = animatedBlurRadius.dp)
                     ) {
-                // Profile Button at the top
+                // Top Header with Logo and Profile
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.End
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // ForkIt Logo
+                    Card(
+                        shape = RoundedCornerShape(8.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.forkit_logo),
+                            contentDescription = "ForkIt Logo",
+                            modifier = Modifier
+                                .size(40.dp)
+                                .padding(4.dp)
+                        )
+                    }
+                    
+                    // Profile Tab
                     Card(
                         modifier = Modifier.clickable { 
                             val intent = Intent(context, ProfileActivity::class.java)
                             context.startActivity(intent)
                         },
-                        shape = CircleShape,
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF22B27D))
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        border = BorderStroke(1.dp, Color(0xFF1E9ECD)) // ForkIt blue border
                     ) {
-                        Box(
-                            modifier = Modifier.padding(12.dp),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Person,
                                 contentDescription = "Profile",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
+                                tint = Color(0xFF1E9ECD), // ForkIt blue color
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = "PROFILE",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E9ECD) // ForkIt blue color
                             )
                         }
                     }
                 }
+                
+                // Welcome Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA)),
+                    border = BorderStroke(2.dp, Color(0xFF22B27D)) // ForkIt green border
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Welcome to the Dashboard",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E9ECD),
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Track your health and fitness journey",
+                            fontSize = 12.sp,
+                            color = Color(0xFF666666),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+                
+                
                 
                 // Total Caloric Intake Card
                 Card(
@@ -179,21 +234,21 @@ fun DashboardScreen() {
                                     )
                                 )
                             )
-                            .padding(24.dp)
+                            .padding(16.dp)
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "Total Caloric Intake",
-                                fontSize = 16.sp,
+                                text = "Today's Caloric Intake",
+                                fontSize = 14.sp,
                                 color = Color.White,
                                 fontWeight = FontWeight.Medium
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "$total kcal",
-                                fontSize = 32.sp,
+                                fontSize = 24.sp,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold
                             )
@@ -201,68 +256,7 @@ fun DashboardScreen() {
                     }
                 }
                 
-                // Period Selection
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .clickable { isDropdownExpanded = !isDropdownExpanded },
-                    shape = RoundedCornerShape(8.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = selectedPeriod,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF333333)
-                        )
-                        
-                        // Dropdown Arrow
-                        Icon(
-                            imageVector = if (isDropdownExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                            contentDescription = "Dropdown",
-                            tint = Color(0xFF22B27D)
-                        )
-                    }
-                }
                 
-                // Dropdown Menu
-                if (isDropdownExpanded) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column {
-                            listOf("Today", "This Month", "Last Month").forEach { period ->
-                                Text(
-                                    text = period,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            selectedPeriod = period
-                                            isDropdownExpanded = false
-                                        }
-                                        .padding(16.dp),
-                                    fontSize = 16.sp,
-                                    color = if (selectedPeriod == period) Color(0xFF22B27D) else Color(0xFF333333)
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
                 
                 // Consumed and Burned Cards
                 Row(
@@ -281,19 +275,19 @@ fun DashboardScreen() {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(20.dp),
+                                .padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
                                 text = "Consumed",
-                                fontSize = 14.sp,
+                                fontSize = 12.sp,
                                 color = Color.White,
                                 fontWeight = FontWeight.Medium
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "$consumed kcal",
-                                fontSize = 24.sp,
+                                fontSize = 18.sp,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold
                             )
@@ -310,19 +304,19 @@ fun DashboardScreen() {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(20.dp),
+                                .padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
                                 text = "Burned",
-                                fontSize = 14.sp,
+                                fontSize = 12.sp,
                                 color = Color.White,
                                 fontWeight = FontWeight.Medium
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "$burned kcal",
-                                fontSize = 24.sp,
+                                fontSize = 18.sp,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold
                             )
@@ -338,7 +332,9 @@ fun DashboardScreen() {
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(2.dp, Color(0xFF22B27D))
                 ) {
                     Column(
                         modifier = Modifier
@@ -352,7 +348,7 @@ fun DashboardScreen() {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Daily Goal Progress",
+                                text = "Today's Goal Progress",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = Color(0xFF333333)
@@ -402,21 +398,24 @@ fun DashboardScreen() {
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Calorie Wheel Card
+                // Today's Calorie Wheel Card
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(2.dp, Color(0xFF22B27D))
                 ) {
-                    Column(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(32.dp)
                     ) {
-                        // Calorie Wheel
+                        // Calorie Wheel (Left side)
                         CalorieWheel(
                             carbsCalories = carbsCalories,
                             proteinCalories = proteinCalories,
@@ -424,9 +423,7 @@ fun DashboardScreen() {
                             totalCalories = totalCalories
                         )
                         
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // Macronutrient Breakdown
+                        // Macronutrient Breakdown (Right side)
                         MacronutrientBreakdown(
                             carbsCalories = carbsCalories,
                             proteinCalories = proteinCalories,
@@ -450,7 +447,7 @@ fun DashboardScreen() {
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF87CEEB))
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E9ECD))
                     ) {
                         Column(
                             modifier = Modifier
@@ -520,7 +517,9 @@ fun DashboardScreen() {
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(2.dp, Color(0xFF22B27D))
                 ) {
                     Column(
                         modifier = Modifier
@@ -658,13 +657,13 @@ fun CalorieWheel(
     )
     
     Box(
-        modifier = Modifier.size(200.dp),
+        modifier = Modifier.size(140.dp),
         contentAlignment = Alignment.Center
     ) {
         Canvas(
             modifier = Modifier.fillMaxSize()
         ) {
-            val strokeWidth = 20.dp.toPx()
+            val strokeWidth = 12.dp.toPx()
             val radius = (size.minDimension - strokeWidth) / 2
             
             // Background circle
@@ -717,7 +716,7 @@ fun CalorieWheel(
                 color = Color(0xFF22B27D) // ForkIt Green
             )
             Text(
-                text = "Total Calories",
+                text = "Today's Calories",
                 fontSize = 12.sp,
                 color = Color(0xFF666666),
                 textAlign = TextAlign.Center
@@ -733,9 +732,9 @@ fun MacronutrientBreakdown(
     fatCalories: Int,
     totalCalories: Int
 ) {
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // Carbs
         MacronutrientItem(
@@ -770,8 +769,9 @@ fun MacronutrientItem(
     color: Color,
     percentage: Int
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // Color indicator
         Box(
@@ -780,26 +780,20 @@ fun MacronutrientItem(
                 .background(color, CircleShape)
         )
         
-        Spacer(modifier = Modifier.height(4.dp))
-        
-        Text(
-            text = name,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF333333)
-        )
-        
-        Text(
-            text = "${calories}cal",
-            fontSize = 10.sp,
-            color = Color(0xFF666666)
-        )
-        
-        Text(
-            text = "${percentage}%",
-            fontSize = 10.sp,
-            color = Color(0xFF666666)
-        )
+        Column {
+            Text(
+                text = name,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF333333)
+            )
+            
+            Text(
+                text = "${calories}cal (${percentage}%)",
+                fontSize = 10.sp,
+                color = Color(0xFF666666)
+            )
+        }
     }
 }
 
@@ -842,10 +836,13 @@ fun BottomNavigationBar(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.clickable { onTabSelected(1) }
             ) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
+                Image(
+                    painter = painterResource(id = R.drawable.ic_meals),
                     contentDescription = "Meals",
-                    tint = if (selectedTab == 1) Color.White else Color.White.copy(alpha = 0.7f)
+                    modifier = Modifier.size(24.dp),
+                    colorFilter = ColorFilter.tint(
+                        if (selectedTab == 1) Color.White else Color.White.copy(alpha = 0.7f)
+                    )
                 )
                 Text(
                     text = "Meals",
@@ -894,10 +891,13 @@ fun BottomNavigationBar(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.clickable { onTabSelected(3) }
             ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
+                Image(
+                    painter = painterResource(id = R.drawable.ic_habits),
                     contentDescription = "Habits",
-                    tint = if (selectedTab == 3) Color.White else Color.White.copy(alpha = 0.7f)
+                    modifier = Modifier.size(24.dp),
+                    colorFilter = ColorFilter.tint(
+                        if (selectedTab == 3) Color.White else Color.White.copy(alpha = 0.7f)
+                    )
                 )
                 Text(
                     text = "Habits",
