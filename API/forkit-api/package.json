@@ -8,14 +8,22 @@
     "dev": "nodemon src/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["health", "fitness", "calorie-tracking", "api"],
+  "keywords": [
+    "health",
+    "fitness",
+    "calorie-tracking",
+    "api"
+  ],
   "author": "ForkIt Development Team",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "axios": "^1.11.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^4.18.2",
+    "firebase": "^12.2.1",
+    "firebase-admin": "^13.5.0",
     "morgan": "^1.10.0"
   },
   "devDependencies": {

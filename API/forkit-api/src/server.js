@@ -1,7 +1,20 @@
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
-require("dotenv").config();
+const dotenv = require("dotenv");
+
+// Load environment variables
+dotenv.config();
+
+// SSL Configuration for Node.js
+const https = require("https");
+const tls = require("tls");
+
+// Configure TLS options
+process.env.NODE_OPTIONS = "--tls-min-v1.0 --tls-max-v1.3";
+
+// Initialize Firebase (this will be done in the config file)
+require("./config/firebase");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,9 +28,17 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 const foodRoutes = require("./routes/food");
 const userRoutes = require("./routes/users");
+const foodLogRoutes = require("./routes/foodLogs");
+const mealLogRoutes = require("./routes/mealLogs");
+const waterLogRoutes = require("./routes/waterLogs");
+const exerciseLogRoutes = require("./routes/exerciseLogs");
 
 app.use("/api/food", foodRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/food-logs", foodLogRoutes);
+app.use("/api/meal-logs", mealLogRoutes);
+app.use("/api/water-logs", waterLogRoutes);
+app.use("/api/exercise-logs", exerciseLogRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -37,6 +58,10 @@ app.get("/", (req, res) => {
       health: "/api/health",
       food: "/api/food",
       users: "/api/users",
+      foodLogs: "/api/food-logs",
+      mealLogs: "/api/meal-logs",
+      waterLogs: "/api/water-logs",
+      exerciseLogs: "/api/exercise-logs",
     },
   });
 });
@@ -61,4 +86,9 @@ app.listen(PORT, () => {
   console.log(`🚀 ForkIt API server running on port ${PORT}`);
   console.log(`🔄 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🍽️  Food endpoints: http://localhost:${PORT}/api/food`);
+  console.log(`👤  User endpoints: http://localhost:${PORT}/api/users`);
+  console.log(`📝 Food logs: http://localhost:${PORT}/api/food-logs`);
+  console.log(`🍳 Meal logs: http://localhost:${PORT}/api/meal-logs`);
+  console.log(`💧 Water logs: http://localhost:${PORT}/api/water-logs`);
+  console.log(`🏃 Exercise logs: http://localhost:${PORT}/api/exercise-logs`);
 });
