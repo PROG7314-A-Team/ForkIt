@@ -74,7 +74,7 @@ class FirebaseService {
   }
 
   // Query documents
-  async query(filters = [], orderByField = null, limitCount = null) {
+  async query(filters = [], orderByField = null, orderDirection = "asc", limitCount = null) {
     try {
       let q = db.collection(this.collectionName);
 
@@ -85,7 +85,7 @@ class FirebaseService {
 
       // Apply ordering
       if (orderByField) {
-        q = q.orderBy(orderByField);
+        q = q.orderBy(orderByField, orderDirection);
       }
 
       // Apply limit
