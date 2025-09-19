@@ -1,22 +1,24 @@
 const FirebaseService = require("../services/firebaseService");
+const StreakService = require("../services/streakService");
 const mealLogService = new FirebaseService("mealLogs");
+const streakService = new StreakService();
 
 // Get all meal logs
 exports.getMealLogs = async (req, res) => {
   try {
     const { userId, date } = req.query;
     let filters = [];
-    
+
     if (userId) {
       filters.push({ field: "userId", operator: "==", value: userId });
     }
-    
+
     if (date) {
       filters.push({ field: "date", operator: "==", value: date });
     }
 
     const mealLogs = await mealLogService.query(filters, "createdAt", "desc");
-    
+
     res.json({
       success: true,
       data: mealLogs,
@@ -73,14 +75,15 @@ exports.createMealLog = async (req, res) => {
       totalProtein,
       servings,
       date,
-      mealType // Breakfast, Lunch, Dinner, Snacks
+      mealType, // Breakfast, Lunch, Dinner, Snacks
     } = req.body;
 
     // Validation
     if (!userId || !name || !ingredients || !instructions || !date) {
       return res.status(400).json({
         success: false,
-        message: "userId, name, ingredients, instructions, and date are required",
+        message:
+          "userId, name, ingredients, instructions, and date are required",
       });
     }
 
@@ -112,10 +115,12 @@ exports.createMealLog = async (req, res) => {
       totalProtein: parseFloat(totalProtein) || 0,
       servings: parseFloat(servings) || 1,
       date,
-      mealType: mealType || null
+      mealType: mealType || null,
     };
 
     const mealLog = await mealLogService.create(mealLogData);
+
+    await streakService.updateUserStreak(userId, date);
 
     res.status(201).json({
       success: true,
@@ -203,7 +208,7 @@ exports.getMealLogsByDateRange = async (req, res) => {
     const filters = [
       { field: "userId", operator: "==", value: userId },
       { field: "date", operator: ">=", value: startDate },
-      { field: "date", operator: "<=", value: endDate }
+      { field: "date", operator: "<=", value: endDate },
     ];
 
     const mealLogs = await mealLogService.query(filters, "date", "asc");

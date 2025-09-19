@@ -1,4 +1,6 @@
 const FirebaseService = require("../services/firebaseService");
+const StreakService = require("../services/streakService");
+const streakService = new StreakService();
 const userService = new FirebaseService("users");
 
 exports.getUser = async (req, res) => {
@@ -56,6 +58,49 @@ exports.getUserById = async (req, res) => {
   }
 };
 
+exports.getUserStreak = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const users = await userService.query([
+      { field: "userId", operator: "==", value: id },
+    ]);
+
+    if (users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const user = users[0];
+    const streakData = user.streakData || {
+      currentStreak: 0,
+      longestStreak: 0,
+      lastLogDate: null,
+      streakStartDate: null,
+    };
+
+    res.json({
+      success: true,
+      data: {
+        userId: id,
+        currentStreak: streakData.currentStreak,
+        longestStreak: streakData.longestStreak,
+        lastLogDate: streakData.lastLogDate,
+        streakStartDate: streakData.streakStartDate,
+        isActive: streakService.isStreakActive(streakData.lastLogDate),
+      },
+      message: "User streak retrieved successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Failed to retrieve user streak",
+    });
+  }
+};
+
 exports.createUser = async (req, res) => {
   try {
     const userData = req.body;
@@ -65,6 +110,13 @@ exports.createUser = async (req, res) => {
         message: "Email is required",
       });
     }
+
+    userData.streakData = {
+      currentStreak: 0,
+      longestStreak: 0,
+      lastLogDate: null,
+      streakStartDate: null,
+    };
 
     let userId = await userService.create(userData);
     userData.userId = String(userId.id);
