@@ -8,6 +8,9 @@ router.get("/", userController.getUser);
 // GET user by ID
 router.get("/:id", userController.getUserById);
 
+// GET user streak
+router.get("/:id/streak", userController.getUserStreak);
+
 // POST user
 router.post("/", userController.createUser);
 
