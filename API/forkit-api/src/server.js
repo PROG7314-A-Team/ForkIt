@@ -32,6 +32,7 @@ const foodLogRoutes = require("./routes/foodLogs");
 const mealLogRoutes = require("./routes/mealLogs");
 const waterLogRoutes = require("./routes/waterLogs");
 const exerciseLogRoutes = require("./routes/exerciseLogs");
+const calorieCalculatorRoutes = require("./routes/calorieCalculator");
 
 app.use("/api/food", foodRoutes);
 app.use("/api/users", userRoutes);
@@ -39,6 +40,7 @@ app.use("/api/food-logs", foodLogRoutes);
 app.use("/api/meal-logs", mealLogRoutes);
 app.use("/api/water-logs", waterLogRoutes);
 app.use("/api/exercise-logs", exerciseLogRoutes);
+app.use("/api/calorie-calculator", calorieCalculatorRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -62,6 +64,7 @@ app.get("/", (req, res) => {
       mealLogs: "/api/meal-logs",
       waterLogs: "/api/water-logs",
       exerciseLogs: "/api/exercise-logs",
+      calorieCalculator: "/api/calorie-calculator",
     },
   });
 });
@@ -91,4 +94,5 @@ app.listen(PORT, () => {
   console.log(`🍳 Meal logs: http://localhost:${PORT}/api/meal-logs`);
   console.log(`💧 Water logs: http://localhost:${PORT}/api/water-logs`);
   console.log(`🏃 Exercise logs: http://localhost:${PORT}/api/exercise-logs`);
+  console.log(`🧮 Calorie calculator: http://localhost:${PORT}/api/calorie-calculator`);
 });

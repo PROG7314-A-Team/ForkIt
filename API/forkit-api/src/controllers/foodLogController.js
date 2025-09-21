@@ -1,5 +1,8 @@
 const FirebaseService = require("../services/firebaseService");
+const CalorieCalculatorService = require("../services/calorieCalculatorService");
+
 const foodLogService = new FirebaseService("foodLogs");
+const calorieCalculator = new CalorieCalculatorService();
 
 // Get all food logs
 exports.getFoodLogs = async (req, res) => {
@@ -83,6 +86,23 @@ exports.createFoodLog = async (req, res) => {
       });
     }
 
+    // Calculate calories using the calorie calculator
+    const calorieData = calorieCalculator.calculateFoodCalories({
+      calories: parseFloat(calories) || 0,
+      carbs: parseFloat(carbs) || 0,
+      fat: parseFloat(fat) || 0,
+      protein: parseFloat(protein) || 0
+    });
+
+    // Validate that we have valid calorie data
+    if (!calorieData.validation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: calorieData.validation.message,
+        data: calorieData
+      });
+    }
+
     const foodLogData = {
       userId,
       foodName,
@@ -90,18 +110,27 @@ exports.createFoodLog = async (req, res) => {
       measuringUnit,
       date,
       mealType,
-      calories: parseFloat(calories) || 0,
+      calories: calorieData.totalCalories,
       carbs: parseFloat(carbs) || 0,
       fat: parseFloat(fat) || 0,
       protein: parseFloat(protein) || 0,
-      foodId: foodId || null
+      foodId: foodId || null,
+      // Add calorie calculation metadata
+      calorieCalculation: {
+        calculatedFromMacronutrients: calorieData.calculatedFromMacronutrients,
+        macronutrientBreakdown: calorieData.breakdown,
+        validation: calorieData.validation
+      }
     };
 
     const foodLog = await foodLogService.create(foodLogData);
 
     res.status(201).json({
       success: true,
-      data: foodLog,
+      data: {
+        ...foodLog,
+        calorieCalculation: calorieData
+      },
       message: "Food log created successfully",
     });
   } catch (error) {
