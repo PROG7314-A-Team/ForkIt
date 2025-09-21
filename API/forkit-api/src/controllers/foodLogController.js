@@ -1,5 +1,8 @@
 const FirebaseService = require("../services/firebaseService");
+const CalorieCalculatorService = require("../services/calorieCalculatorService");
+
 const foodLogService = new FirebaseService("foodLogs");
+const calorieCalculator = new CalorieCalculatorService();
 
 // Get all food logs
 exports.getFoodLogs = async (req, res) => {
