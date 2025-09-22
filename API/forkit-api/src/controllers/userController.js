@@ -1,8 +1,10 @@
+const { auth } = require("../config/firebase"); // Firebase Admin
 const FirebaseService = require("../services/firebaseService");
 const StreakService = require("../services/streakService");
 const streakService = new StreakService();
 const userService = new FirebaseService("users");
 
+// GET all users (Firestore)
 exports.getUser = async (req, res) => {
   try {
     let user = await userService.getAll();
@@ -28,6 +30,7 @@ exports.getUser = async (req, res) => {
   }
 };
 
+// GET user by ID (Firestore)
 exports.getUserById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -101,48 +104,7 @@ exports.getUserStreak = async (req, res) => {
   }
 };
 
-exports.createUser = async (req, res) => {
-  try {
-    const userData = req.body;
-    if (!userData.email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
-    }
-
-    userData.streakData = {
-      currentStreak: 0,
-      longestStreak: 0,
-      lastLogDate: null,
-      streakStartDate: null,
-    };
-
-    let userId = await userService.create(userData);
-    userData.userId = String(userId.id);
-    let user = await userService.update(String(userId.id), userData);
-
-    if (user) {
-      res.json({
-        success: true,
-        data: user,
-        message: "User created successfully",
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: "Failed to create user",
-      });
-    }
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      message: "Failed to create user",
-    });
-  }
-};
-
+// UPDATE user (Firestore)
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
@@ -183,6 +145,7 @@ exports.updateUser = async (req, res) => {
   }
 };
 
+// DELETE user (Firestore)
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;

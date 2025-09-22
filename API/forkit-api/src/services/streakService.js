@@ -71,18 +71,23 @@ class StreakService {
   }
 
   isSameDay(date1, date2) {
-    if (!date1 || !date2) return false;
+    console.log("isSameDay \ndate1", date1);
+    console.log("date2", date2);
     return date1.toDateString() === date2.toDateString();
   }
 
   isConsecutiveDay(lastDate, currentDate) {
-    if (!lastDate) return false; // Changed from true to false
+    console.log("isConsecutiveDay \nlastDate", lastDate);
+    console.log("currentDate", currentDate);
+    if (!lastDate) return false;
     const diffTime = currentDate - lastDate;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays === 1;
   }
 
   isNewDay(lastDate, currentDate) {
+    console.log("isNewDay \nlastDate", lastDate);
+    console.log("currentDate", currentDate);
     if (!lastDate) return true;
     const diffTime = currentDate - lastDate;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -90,6 +95,7 @@ class StreakService {
   }
 
   isStreakActive(lastLogDate) {
+    console.log("lastLogDate", lastLogDate);
     if (!lastLogDate) return false;
     const currentDate = new Date();
     const lastLogDateObj = new Date(lastLogDate);
