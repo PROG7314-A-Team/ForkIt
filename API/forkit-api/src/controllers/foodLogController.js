@@ -1,9 +1,10 @@
 const FirebaseService = require("../services/firebaseService");
 const CalorieCalculatorService = require("../services/calorieCalculatorService");
+const StreakService = require("../services/streakService");
 
 const foodLogService = new FirebaseService("foodLogs");
 const calorieCalculator = new CalorieCalculatorService();
-
+const streakService = new StreakService();
 // Get all food logs
 exports.getFoodLogs = async (req, res) => {
   try {
@@ -99,7 +100,7 @@ exports.createFoodLog = async (req, res) => {
       calories: parseFloat(calories) || 0,
       carbs: parseFloat(carbs) || 0,
       fat: parseFloat(fat) || 0,
-      protein: parseFloat(protein) || 0
+      protein: parseFloat(protein) || 0,
     });
 
     // Validate that we have valid calorie data
@@ -107,7 +108,7 @@ exports.createFoodLog = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: calorieData.validation.message,
-        data: calorieData
+        data: calorieData,
       });
     }
 
@@ -122,19 +123,20 @@ exports.createFoodLog = async (req, res) => {
       carbs: parseFloat(carbs) || 0,
       fat: parseFloat(fat) || 0,
       protein: parseFloat(protein) || 0,
-      foodId: foodId || null
+      foodId: foodId || null,
     };
 
     const foodLog = await foodLogService.create(foodLogData);
 
     // Update user streak
-    await streakService.updateUserStreak(userId, date);
+    const response = await streakService.updateUserStreak(userId, date);
+    console.log("create food log response", response);
 
     res.status(201).json({
       success: true,
       data: {
         ...foodLog,
-        calorieCalculation: calorieData
+        calorieCalculation: calorieData,
       },
       message: "Food log created successfully",
     });
