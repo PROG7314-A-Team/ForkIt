@@ -62,7 +62,15 @@ fun DevelopmentScreen() {
             name = "Sign In Screen",
             description = "User login screen with email/password fields and Google login",
             activityClass = SignInActivity::class.java
+        ),
+        ScreenItem(
+            name = "Biometric Screen",
+            description = "Screen requires biometric when opened",
+            activityClass = AccountActivity::class.java
         )
+
+
+
         // Add more screens here as you develop them
         // ScreenItem(
         //     name = "Profile Screen",

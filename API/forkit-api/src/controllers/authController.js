@@ -1,7 +1,9 @@
-const { auth } = require("../config/firebase"); // your firebase.js file
+const { auth, db } = require("../config/firebase"); // your firebase.js file
 const axios = require("axios");
+const { Timestamp } = require("firebase-admin/firestore");
 
 
+// create a new user - used by api/users/register endpoint
 // create a new user - used by api/users/register endpoint
 const createUser = async (req, res) => {
   const { email, password } = req.body;
@@ -11,15 +13,26 @@ const createUser = async (req, res) => {
   }
 
   try {
+    // 1. Create the user in Firebase Authentication
     const userRecord = await auth.createUser({
       email,
       password,
     });
 
+    const uid = userRecord.uid;
+
+    // 2. Save a document in Firestore with UID as doc id
+    await db.collection("users").doc(uid).set({
+      userId: uid,
+      email: email,
+      createdAt: new Date().toISOString(), // e.g. "2025-09-19T08:48:34.806Z"
+    });
+
+    // 3. Return response
     return res.status(201).json({
       message: "User created successfully",
-      uid: userRecord.uid,
-      email: userRecord.email,
+      uid,
+      email,
     });
   } catch (error) {
     console.error("Error creating user:", error);
