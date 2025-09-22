@@ -1,12 +1,12 @@
 const { auth, db } = require("../config/firebase"); // your firebase.js file
 const axios = require("axios");
 const { Timestamp } = require("firebase-admin/firestore");
-
+const userController = require("../controllers/userController");
 
 // create a new user - used by api/users/register endpoint
 // create a new user - used by api/users/register endpoint
 const createUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, ...otherData } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
@@ -22,13 +22,25 @@ const createUser = async (req, res) => {
     const uid = userRecord.uid;
 
     // 2. Save a document in Firestore with UID as doc id
-    await db.collection("users").doc(uid).set({
-      userId: uid,
-      email: email,
-      createdAt: new Date().toISOString(), // e.g. "2025-09-19T08:48:34.806Z"
-    });
+    await db
+      .collection("users")
+      .doc(uid)
+      .set({
+        userId: uid,
+        email: email,
+        streakData: {
+          currentStreak: 0,
+          longestStreak: 0,
+          lastLogDate: null,
+          streakStartDate: null,
+        },
+        ...otherData,
+        createdAt: new Date(
+          new Date().getTime() + 2 * 60 * 60 * 1000
+        ).toISOString(), // e.g. "2025-09-19T08:48:34.806Z"
+      });
 
-    // 3. Return response
+    //3. Return response
     return res.status(201).json({
       message: "User created successfully",
       uid,
@@ -42,7 +54,6 @@ const createUser = async (req, res) => {
     });
   }
 };
-
 
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
@@ -81,6 +92,6 @@ const loginUser = async (req, res) => {
 };
 
 module.exports = {
-  createUser, 
-  loginUser
+  createUser,
+  loginUser,
 };

@@ -12,11 +12,8 @@ router.get("/:id", userController.getUserById);
 // GET user streak
 router.get("/:id/streak", userController.getUserStreak);
 
-// POST user
-router.post("/", userController.createUser);
-
 // POST user -> Register endpoint
-router.post("/register", authController.createUser); // UPDATED
+router.post("/register", authController.createUser);
 
 // POST user -> Login endpoint
 router.post("/login", authController.loginUser);

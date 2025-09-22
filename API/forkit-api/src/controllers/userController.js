@@ -104,67 +104,6 @@ exports.getUserStreak = async (req, res) => {
   }
 };
 
-exports.createUser = async (req, res) => {
-  try {
-    const { email, password, ...otherData } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password are required",
-      });
-    }
-
-    userData.streakData = {
-      currentStreak: 0,
-      longestStreak: 0,
-      lastLogDate: null,
-      streakStartDate: null,
-    };
-
-    let userId = await userService.create(userData);
-    userData.userId = String(userId.id);
-    let user = await userService.update(String(userId.id), userData);
-
-    if (user) {
-      res.json({
-        success: true,
-        data: user,
-        message: "User created successfully",
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: "Failed to create user in Firebase Auth",
-        error: error.message,
-      });
-    }
-
-    // 2️⃣ Save user in Firestore
-    const userData = {
-      userId: firebaseUser.uid, // Firebase UID as userId
-      email,
-      ...otherData,
-    };
-
-    let user = await userService.create(userData);
-    userData.userId = String(user.id);
-    let updatedUser = await userService.update(String(user.id), userData);
-
-    res.status(201).json({
-      success: true,
-      data: updatedUser,
-      message: "User created successfully in Firebase Auth and Firestore",
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      message: "Failed to create user",
-    });
-  }
-};
-
 // UPDATE user (Firestore)
 exports.updateUser = async (req, res) => {
   try {
