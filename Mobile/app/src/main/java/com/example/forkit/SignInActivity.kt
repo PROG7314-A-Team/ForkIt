@@ -16,9 +16,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -30,7 +30,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.forkit.data.RetrofitClient
+import com.example.forkit.data.models.LoginRequest
+import com.example.forkit.data.models.LoginResponse
 import com.example.forkit.ui.theme.ForkItTheme
+import kotlinx.coroutines.launch
 
 class SignInActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,6 +54,10 @@ fun SignInScreen() {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf("") }
+
+    val scope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
@@ -65,32 +73,32 @@ fun SignInScreen() {
         ) {
             // Title
             Text(
-                text = stringResource(id = R.string.continue_tracking),
+                text = stringResource(id = R.string.start_tracking),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 style = TextStyle(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFF22B27D), // ForkIt Green
-                            Color(0xFF1E9ECD)  // ForkIt Blue
+                            Color(0xFF22B27D),
+                            Color(0xFF1E9ECD)
                         )
                     )
                 ),
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Subtitle
             Text(
-                text = stringResource(id = R.string.login_pickup),
+                text = stringResource(id = R.string.create_account_here),
                 fontSize = 16.sp,
-                color = Color(0xFFB4B4B4), // ForkIt Grey
+                color = Color(0xFFB4B4B4),
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(48.dp))
-            
+
             // Email Field
             OutlinedTextField(
                 value = email,
@@ -101,16 +109,16 @@ fun SignInScreen() {
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF1E9ECD), // ForkIt Blue
-                    unfocusedBorderColor = Color(0xFFB4B4B4), // ForkIt Grey
+                    focusedBorderColor = Color(0xFF1E9ECD),
+                    unfocusedBorderColor = Color(0xFFB4B4B4),
                     focusedLabelColor = Color(0xFF1E9ECD),
                     unfocusedLabelColor = Color(0xFFB4B4B4)
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Password Field
             OutlinedTextField(
                 value = password,
@@ -121,8 +129,8 @@ fun SignInScreen() {
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF1E9ECD), // ForkIt Blue
-                    unfocusedBorderColor = Color(0xFFB4B4B4), // ForkIt Grey
+                    focusedBorderColor = Color(0xFF1E9ECD),
+                    unfocusedBorderColor = Color(0xFFB4B4B4),
                     focusedLabelColor = Color(0xFF1E9ECD),
                     unfocusedLabelColor = Color(0xFFB4B4B4)
                 ),
@@ -137,36 +145,76 @@ fun SignInScreen() {
                     }
                 }
             )
-            
+
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             // Login Button
-            androidx.compose.foundation.layout.Box(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
                     .background(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
-                                Color(0xFF22B27D), // ForkIt Green
-                                Color(0xFF1E9ECD)  // ForkIt Blue
+                                Color(0xFF22B27D),
+                                Color(0xFF1E9ECD)
                             )
                         ),
                         shape = RoundedCornerShape(12.dp)
                     )
-                    .clickable { /* TODO: Add login functionality */ },
+                    .clickable {
+                        isLoading = true
+                        message = ""
+
+                        scope.launch {
+                            try {
+                                val response = RetrofitClient.api.loginUser(
+                                    LoginRequest(email, password)
+                                )
+                                if (response.isSuccessful) {
+                                    val body: LoginResponse? = response.body()
+                                    message = "Login successful!"
+                                    // TODO: Save token (body?.token) securely
+                                    // Navigate to MainActivity
+                                    val intent = Intent(context, DashboardActivity::class.java)
+                                    context.startActivity(intent)
+                                } else {
+                                    message = "Login failed: ${response.errorBody()?.string()}"
+                                }
+                            } catch (e: Exception) {
+                                message = "Error: ${e.localizedMessage}"
+                            } finally {
+                                isLoading = false
+                            }
+                        }
+                    },
                 contentAlignment = Alignment.Center
             ) {
+                if (isLoading) {
+                    CircularProgressIndicator(color = Color.White)
+                } else {
+                    Text(
+                        text = stringResource(id = R.string.login),
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Show message
+            if (message.isNotEmpty()) {
                 Text(
-                    text = stringResource(id = R.string.login),
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
+                    text = message,
+                    color = if (message.contains("success", ignoreCase = true)) Color(0xFF22B27D) else Color.Red,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Sign Up Link
             Row(
                 horizontalArrangement = Arrangement.Center,
@@ -174,13 +222,13 @@ fun SignInScreen() {
             ) {
                 Text(
                     text = stringResource(id = R.string.dont_have_account),
-                    color = Color(0xFFB4B4B4), // ForkIt Grey
+                    color = Color(0xFFB4B4B4),
                     fontSize = 14.sp
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = stringResource(id = R.string.sign_up),
-                    color = Color(0xFF1E9ECD), // ForkIt Blue
+                    color = Color(0xFF1E9ECD),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.clickable {
@@ -189,11 +237,11 @@ fun SignInScreen() {
                     }
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(32.dp))
-            
-            // Google Sign In Button
-            androidx.compose.foundation.layout.Box(
+
+            // Google Login Button
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
@@ -203,17 +251,16 @@ fun SignInScreen() {
                     )
                     .border(
                         width = 1.dp,
-                        color = Color(0xFF1E9ECD), // ForkIt Blue
+                        color = Color(0xFF1E9ECD),
                         shape = RoundedCornerShape(12.dp)
                     )
-                    .clickable { /* TODO: Add Google sign in functionality */ },
+                    .clickable { /* TODO: Add Google login */ },
                 contentAlignment = Alignment.Center
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    // Google logo image
                     Image(
                         painter = painterResource(id = R.drawable.google_logo),
                         contentDescription = "Google Logo",
@@ -221,8 +268,8 @@ fun SignInScreen() {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = stringResource(id = R.string.continue_with_google),
-                        color = Color(0xFF1E9ECD), // ForkIt Blue
+                        text = stringResource(id = R.string.sign_up_with_google),
+                        color = Color(0xFF1E9ECD),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )

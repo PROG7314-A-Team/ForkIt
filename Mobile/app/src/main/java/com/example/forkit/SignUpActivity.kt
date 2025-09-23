@@ -31,6 +31,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
+import com.example.forkit.data.models.RegisterRequest
+import com.example.forkit.data.RetrofitClient
+import kotlinx.coroutines.launch
 
 class SignUpActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +55,10 @@ fun SignUpScreen() {
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf("") }
+
+    val scope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
@@ -73,26 +80,26 @@ fun SignUpScreen() {
                 style = TextStyle(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFF22B27D), // ForkIt Green
-                            Color(0xFF1E9ECD)  // ForkIt Blue
+                            Color(0xFF22B27D),
+                            Color(0xFF1E9ECD)
                         )
                     )
                 ),
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Subtitle
             Text(
                 text = stringResource(id = R.string.create_account_here),
                 fontSize = 16.sp,
-                color = Color(0xFFB4B4B4), // ForkIt Grey
+                color = Color(0xFFB4B4B4),
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(48.dp))
-            
+
             // Email Field
             OutlinedTextField(
                 value = email,
@@ -103,16 +110,16 @@ fun SignUpScreen() {
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF1E9ECD), // ForkIt Blue
-                    unfocusedBorderColor = Color(0xFFB4B4B4), // ForkIt Grey
+                    focusedBorderColor = Color(0xFF1E9ECD),
+                    unfocusedBorderColor = Color(0xFFB4B4B4),
                     focusedLabelColor = Color(0xFF1E9ECD),
                     unfocusedLabelColor = Color(0xFFB4B4B4)
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Password Field
             OutlinedTextField(
                 value = password,
@@ -123,8 +130,8 @@ fun SignUpScreen() {
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF1E9ECD), // ForkIt Blue
-                    unfocusedBorderColor = Color(0xFFB4B4B4), // ForkIt Grey
+                    focusedBorderColor = Color(0xFF1E9ECD),
+                    unfocusedBorderColor = Color(0xFFB4B4B4),
                     focusedLabelColor = Color(0xFF1E9ECD),
                     unfocusedLabelColor = Color(0xFFB4B4B4)
                 ),
@@ -139,9 +146,9 @@ fun SignUpScreen() {
                     }
                 }
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Confirm Password Field
             OutlinedTextField(
                 value = confirmPassword,
@@ -152,8 +159,8 @@ fun SignUpScreen() {
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF1E9ECD), // ForkIt Blue
-                    unfocusedBorderColor = Color(0xFFB4B4B4), // ForkIt Grey
+                    focusedBorderColor = Color(0xFF1E9ECD),
+                    unfocusedBorderColor = Color(0xFFB4B4B4),
                     focusedLabelColor = Color(0xFF1E9ECD),
                     unfocusedLabelColor = Color(0xFFB4B4B4)
                 ),
@@ -168,9 +175,9 @@ fun SignUpScreen() {
                     }
                 }
             )
-            
+
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             // Sign Up Button
             androidx.compose.foundation.layout.Box(
                 modifier = Modifier
@@ -179,25 +186,70 @@ fun SignUpScreen() {
                     .background(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
-                                Color(0xFF22B27D), // ForkIt Green
-                                Color(0xFF1E9ECD)  // ForkIt Blue
+                                Color(0xFF22B27D),
+                                Color(0xFF1E9ECD)
                             )
                         ),
                         shape = RoundedCornerShape(12.dp)
                     )
-                    .clickable { /* TODO: Add sign up functionality */ },
+                    .clickable {
+                        if (password != confirmPassword) {
+                            message = "Passwords do not match!"
+                            return@clickable
+                        }
+
+                        isLoading = true
+                        message = ""
+
+                        scope.launch {
+                            try {
+                                val response = RetrofitClient.api.registerUser(
+                                    RegisterRequest(email, password)
+                                )
+                                if (response.isSuccessful) {
+                                    message = response.body()?.message ?: "Registered successfully"
+                                    // Navigate to SignInActivity
+                                    val intent = Intent(context, SignInActivity::class.java)
+                                    context.startActivity(intent)
+                                } else {
+                                    message = "Registration failed: ${response.errorBody()?.string()}"
+                                }
+                            } catch (e: Exception) {
+                                message = "Error: ${e.localizedMessage}"
+                            } finally {
+                                isLoading = false
+                            }
+                        }
+
+
+                    },
                 contentAlignment = Alignment.Center
             ) {
+                if (isLoading) {
+                    CircularProgressIndicator(color = Color.White)
+                } else {
+                    Text(
+                        text = stringResource(id = R.string.sign_up),
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Show message
+            if (message.isNotEmpty()) {
                 Text(
-                    text = stringResource(id = R.string.sign_up),
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
+                    text = message,
+                    color = if (message.contains("success", ignoreCase = true)) Color(0xFF22B27D) else Color.Red,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Login Link
             Row(
                 horizontalArrangement = Arrangement.Center,
@@ -205,13 +257,13 @@ fun SignUpScreen() {
             ) {
                 Text(
                     text = stringResource(id = R.string.already_have_account),
-                    color = Color(0xFFB4B4B4), // ForkIt Grey
+                    color = Color(0xFFB4B4B4),
                     fontSize = 14.sp
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = stringResource(id = R.string.login),
-                    color = Color(0xFF1E9ECD), // ForkIt Blue
+                    color = Color(0xFF1E9ECD),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.clickable {
@@ -220,9 +272,9 @@ fun SignUpScreen() {
                     }
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             // Google Sign Up Button
             androidx.compose.foundation.layout.Box(
                 modifier = Modifier
@@ -234,17 +286,16 @@ fun SignUpScreen() {
                     )
                     .border(
                         width = 1.dp,
-                        color = Color(0xFF1E9ECD), // ForkIt Blue
+                        color = Color(0xFF1E9ECD),
                         shape = RoundedCornerShape(12.dp)
                     )
-                    .clickable { /* TODO: Add Google sign up functionality */ },
+                    .clickable { /* TODO: Add Google sign up */ },
                 contentAlignment = Alignment.Center
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    // Google logo image
                     Image(
                         painter = painterResource(id = R.drawable.google_logo),
                         contentDescription = "Google Logo",
@@ -253,7 +304,7 @@ fun SignUpScreen() {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(id = R.string.sign_up_with_google),
-                        color = Color(0xFF1E9ECD), // ForkIt Blue
+                        color = Color(0xFF1E9ECD),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )

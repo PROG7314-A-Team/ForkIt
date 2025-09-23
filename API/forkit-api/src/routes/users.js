@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/userController");
+const authController = require("../controllers/authController"); // NEW
 
 // GET users listing
 router.get("/", userController.getUser);
@@ -8,8 +9,14 @@ router.get("/", userController.getUser);
 // GET user by ID
 router.get("/:id", userController.getUserById);
 
-// POST user
-router.post("/", userController.createUser);
+// GET user streak
+router.get("/:id/streak", userController.getUserStreak);
+
+// POST user -> Register endpoint
+router.post("/register", authController.createUser);
+
+// POST user -> Login endpoint
+router.post("/login", authController.loginUser);
 
 // PUT user
 router.put("/:id", userController.updateUser);

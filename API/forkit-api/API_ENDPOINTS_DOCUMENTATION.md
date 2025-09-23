@@ -455,6 +455,151 @@ GET /api/exercise-logs/daily-total?userId=user123&date=2024-01-15
 
 ---
 
+## 🧮 Calorie Calculator Endpoints (`/api/calorie-calculator`)
+
+### Get Macronutrient Calorie Values
+```
+GET /api/calorie-calculator/macronutrient-values
+```
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "macronutrientCalories": {
+      "CARBS": 4,
+      "PROTEIN": 4,
+      "FAT": 9
+    },
+    "description": {
+      "carbs": "4 calories per gram of carbohydrates",
+      "protein": "4 calories per gram of protein",
+      "fat": "9 calories per gram of fat"
+    }
+  },
+  "message": "Macronutrient calorie values retrieved successfully"
+}
+```
+
+### Calculate Total Calories from Macronutrients
+```
+POST /api/calorie-calculator/calculate
+```
+**Request Body:**
+```json
+{
+  "carbs": 50,
+  "protein": 30,
+  "fat": 20
+}
+```
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalCalories": 560,
+    "breakdown": {
+      "carbs": {
+        "grams": 50,
+        "calories": 200
+      },
+      "protein": {
+        "grams": 30,
+        "calories": 120
+      },
+      "fat": {
+        "grams": 20,
+        "calories": 180
+      }
+    },
+    "macronutrientCalories": {
+      "carbs": 200,
+      "protein": 120,
+      "fat": 180
+    }
+  },
+  "message": "Calories calculated successfully"
+}
+```
+
+### Calculate Individual Macronutrient Calories
+```
+POST /api/calorie-calculator/individual
+```
+**Request Body:**
+```json
+{
+  "macronutrient": "carbs",
+  "grams": 25
+}
+```
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "macronutrient": "carbs",
+    "grams": 25,
+    "calories": 100,
+    "caloriesPerGram": 4
+  },
+  "message": "carbs calories calculated successfully"
+}
+```
+
+### Calculate Food Calories (Smart Calculation)
+```
+POST /api/calorie-calculator/food-calories
+```
+**Request Body:**
+```json
+{
+  "calories": 0,
+  "carbs": 50,
+  "protein": 30,
+  "fat": 20
+}
+```
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalCalories": 560,
+    "calculatedFromMacronutrients": true,
+    "breakdown": {
+      "carbs": {
+        "grams": 50,
+        "calories": 200
+      },
+      "protein": {
+        "grams": 30,
+        "calories": 120
+      },
+      "fat": {
+        "grams": 20,
+        "calories": 180
+      }
+    },
+    "validation": {
+      "isValid": true,
+      "message": "Calories calculated from macronutrients"
+    }
+  },
+  "message": "Food calories calculated successfully"
+}
+```
+
+**Features:**
+- **Smart Calculation:** Automatically calculates calories from macronutrients when no direct calorie value is provided
+- **Validation:** Compares provided calories with calculated macronutrient calories for consistency
+- **Individual Calculations:** Calculate calories for each macronutrient separately
+- **Flexible Input:** Accepts any combination of calories and macronutrients
+- **Real-time Ready:** Perfect for mobile app real-time calorie calculation as user types
+
+---
+
 ## 🗄️ Database Collections
 
 The API creates the following Firestore collections:
