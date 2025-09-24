@@ -27,6 +27,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
+import java.text.SimpleDateFormat
+import java.util.*
 
 class AddWaterActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,7 +51,15 @@ fun AddWaterScreen(
     onBackPressed: () -> Unit
 ) {
     var amount by remember { mutableStateOf("") }
-    var selectedDate by remember { mutableStateOf("") }
+    
+    // Initialize with current date
+    val currentDate = remember { Date() }
+    var selectedDate by remember { mutableStateOf(currentDate) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    
+    // Format date for display
+    val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+    val selectedDateString = remember(selectedDate) { dateFormatter.format(selectedDate) }
     
     Box(
         modifier = Modifier
@@ -84,127 +94,133 @@ fun AddWaterScreen(
                 )
             }
             
-            // Main content
+            // Main content - centered
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Amount input field
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .border(
-                            width = 1.dp,
-                            color = Color(0xFFB0BEC5),
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .background(
-                            color = Color.White,
-                            shape = RoundedCornerShape(8.dp)
-                        )
+                // Input fields section
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(26.dp)
                 ) {
-                    Row(
+                    // Amount input field
+                    Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .fillMaxWidth()
+                            .height(68.dp)
+                            .border(
+                                width = 3.dp,
+                                color = ThemeManager.forkItBlue.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .background(
+                                color = ThemeManager.forkItBlue.copy(alpha = 0.05f),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 24.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (amount.isEmpty()) "Amount" else amount,
+                                fontSize = 18.sp,
+                                color = if (amount.isEmpty()) Color(0xFF90A4AE) else Color.Black,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = "ml",
+                                fontSize = 18.sp,
+                                color = ThemeManager.forkItBlue,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                    
+                    // Date input field
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(68.dp)
+                            .border(
+                                width = 3.dp,
+                                color = ThemeManager.forkItBlue.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .background(
+                                color = ThemeManager.forkItBlue.copy(alpha = 0.05f),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .clickable { showDatePicker = true }
                     ) {
                         Text(
-                            text = if (amount.isEmpty()) "Amount" else amount,
-                            fontSize = 16.sp,
-                            color = if (amount.isEmpty()) Color(0xFF90A4AE) else Color.Black,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = "ml",
-                            fontSize = 16.sp,
-                            color = Color(0xFF1E9ECD)
+                            text = selectedDateString,
+                            fontSize = 18.sp,
+                            color = Color.Black,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 24.dp)
+                                .wrapContentHeight(Alignment.CenterVertically)
                         )
                     }
                 }
                 
-                // Date input field
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .border(
-                            width = 1.dp,
-                            color = Color(0xFFB0BEC5),
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .background(
-                            color = Color.White,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .clickable { /* Handle date picker */ }
-                ) {
-                    Text(
-                        text = if (selectedDate.isEmpty()) "Select Date" else selectedDate,
-                        fontSize = 16.sp,
-                        color = if (selectedDate.isEmpty()) Color(0xFF90A4AE) else Color.Black,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp)
-                            .wrapContentHeight(Alignment.CenterVertically)
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(32.dp))
                 
                 // Quick Adds section
-                Text(
-                    text = "Quick Adds",
-                    fontSize = 16.sp,
-                    color = Color(0xFF666666),
-                    fontWeight = FontWeight.Medium
-                )
-                
-                // Quick add buttons
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier.weight(1f)
+                    Text(
+                        text = "Quick Adds",
+                        fontSize = 16.sp,
+                        color = Color(0xFF666666),
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    // Quick add buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        QuickAddButton(
-                            text = "+250ml",
-                            onClick = { amount = "250" }
-                        )
-                    }
-                    Box(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        QuickAddButton(
-                            text = "+500ml",
-                            onClick = { amount = "500" }
-                        )
-                    }
-                    Box(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        QuickAddButton(
-                            text = "+1000ml",
-                            onClick = { amount = "1000" }
-                        )
+                        Box(modifier = Modifier.weight(1f)) {
+                            QuickAddButton(
+                                text = "+250ml",
+                                onClick = { amount = "250" }
+                            )
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            QuickAddButton(
+                                text = "+500ml",
+                                onClick = { amount = "500" }
+                            )
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            QuickAddButton(
+                                text = "+1000ml",
+                                onClick = { amount = "1000" }
+                            )
+                        }
                     }
                 }
                 
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.height(48.dp))
                 
                 // Add Water button
                 Button(
                     onClick = { /* Handle add water */ },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
-                        .clip(RoundedCornerShape(12.dp)),
+                        .height(72.dp)
+                        .clip(RoundedCornerShape(16.dp)),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent
                     ),
@@ -220,20 +236,65 @@ fun AddWaterScreen(
                                         ThemeManager.forkItBlue
                                     )
                                 ),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(16.dp)
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "Add Water",
-                            fontSize = 16.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color.White
                         )
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+        
+        // Date Picker Dialog
+        if (showDatePicker) {
+            val datePickerState = rememberDatePickerState(
+                initialSelectedDateMillis = selectedDate.time
+            )
+            
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                selectedDate = Date(millis)
+                            }
+                            showDatePicker = false
+                        }
+                    ) {
+                        Text(
+                            "OK",
+                            color = ThemeManager.forkItBlue,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showDatePicker = false }
+                    ) {
+                        Text(
+                            "Cancel",
+                            color = Color.Gray,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            ) {
+                DatePicker(
+                    state = datePickerState,
+                    colors = DatePickerDefaults.colors(
+                        selectedDayContainerColor = ThemeManager.forkItBlue,
+                        todayDateBorderColor = ThemeManager.forkItGreen,
+                        selectedDayContentColor = Color.White
+                    )
+                )
             }
         }
     }
@@ -246,23 +307,24 @@ fun QuickAddButton(
 ) {
     Box(
         modifier = Modifier
-            .height(48.dp)
+            .fillMaxWidth()
+            .height(64.dp)
             .border(
-                width = 1.dp,
-                color = Color(0xFFB0BEC5),
-                shape = RoundedCornerShape(8.dp)
+                width = 3.dp,
+                color = ThemeManager.forkItBlue.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(16.dp)
             )
             .background(
-                color = Color.White,
-                shape = RoundedCornerShape(8.dp)
+                color = ThemeManager.forkItBlue.copy(alpha = 0.05f),
+                shape = RoundedCornerShape(16.dp)
             )
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            fontSize = 14.sp,
-            color = Color(0xFF1E9ECD),
+            fontSize = 18.sp,
+            color = ThemeManager.forkItBlue,
             fontWeight = FontWeight.Medium
         )
     }
