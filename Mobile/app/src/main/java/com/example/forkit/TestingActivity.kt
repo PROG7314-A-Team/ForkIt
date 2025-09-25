@@ -196,6 +196,197 @@ fun TestingScreen() {
                 responseText = "Delete Food Response:\n${response.body()}"
             }
         }
+        
+        // FOOD LOGGING ENDPOINTS SECTION
+        Text(
+            text = "FOOD LOGGING ENDPOINTS",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+        
+        // Get Food Logs
+        GetFoodLogsSection { userId, date ->
+            makeApiCall {
+                val response = apiService.getFoodLogs(userId, date)
+                responseText = "Get Food Logs Response:\n${response.body()}"
+            }
+        }
+        
+        // Create Food Log
+        CreateFoodLogSection { foodLogData ->
+            makeApiCall {
+                val request = CreateFoodLogRequest(
+                    userId = foodLogData.userId,
+                    foodName = foodLogData.foodName,
+                    servingSize = foodLogData.servingSize,
+                    measuringUnit = foodLogData.measuringUnit,
+                    date = foodLogData.date,
+                    mealType = foodLogData.mealType,
+                    calories = foodLogData.calories,
+                    carbs = foodLogData.carbs,
+                    fat = foodLogData.fat,
+                    protein = foodLogData.protein,
+                    foodId = foodLogData.foodId
+                )
+                val response = apiService.createFoodLog(request)
+                responseText = "Create Food Log Response:\n${response.body()}"
+            }
+        }
+        
+        // Get Daily Calorie Summary
+        GetDailyCalorieSummarySection { userId, date ->
+            makeApiCall {
+                val response = apiService.getDailyCalorieSummary(userId, date)
+                responseText = "Get Daily Calorie Summary Response:\n${response.body()}"
+            }
+        }
+        
+        // MEAL LOGGING ENDPOINTS SECTION
+        Text(
+            text = "MEAL LOGGING ENDPOINTS",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+        
+        // Get Meal Logs
+        GetMealLogsSection { userId, date ->
+            makeApiCall {
+                val response = apiService.getMealLogs(userId, date)
+                responseText = "Get Meal Logs Response:\n${response.body()}"
+            }
+        }
+        
+        // Create Meal Log
+        CreateMealLogSection { mealLogData ->
+            makeApiCall {
+                val request = CreateMealLogRequest(
+                    userId = mealLogData.userId,
+                    name = mealLogData.name,
+                    description = mealLogData.description,
+                    ingredients = mealLogData.ingredients,
+                    instructions = mealLogData.instructions,
+                    totalCalories = mealLogData.totalCalories,
+                    totalCarbs = mealLogData.totalCarbs,
+                    totalFat = mealLogData.totalFat,
+                    totalProtein = mealLogData.totalProtein,
+                    servings = mealLogData.servings,
+                    date = mealLogData.date,
+                    mealType = mealLogData.mealType
+                )
+                val response = apiService.createMealLog(request)
+                responseText = "Create Meal Log Response:\n${response.body()}"
+            }
+        }
+        
+        // WATER LOGGING ENDPOINTS SECTION
+        Text(
+            text = "WATER LOGGING ENDPOINTS",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+        
+        // Get Water Logs
+        GetWaterLogsSection { userId, date ->
+            makeApiCall {
+                val response = apiService.getWaterLogs(userId, date)
+                responseText = "Get Water Logs Response:\n${response.body()}"
+            }
+        }
+        
+        // Create Water Log
+        CreateWaterLogSection { waterLogData ->
+            makeApiCall {
+                val request = CreateWaterLogRequest(
+                    userId = waterLogData.userId,
+                    amount = waterLogData.amount,
+                    date = waterLogData.date
+                )
+                val response = apiService.createWaterLog(request)
+                responseText = "Create Water Log Response:\n${response.body()}"
+            }
+        }
+        
+        // Get Daily Water Summary
+        GetDailyWaterSummarySection { userId, date ->
+            makeApiCall {
+                val response = apiService.getDailyWaterSummary(userId, date)
+                responseText = "Get Daily Water Summary Response:\n${response.body()}"
+            }
+        }
+        
+        // EXERCISE LOGGING ENDPOINTS SECTION
+        Text(
+            text = "EXERCISE LOGGING ENDPOINTS",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+        
+        // Get Exercise Logs
+        GetExerciseLogsSection { userId, date, type ->
+            makeApiCall {
+                val response = apiService.getExerciseLogs(userId, date, type)
+                responseText = "Get Exercise Logs Response:\n${response.body()}"
+            }
+        }
+        
+        // Create Exercise Log
+        CreateExerciseLogSection { exerciseLogData ->
+            makeApiCall {
+                val request = CreateExerciseLogRequest(
+                    userId = exerciseLogData.userId,
+                    name = exerciseLogData.name,
+                    date = exerciseLogData.date,
+                    caloriesBurnt = exerciseLogData.caloriesBurnt,
+                    type = exerciseLogData.type,
+                    duration = exerciseLogData.duration,
+                    notes = exerciseLogData.notes
+                )
+                val response = apiService.createExerciseLog(request)
+                responseText = "Create Exercise Log Response:\n${response.body()}"
+            }
+        }
+        
+        // Get Daily Exercise Summary
+        GetDailyExerciseSummarySection { userId, date ->
+            makeApiCall {
+                val response = apiService.getDailyExerciseSummary(userId, date)
+                responseText = "Get Daily Exercise Summary Response:\n${response.body()}"
+            }
+        }
+        
+        // CALORIE CALCULATOR ENDPOINTS SECTION
+        Text(
+            text = "CALORIE CALCULATOR ENDPOINTS",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+        
+        // Get Macronutrient Values
+        GetMacronutrientValuesSection {
+            makeApiCall {
+                val response = apiService.getMacronutrientValues()
+                responseText = "Get Macronutrient Values Response:\n${response.body()}"
+            }
+        }
+        
+        // Calculate Calories
+        CalculateCaloriesSection { carbs, protein, fat ->
+            makeApiCall {
+                val request = CalculateCaloriesRequest(carbs, protein, fat)
+                val response = apiService.calculateCalories(request)
+                responseText = "Calculate Calories Response:\n${response.body()}"
+            }
+        }
     }
 }
 
@@ -605,11 +796,12 @@ fun CreateFoodSection(onTest: (Food) -> Unit) {
             Button(
                 onClick = { 
                     val nutrients = Nutrients(
-                        carbs = carbs.toDoubleOrNull() ?: 0.0,
+                        calories = calories.toDoubleOrNull() ?: 0.0,
                         protein = protein.toDoubleOrNull() ?: 0.0,
+                        carbs = carbs.toDoubleOrNull() ?: 0.0,
                         fat = fat.toDoubleOrNull() ?: 0.0,
-                        fiber = fiber.toDoubleOrNull() ?: 0.0,
-                        sugar = sugar.toDoubleOrNull() ?: 0.0
+                        fiber = fiber.toDoubleOrNull(),
+                        sugar = sugar.toDoubleOrNull()
                     )
                     val food = Food(
                         id = id,
@@ -617,7 +809,11 @@ fun CreateFoodSection(onTest: (Food) -> Unit) {
                         brand = brand,
                         barcode = barcode,
                         calories = calories.toDoubleOrNull() ?: 0.0,
-                        nutrients = nutrients,
+                        protein = protein.toDoubleOrNull() ?: 0.0,
+                        carbs = carbs.toDoubleOrNull() ?: 0.0,
+                        fat = fat.toDoubleOrNull() ?: 0.0,
+                        fiber = fiber.toDoubleOrNull(),
+                        sugar = sugar.toDoubleOrNull(),
                         image = image,
                         ingredients = ingredients
                     )
@@ -768,11 +964,12 @@ fun UpdateFoodSection(onTest: (String, Food) -> Unit) {
             Button(
                 onClick = { 
                     val nutrients = Nutrients(
-                        carbs = carbs.toDoubleOrNull() ?: 0.0,
+                        calories = calories.toDoubleOrNull() ?: 0.0,
                         protein = protein.toDoubleOrNull() ?: 0.0,
+                        carbs = carbs.toDoubleOrNull() ?: 0.0,
                         fat = fat.toDoubleOrNull() ?: 0.0,
-                        fiber = fiber.toDoubleOrNull() ?: 0.0,
-                        sugar = sugar.toDoubleOrNull() ?: 0.0
+                        fiber = fiber.toDoubleOrNull(),
+                        sugar = sugar.toDoubleOrNull()
                     )
                     val food = Food(
                         id = id,
@@ -780,7 +977,11 @@ fun UpdateFoodSection(onTest: (String, Food) -> Unit) {
                         brand = brand,
                         barcode = barcode,
                         calories = calories.toDoubleOrNull() ?: 0.0,
-                        nutrients = nutrients,
+                        protein = protein.toDoubleOrNull() ?: 0.0,
+                        carbs = carbs.toDoubleOrNull() ?: 0.0,
+                        fat = fat.toDoubleOrNull() ?: 0.0,
+                        fiber = fiber.toDoubleOrNull(),
+                        sugar = sugar.toDoubleOrNull(),
                         image = image,
                         ingredients = ingredients
                     )
@@ -816,6 +1017,788 @@ fun DeleteFoodSection(onTest: (String) -> Unit) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Test Delete Food")
+            }
+        }
+    }
+}
+
+// FOOD LOGGING UI COMPONENTS
+@Composable
+fun GetFoodLogsSection(onTest: (String?, String?) -> Unit) {
+    var userId by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
+    
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Get Food Logs", fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("User ID (optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = date,
+                onValueChange = { date = it },
+                label = { Text("Date (optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { onTest(userId.ifEmpty { null }, date.ifEmpty { null }) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Test Get Food Logs")
+            }
+        }
+    }
+}
+
+@Composable
+fun CreateFoodLogSection(onTest: (FoodLog) -> Unit) {
+    var userId by remember { mutableStateOf("") }
+    var foodName by remember { mutableStateOf("") }
+    var servingSize by remember { mutableStateOf("") }
+    var measuringUnit by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
+    var mealType by remember { mutableStateOf("") }
+    var calories by remember { mutableStateOf("") }
+    var carbs by remember { mutableStateOf("") }
+    var fat by remember { mutableStateOf("") }
+    var protein by remember { mutableStateOf("") }
+    var foodId by remember { mutableStateOf("") }
+    
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Create Food Log", fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("User ID") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = foodName,
+                onValueChange = { foodName = it },
+                label = { Text("Food Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = servingSize,
+                    onValueChange = { servingSize = it },
+                    label = { Text("Serving Size") },
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = measuringUnit,
+                    onValueChange = { measuringUnit = it },
+                    label = { Text("Unit") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = date,
+                    onValueChange = { date = it },
+                    label = { Text("Date") },
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = mealType,
+                    onValueChange = { mealType = it },
+                    label = { Text("Meal Type") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text("Macronutrients:", fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = calories,
+                    onValueChange = { calories = it },
+                    label = { Text("Calories") },
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = carbs,
+                    onValueChange = { carbs = it },
+                    label = { Text("Carbs") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = protein,
+                    onValueChange = { protein = it },
+                    label = { Text("Protein") },
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = fat,
+                    onValueChange = { fat = it },
+                    label = { Text("Fat") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = foodId,
+                onValueChange = { foodId = it },
+                label = { Text("Food ID (optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { 
+                    val foodLog = FoodLog(
+                        id = "",
+                        userId = userId,
+                        foodName = foodName,
+                        servingSize = servingSize.toDoubleOrNull() ?: 0.0,
+                        measuringUnit = measuringUnit,
+                        date = date,
+                        mealType = mealType,
+                        calories = calories.toDoubleOrNull() ?: 0.0,
+                        carbs = carbs.toDoubleOrNull() ?: 0.0,
+                        fat = fat.toDoubleOrNull() ?: 0.0,
+                        protein = protein.toDoubleOrNull() ?: 0.0,
+                        foodId = foodId.ifEmpty { null },
+                        createdAt = "",
+                        updatedAt = ""
+                    )
+                    onTest(foodLog)
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Test Create Food Log")
+            }
+        }
+    }
+}
+
+@Composable
+fun GetDailyCalorieSummarySection(onTest: (String, String) -> Unit) {
+    var userId by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
+    
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Get Daily Calorie Summary", fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("User ID") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = date,
+                onValueChange = { date = it },
+                label = { Text("Date") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { onTest(userId, date) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Test Get Daily Calorie Summary")
+            }
+        }
+    }
+}
+
+// MEAL LOGGING UI COMPONENTS
+@Composable
+fun GetMealLogsSection(onTest: (String?, String?) -> Unit) {
+    var userId by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
+    
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Get Meal Logs", fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("User ID (optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = date,
+                onValueChange = { date = it },
+                label = { Text("Date (optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { onTest(userId.ifEmpty { null }, date.ifEmpty { null }) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Test Get Meal Logs")
+            }
+        }
+    }
+}
+
+@Composable
+fun CreateMealLogSection(onTest: (MealLog) -> Unit) {
+    var userId by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
+    var mealType by remember { mutableStateOf("") }
+    var totalCalories by remember { mutableStateOf("") }
+    var totalCarbs by remember { mutableStateOf("") }
+    var totalFat by remember { mutableStateOf("") }
+    var totalProtein by remember { mutableStateOf("") }
+    var servings by remember { mutableStateOf("") }
+    
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Create Meal Log", fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("User ID") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Meal Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Description (optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = date,
+                    onValueChange = { date = it },
+                    label = { Text("Date") },
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = mealType,
+                    onValueChange = { mealType = it },
+                    label = { Text("Meal Type") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text("Nutritional Info:", fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = totalCalories,
+                    onValueChange = { totalCalories = it },
+                    label = { Text("Total Calories") },
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = servings,
+                    onValueChange = { servings = it },
+                    label = { Text("Servings") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = totalCarbs,
+                    onValueChange = { totalCarbs = it },
+                    label = { Text("Total Carbs") },
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = totalProtein,
+                    onValueChange = { totalProtein = it },
+                    label = { Text("Total Protein") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = totalFat,
+                onValueChange = { totalFat = it },
+                label = { Text("Total Fat") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { 
+                    val mealLog = MealLog(
+                        id = "",
+                        userId = userId,
+                        name = name,
+                        description = description,
+                        ingredients = emptyList(),
+                        instructions = emptyList(),
+                        totalCalories = totalCalories.toDoubleOrNull() ?: 0.0,
+                        totalCarbs = totalCarbs.toDoubleOrNull() ?: 0.0,
+                        totalFat = totalFat.toDoubleOrNull() ?: 0.0,
+                        totalProtein = totalProtein.toDoubleOrNull() ?: 0.0,
+                        servings = servings.toDoubleOrNull() ?: 1.0,
+                        date = date,
+                        mealType = mealType.ifEmpty { null },
+                        createdAt = "",
+                        updatedAt = ""
+                    )
+                    onTest(mealLog)
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Test Create Meal Log")
+            }
+        }
+    }
+}
+
+// WATER LOGGING UI COMPONENTS
+@Composable
+fun GetWaterLogsSection(onTest: (String?, String?) -> Unit) {
+    var userId by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
+    
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Get Water Logs", fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("User ID (optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = date,
+                onValueChange = { date = it },
+                label = { Text("Date (optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { onTest(userId.ifEmpty { null }, date.ifEmpty { null }) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Test Get Water Logs")
+            }
+        }
+    }
+}
+
+@Composable
+fun CreateWaterLogSection(onTest: (WaterLog) -> Unit) {
+    var userId by remember { mutableStateOf("") }
+    var amount by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
+    
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Create Water Log", fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("User ID") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = amount,
+                onValueChange = { amount = it },
+                label = { Text("Amount (ml)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = date,
+                onValueChange = { date = it },
+                label = { Text("Date") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { 
+                    val waterLog = WaterLog(
+                        id = "",
+                        userId = userId,
+                        amount = amount.toDoubleOrNull() ?: 0.0,
+                        date = date,
+                        createdAt = "",
+                        updatedAt = ""
+                    )
+                    onTest(waterLog)
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Test Create Water Log")
+            }
+        }
+    }
+}
+
+@Composable
+fun GetDailyWaterSummarySection(onTest: (String, String) -> Unit) {
+    var userId by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
+    
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Get Daily Water Summary", fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("User ID") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = date,
+                onValueChange = { date = it },
+                label = { Text("Date") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { onTest(userId, date) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Test Get Daily Water Summary")
+            }
+        }
+    }
+}
+
+// EXERCISE LOGGING UI COMPONENTS
+@Composable
+fun GetExerciseLogsSection(onTest: (String?, String?, String?) -> Unit) {
+    var userId by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf("") }
+    
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Get Exercise Logs", fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("User ID (optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = date,
+                onValueChange = { date = it },
+                label = { Text("Date (optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = type,
+                onValueChange = { type = it },
+                label = { Text("Type (optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { onTest(userId.ifEmpty { null }, date.ifEmpty { null }, type.ifEmpty { null }) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Test Get Exercise Logs")
+            }
+        }
+    }
+}
+
+@Composable
+fun CreateExerciseLogSection(onTest: (ExerciseLog) -> Unit) {
+    var userId by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
+    var caloriesBurnt by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf("") }
+    var duration by remember { mutableStateOf("") }
+    var notes by remember { mutableStateOf("") }
+    
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Create Exercise Log", fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("User ID") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Exercise Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = date,
+                    onValueChange = { date = it },
+                    label = { Text("Date") },
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = type,
+                    onValueChange = { type = it },
+                    label = { Text("Type") },
+                    modifier = Modifier.weight(1f)
+                )
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = caloriesBurnt,
+                    onValueChange = { caloriesBurnt = it },
+                    label = { Text("Calories Burnt") },
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = duration,
+                    onValueChange = { duration = it },
+                    label = { Text("Duration (min)") },
+                    modifier = Modifier.weight(1f)
+                )
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = notes,
+                onValueChange = { notes = it },
+                label = { Text("Notes (optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { 
+                    val exerciseLog = ExerciseLog(
+                        id = "",
+                        userId = userId,
+                        name = name,
+                        date = date,
+                        caloriesBurnt = caloriesBurnt.toDoubleOrNull() ?: 0.0,
+                        type = type,
+                        duration = duration.toDoubleOrNull(),
+                        notes = notes,
+                        createdAt = "",
+                        updatedAt = ""
+                    )
+                    onTest(exerciseLog)
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Test Create Exercise Log")
+            }
+        }
+    }
+}
+
+@Composable
+fun GetDailyExerciseSummarySection(onTest: (String, String) -> Unit) {
+    var userId by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf("") }
+    
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Get Daily Exercise Summary", fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("User ID") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = date,
+                onValueChange = { date = it },
+                label = { Text("Date") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { onTest(userId, date) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Test Get Daily Exercise Summary")
+            }
+        }
+    }
+}
+
+// CALORIE CALCULATOR UI COMPONENTS
+@Composable
+fun GetMacronutrientValuesSection(onTest: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Get Macronutrient Values", fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { onTest() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Test Get Macronutrient Values")
+            }
+        }
+    }
+}
+
+@Composable
+fun CalculateCaloriesSection(onTest: (Double?, Double?, Double?) -> Unit) {
+    var carbs by remember { mutableStateOf("") }
+    var protein by remember { mutableStateOf("") }
+    var fat by remember { mutableStateOf("") }
+    
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Calculate Calories", fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = carbs,
+                    onValueChange = { carbs = it },
+                    label = { Text("Carbs (g)") },
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = protein,
+                    onValueChange = { protein = it },
+                    label = { Text("Protein (g)") },
+                    modifier = Modifier.weight(1f)
+                )
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = fat,
+                onValueChange = { fat = it },
+                label = { Text("Fat (g)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { 
+                    onTest(
+                        carbs.toDoubleOrNull(),
+                        protein.toDoubleOrNull(),
+                        fat.toDoubleOrNull()
+                    )
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Test Calculate Calories")
             }
         }
     }
