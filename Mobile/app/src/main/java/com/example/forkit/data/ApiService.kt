@@ -49,27 +49,6 @@ interface ApiService {
     // Delete food
     @DELETE("api/food/{id}")
     suspend fun deleteFood(@Path("id") foodId: String): Response<DeleteFoodResponse>
-// ==================== FOOD MANAGEMENT ====================
-    
-    // Get Food by Barcode
-    @GET("api/food/barcode/{code}")
-    suspend fun getFoodByBarcode(@Path("code") code: String): Response<FoodResponse>
-    
-    // Get Food by Name
-    @GET("api/food/{name}")
-    suspend fun getFoodByName(@Path("name") name: String): Response<FoodSearchResponse>
-    
-    // Create Food
-    @POST("api/food")
-    suspend fun createFood(@Body request: CreateFoodRequest): Response<FoodResponse>
-    
-    // Update Food
-    @PUT("api/food/{id}")
-    suspend fun updateFood(@Path("id") id: String, @Body request: UpdateFoodRequest): Response<FoodResponse>
-    
-    // Delete Food
-    @DELETE("api/food/{id}")
-    suspend fun deleteFood(@Path("id") id: String): Response<FoodResponse>
     
     // ==================== FOOD LOGGING ====================
     

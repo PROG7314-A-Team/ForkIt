@@ -1,11 +1,12 @@
 package com.example.forkit.data.models
 
 data class Nutrients(
+    val calories: Int,
     val carbs: Double,
     val protein: Double,
     val fat: Double,
     val fiber: Double,
-    val sugar: Double,
+    val sugar: Double
 )
 
 data class Food(

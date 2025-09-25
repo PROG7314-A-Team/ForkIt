@@ -796,12 +796,12 @@ fun CreateFoodSection(onTest: (Food) -> Unit) {
             Button(
                 onClick = { 
                     val nutrients = Nutrients(
-                        calories = calories.toDoubleOrNull() ?: 0.0,
+                        calories = calories.toIntOrNull() ?: 0,
                         protein = protein.toDoubleOrNull() ?: 0.0,
                         carbs = carbs.toDoubleOrNull() ?: 0.0,
                         fat = fat.toDoubleOrNull() ?: 0.0,
-                        fiber = fiber.toDoubleOrNull(),
-                        sugar = sugar.toDoubleOrNull()
+                        fiber = fiber.toDoubleOrNull() ?: 0.0,
+                        sugar = sugar.toDoubleOrNull() ?: 0.0
                     )
                     val food = Food(
                         id = id,
@@ -809,11 +809,7 @@ fun CreateFoodSection(onTest: (Food) -> Unit) {
                         brand = brand,
                         barcode = barcode,
                         calories = calories.toDoubleOrNull() ?: 0.0,
-                        protein = protein.toDoubleOrNull() ?: 0.0,
-                        carbs = carbs.toDoubleOrNull() ?: 0.0,
-                        fat = fat.toDoubleOrNull() ?: 0.0,
-                        fiber = fiber.toDoubleOrNull(),
-                        sugar = sugar.toDoubleOrNull(),
+                        nutrients = nutrients,
                         image = image,
                         ingredients = ingredients
                     )
@@ -964,12 +960,12 @@ fun UpdateFoodSection(onTest: (String, Food) -> Unit) {
             Button(
                 onClick = { 
                     val nutrients = Nutrients(
-                        calories = calories.toDoubleOrNull() ?: 0.0,
+                        calories = calories.toIntOrNull() ?: 0,
                         protein = protein.toDoubleOrNull() ?: 0.0,
                         carbs = carbs.toDoubleOrNull() ?: 0.0,
                         fat = fat.toDoubleOrNull() ?: 0.0,
-                        fiber = fiber.toDoubleOrNull(),
-                        sugar = sugar.toDoubleOrNull()
+                        fiber = fiber.toDoubleOrNull() ?: 0.0,
+                        sugar = sugar.toDoubleOrNull() ?: 0.0
                     )
                     val food = Food(
                         id = id,
@@ -977,11 +973,7 @@ fun UpdateFoodSection(onTest: (String, Food) -> Unit) {
                         brand = brand,
                         barcode = barcode,
                         calories = calories.toDoubleOrNull() ?: 0.0,
-                        protein = protein.toDoubleOrNull() ?: 0.0,
-                        carbs = carbs.toDoubleOrNull() ?: 0.0,
-                        fat = fat.toDoubleOrNull() ?: 0.0,
-                        fiber = fiber.toDoubleOrNull(),
-                        sugar = sugar.toDoubleOrNull(),
+                        nutrients = nutrients,
                         image = image,
                         ingredients = ingredients
                     )
