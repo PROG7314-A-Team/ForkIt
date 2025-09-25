@@ -66,7 +66,7 @@ fun AddWorkoutScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -84,14 +84,14 @@ fun AddWorkoutScreen(
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        tint = Color.Black
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
                 Text(
                     text = "Add Exercise",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
-                    color = ThemeManager.forkItGreen,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
@@ -117,18 +117,18 @@ fun AddWorkoutScreen(
                             .height(68.dp)
                             .border(
                                 width = 3.dp,
-                                color = ThemeManager.forkItBlue.copy(alpha = 0.3f),
+                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .background(
-                                color = ThemeManager.forkItBlue.copy(alpha = 0.05f),
+                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                     ) {
                         Text(
                             text = if (name.isEmpty()) "Name" else name,
                             fontSize = 18.sp,
-                            color = if (name.isEmpty()) Color(0xFF90A4AE) else Color.Black,
+                            color = if (name.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 24.dp)
@@ -143,11 +143,11 @@ fun AddWorkoutScreen(
                             .height(68.dp)
                             .border(
                                 width = 3.dp,
-                                color = ThemeManager.forkItBlue.copy(alpha = 0.3f),
+                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .background(
-                                color = ThemeManager.forkItBlue.copy(alpha = 0.05f),
+                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .clickable { showDatePicker = true }
@@ -155,7 +155,7 @@ fun AddWorkoutScreen(
                         Text(
                             text = selectedDateString,
                             fontSize = 18.sp,
-                            color = Color.Black,
+                            color = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 24.dp)
@@ -170,11 +170,11 @@ fun AddWorkoutScreen(
                             .height(68.dp)
                             .border(
                                 width = 3.dp,
-                                color = ThemeManager.forkItBlue.copy(alpha = 0.3f),
+                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .background(
-                                color = ThemeManager.forkItBlue.copy(alpha = 0.05f),
+                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                     ) {
@@ -187,13 +187,13 @@ fun AddWorkoutScreen(
                             Text(
                                 text = if (caloriesBurned.isEmpty()) "Calories Burned" else caloriesBurned,
                                 fontSize = 18.sp,
-                                color = if (caloriesBurned.isEmpty()) Color(0xFF90A4AE) else Color.Black,
+                                color = if (caloriesBurned.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
                                 modifier = Modifier.weight(1f)
                             )
                             Text(
                                 text = "kcal",
                                 fontSize = 18.sp,
-                                color = ThemeManager.forkItBlue,
+                                color = MaterialTheme.colorScheme.secondary,
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -210,7 +210,7 @@ fun AddWorkoutScreen(
                     Text(
                         text = "Type",
                         fontSize = 16.sp,
-                        color = Color(0xFF666666),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
@@ -256,8 +256,8 @@ fun AddWorkoutScreen(
                             .background(
                                 brush = Brush.horizontalGradient(
                                     colors = listOf(
-                                        ThemeManager.forkItGreen,
-                                        ThemeManager.forkItBlue
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.secondary
                                     )
                                 ),
                                 shape = RoundedCornerShape(16.dp)
@@ -268,7 +268,7 @@ fun AddWorkoutScreen(
                             text = "Add Exercise",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.background
                         )
                     }
                 }
@@ -294,7 +294,7 @@ fun AddWorkoutScreen(
                     ) {
                         Text(
                             "OK",
-                            color = ThemeManager.forkItBlue,
+                            color = MaterialTheme.colorScheme.secondary,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -314,9 +314,9 @@ fun AddWorkoutScreen(
                 DatePicker(
                     state = datePickerState,
                     colors = DatePickerDefaults.colors(
-                        selectedDayContainerColor = ThemeManager.forkItBlue,
-                        todayDateBorderColor = ThemeManager.forkItGreen,
-                        selectedDayContentColor = Color.White
+                        selectedDayContainerColor = MaterialTheme.colorScheme.secondary,
+                        todayDateBorderColor = MaterialTheme.colorScheme.primary,
+                        selectedDayContentColor = MaterialTheme.colorScheme.background
                     )
                 )
             }
@@ -336,11 +336,11 @@ fun TypeButton(
             .height(64.dp)
             .border(
                 width = 3.dp,
-                color = ThemeManager.forkItBlue.copy(alpha = 0.3f),
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(16.dp)
             )
             .background(
-                color = ThemeManager.forkItBlue.copy(alpha = 0.05f),
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
                 shape = RoundedCornerShape(16.dp)
             )
             .clickable { onClick() },
@@ -349,7 +349,7 @@ fun TypeButton(
         Text(
             text = text,
             fontSize = 18.sp,
-            color = ThemeManager.forkItBlue,
+            color = MaterialTheme.colorScheme.secondary,
             fontWeight = FontWeight.Medium
         )
     }

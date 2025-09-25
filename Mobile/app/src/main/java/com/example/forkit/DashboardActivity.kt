@@ -15,8 +15,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,18 +22,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
@@ -45,20 +38,13 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
-import com.example.forkit.ThemeManager
-import com.example.forkit.data.models.Habit
-import com.example.forkit.data.models.MockHabits
-import java.time.LocalDateTime
 
 class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -110,7 +96,7 @@ fun DashboardScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(ThemeManager.backgroundColor)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -148,8 +134,8 @@ fun DashboardScreen() {
                             context.startActivity(intent)
                         },
                         shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor),
-                        border = BorderStroke(1.dp, ThemeManager.forkItBlue) // ForkIt blue border
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary) // ForkIt blue border
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -159,14 +145,14 @@ fun DashboardScreen() {
                             Icon(
                                 imageVector = Icons.Default.Person,
                                 contentDescription = "Profile",
-                                tint = ThemeManager.forkItBlue, // ForkIt blue color
+                                tint = MaterialTheme.colorScheme.secondary, // ForkIt blue color
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
                                 text = "PROFILE",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = ThemeManager.forkItBlue // ForkIt blue color
+                                color = MaterialTheme.colorScheme.secondary // ForkIt blue color
                             )
                         }
                     }
@@ -179,8 +165,8 @@ fun DashboardScreen() {
                         .padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor),
-                    border = BorderStroke(2.dp, ThemeManager.forkItGreen) // ForkIt green border
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary) // ForkIt green border
                 ) {
                     Column(
                         modifier = Modifier
@@ -192,14 +178,14 @@ fun DashboardScreen() {
                             text = "Welcome to the Dashboard",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = ThemeManager.forkItBlue,
+                            color = MaterialTheme.colorScheme.secondary,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "Track your health and fitness journey",
                             fontSize = 12.sp,
-                            color = ThemeManager.onBackgroundColor,
+                            color = MaterialTheme.colorScheme.onBackground,
                             textAlign = TextAlign.Center
                         )
                     }
@@ -214,7 +200,7 @@ fun DashboardScreen() {
                         .padding(16.dp),
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                    Box(
                         modifier = Modifier
@@ -222,8 +208,8 @@ fun DashboardScreen() {
                             .background(
                                 brush = Brush.horizontalGradient(
                                     colors = listOf(
-                                        Color(0xFF22B27D), // ForkIt Green
-                                        Color(0xFF1E9ECD)  // ForkIt Blue
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.secondary
                                     )
                                 )
                             )
@@ -263,7 +249,7 @@ fun DashboardScreen() {
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = ThemeManager.forkItGreen)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Column(
                             modifier = Modifier
@@ -292,7 +278,7 @@ fun DashboardScreen() {
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = ThemeManager.forkItBlue)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary)
                     ) {
                         Column(
                             modifier = Modifier
@@ -326,8 +312,8 @@ fun DashboardScreen() {
                         .padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor),
-                    border = BorderStroke(2.dp, ThemeManager.forkItGreen)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
                 ) {
                     Column(
                         modifier = Modifier
@@ -344,13 +330,13 @@ fun DashboardScreen() {
                                 text = "Today's Goal Progress",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = ThemeManager.onSurfaceColor
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = "$consumed / $dailyGoal kcal",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isGoalReached) ThemeManager.forkItGreen else ThemeManager.onBackgroundColor
+                                color = if (isGoalReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
                             )
                         }
                         
@@ -363,8 +349,8 @@ fun DashboardScreen() {
                                 .fillMaxWidth()
                                 .height(12.dp)
                                 .clip(RoundedCornerShape(6.dp)),
-                            color = if (isGoalReached) ThemeManager.forkItGreen else ThemeManager.forkItBlue,
-                            trackColor = ThemeManager.borderColor
+                            color = if (isGoalReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                            trackColor = MaterialTheme.colorScheme.outline
                         )
                         
                         Spacer(modifier = Modifier.height(8.dp))
@@ -377,12 +363,12 @@ fun DashboardScreen() {
                             Text(
                                 text = "${(animatedProgress * 100).toInt()}% Complete",
                                 fontSize = 12.sp,
-                                color = ThemeManager.onBackgroundColor
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                             Text(
                                 text = if (isGoalReached) "Goal Reached! 🎉" else "$caloriesRemaining kcal remaining",
                                 fontSize = 12.sp,
-                                color = if (isGoalReached) ThemeManager.forkItGreen else ThemeManager.onBackgroundColor,
+                                color = if (isGoalReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
                                 fontWeight = if (isGoalReached) FontWeight.Bold else FontWeight.Normal
                             )
                         }
@@ -398,8 +384,8 @@ fun DashboardScreen() {
                         .padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor),
-                    border = BorderStroke(2.dp, ThemeManager.forkItGreen)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
                 ) {
                     Row(
                         modifier = Modifier
@@ -440,7 +426,7 @@ fun DashboardScreen() {
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = ThemeManager.forkItBlue)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary)
                     ) {
                         Column(
                             modifier = Modifier
@@ -473,7 +459,7 @@ fun DashboardScreen() {
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = ThemeManager.forkItGreen)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Column(
                             modifier = Modifier
@@ -511,8 +497,8 @@ fun DashboardScreen() {
                         .padding(horizontal = 16.dp),
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor),
-                    border = BorderStroke(2.dp, ThemeManager.forkItGreen)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
                 ) {
                     Column(
                         modifier = Modifier
@@ -523,7 +509,7 @@ fun DashboardScreen() {
                             text = "Recent Meals",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium,
-                            color = ThemeManager.onSurfaceColor
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         
                         Spacer(modifier = Modifier.height(16.dp))
@@ -544,12 +530,12 @@ fun DashboardScreen() {
                                 Text(
                                     text = meal,
                                     fontSize = 14.sp,
-                                    color = ThemeManager.onBackgroundColor
+                                    color = MaterialTheme.colorScheme.onBackground
                                 )
                                 Text(
                                     text = "2h ago",
                                     fontSize = 12.sp,
-                                    color = ThemeManager.onBackgroundColor
+                                    color = MaterialTheme.colorScheme.onBackground
                                 )
                             }
                         }
@@ -576,13 +562,8 @@ fun DashboardScreen() {
                     Spacer(modifier = Modifier.weight(1f))
                 }
                 3 -> {
-                    // Habits Screen
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                    ) {
-                        HabitsScreen()
-                    }
+                    // Habits Screen - Navigate to HabitsActivity
+                    Spacer(modifier = Modifier.weight(1f))
                 }
                 4 -> {
                     // Coach Screen
@@ -598,7 +579,15 @@ fun DashboardScreen() {
             // Bottom Navigation (always clickable)
             BottomNavigationBar(
                 selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it },
+                onTabSelected = { tabIndex ->
+                    if (tabIndex == 3) {
+                        // Navigate to HabitsActivity
+                        val intent = Intent(context, HabitsActivity::class.java)
+                        context.startActivity(intent)
+                    } else {
+                        selectedTab = tabIndex
+                    }
+                },
                 showFloatingIcons = showFloatingIcons,
                 onAddButtonClick = { showFloatingIcons = true }
             )
@@ -609,7 +598,7 @@ fun DashboardScreen() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(ThemeManager.onBackgroundColor.copy(alpha = 0.3f)) // Semi-transparent overlay
+                    .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)) // Semi-transparent overlay
             ) {
                 FloatingIcons(
                     context = context,
@@ -645,6 +634,12 @@ fun CalorieWheel(
         animationSpec = tween(1000)
     )
     
+    // Get colors outside Canvas
+    val outlineColor = MaterialTheme.colorScheme.outline
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    val primaryContainerColor = MaterialTheme.colorScheme.primaryContainer
+    
     Box(
         modifier = Modifier.size(140.dp),
         contentAlignment = Alignment.Center
@@ -657,7 +652,7 @@ fun CalorieWheel(
             
             // Background circle
             drawCircle(
-                color = Color(0xFFE0E0E0),
+                color = outlineColor,
                 radius = radius,
                 style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
             )
@@ -666,7 +661,7 @@ fun CalorieWheel(
             
             // Carbs segment (Dark Blue)
             drawArc(
-                color = Color(0xFF1565C0), // Dark Blue
+                color = tertiaryColor,
                 startAngle = currentAngle,
                 sweepAngle = 360f * animatedCarbs,
                 useCenter = false,
@@ -676,7 +671,7 @@ fun CalorieWheel(
             
             // Protein segment (Blue)
             drawArc(
-                color = Color(0xFF1E9ECD), // ForkIt Blue
+                color = secondaryColor,
                 startAngle = currentAngle,
                 sweepAngle = 360f * animatedProtein,
                 useCenter = false,
@@ -686,7 +681,7 @@ fun CalorieWheel(
             
             // Fat segment (Light Blue)
             drawArc(
-                color = Color(0xFF87CEEB), // Light Blue
+                color = primaryContainerColor,
                 startAngle = currentAngle,
                 sweepAngle = 360f * animatedFat,
                 useCenter = false,
@@ -702,12 +697,12 @@ fun CalorieWheel(
                 text = totalCalories.toString(),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = ThemeManager.forkItGreen // ForkIt Green
+                color = MaterialTheme.colorScheme.primary // ForkIt Green
             )
             Text(
                 text = "Today's Calories",
                 fontSize = 12.sp,
-                color = ThemeManager.onBackgroundColor,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center
             )
         }
@@ -729,7 +724,7 @@ fun MacronutrientBreakdown(
         MacronutrientItem(
             name = "Carbs",
             calories = carbsCalories,
-            color = Color(0xFF1565C0), // Dark Blue
+            color = MaterialTheme.colorScheme.tertiary,
             percentage = (carbsCalories * 100 / totalCalories)
         )
         
@@ -737,7 +732,7 @@ fun MacronutrientBreakdown(
         MacronutrientItem(
             name = "Protein",
             calories = proteinCalories,
-            color = Color(0xFF1E9ECD), // ForkIt Blue
+            color = MaterialTheme.colorScheme.secondary,
             percentage = (proteinCalories * 100 / totalCalories)
         )
         
@@ -745,7 +740,7 @@ fun MacronutrientBreakdown(
         MacronutrientItem(
             name = "Fat",
             calories = fatCalories,
-            color = Color(0xFF87CEEB), // Light Blue
+            color = MaterialTheme.colorScheme.primaryContainer,
             percentage = (fatCalories * 100 / totalCalories)
         )
     }
@@ -774,13 +769,13 @@ fun MacronutrientItem(
                 text = name,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
-                color = ThemeManager.onSurfaceColor
+                color = MaterialTheme.colorScheme.onSurface
             )
             
             Text(
                 text = "${calories}cal (${percentage}%)",
                 fontSize = 10.sp,
-                color = ThemeManager.onBackgroundColor
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
     }
@@ -850,7 +845,7 @@ fun BottomNavigationBar(
                 Card(
                     modifier = Modifier.size(48.dp),
                     shape = CircleShape,
-                    colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Box(
@@ -860,7 +855,7 @@ fun BottomNavigationBar(
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Add",
-                            tint = ThemeManager.forkItGreen,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.rotate(
                                 animateFloatAsState(
                                     targetValue = if (showFloatingIcons) 45f else 0f,
@@ -997,7 +992,7 @@ fun FloatingIcon(
             .scale(scale)
             .size(56.dp), // Fixed size like a floating action button
         shape = CircleShape,
-        colors = CardDefaults.cardColors(containerColor = ThemeManager.forkItGreen), // Green background like in the image
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary), // Green background like in the image
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(
@@ -1075,230 +1070,6 @@ fun MealsScreen() {
     }
 }
 
-@Composable
-fun HabitsScreen() {
-    var selectedTimeFilter by remember { mutableStateOf(0) } // 0: Today, 1: Weekly, 2: Monthly
-    var habits by remember { mutableStateOf(MockHabits.getTodayHabits()) }
-    
-    // Update habits when time filter changes
-    LaunchedEffect(selectedTimeFilter) {
-        habits = when (selectedTimeFilter) {
-            0 -> MockHabits.getTodayHabits()
-            1 -> MockHabits.getWeeklyHabits()
-            2 -> MockHabits.getMonthlyHabits()
-            else -> MockHabits.getTodayHabits()
-        }
-    }
-    
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-    ) {
-        // Top spacing
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        // "Your Habits" title with gradient
-        Text(
-            text = "Your Habits",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            style = androidx.compose.ui.text.TextStyle(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(
-                        Color(0xFF22B27D), // ForkIt Green
-                        Color(0xFF1E9ECD)  // ForkIt Blue
-                    )
-                )
-            ),
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-        // Time Filter Tabs - Segmented Control
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp)
-                .height(68.dp)
-                .background(
-                    color = Color(0xFFF5F5F5),
-                    shape = RoundedCornerShape(16.dp)
-                )
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                val timeFilters = listOf("Today", "Weekly", "Monthly")
-                timeFilters.forEachIndexed { index, filter ->
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .background(
-                                color = if (selectedTimeFilter == index) 
-                                    Color(0xFF22B27D) else Color.Transparent,
-                                shape = when (index) {
-                                    0 -> RoundedCornerShape(
-                                        topStart = 16.dp,
-                                        bottomStart = 16.dp,
-                                        topEnd = 0.dp,
-                                        bottomEnd = 0.dp
-                                    )
-                                    timeFilters.size - 1 -> RoundedCornerShape(
-                                        topStart = 0.dp,
-                                        bottomStart = 0.dp,
-                                        topEnd = 16.dp,
-                                        bottomEnd = 16.dp
-                                    )
-                                    else -> RoundedCornerShape(0.dp)
-                                }
-                            )
-                            .clickable { selectedTimeFilter = index },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = filter,
-                            color = if (selectedTimeFilter == index) Color.White else Color(0xFF666666),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-        }
-        
-        // Habits Content
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Todo Section
-            item {
-                Text(
-                    text = "Todo",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF333333),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-            
-            val todoHabits = habits.filter { !it.isCompleted }
-            items(todoHabits) { habit ->
-                HabitItem(
-                    habit = habit,
-                    isCompleted = false,
-                    onToggleComplete = { habitId ->
-                        habits = habits.map { h ->
-                            if (h.id == habitId) {
-                                h.copy(
-                                    isCompleted = !h.isCompleted,
-                                    completedAt = if (!h.isCompleted) LocalDateTime.now() else null
-                                )
-                            } else h
-                        }
-                    }
-                )
-            }
-            
-            // Completed Section
-            if (habits.any { it.isCompleted }) {
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Completed",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF333333),
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
-                
-                val completedHabits = habits.filter { it.isCompleted }
-                items(completedHabits) { habit ->
-                    HabitItem(
-                        habit = habit,
-                        isCompleted = true,
-                        onToggleComplete = { habitId ->
-                            habits = habits.map { h ->
-                                if (h.id == habitId) {
-                                    h.copy(
-                                        isCompleted = !h.isCompleted,
-                                        completedAt = if (!h.isCompleted) LocalDateTime.now() else null
-                                    )
-                                } else h
-                            }
-                        }
-                    )
-                }
-            }
-            
-            // Bottom padding for navigation
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
-            }
-        }
-    }
-}
-
-@Composable
-fun HabitItem(
-    habit: Habit,
-    isCompleted: Boolean,
-    onToggleComplete: (String) -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(68.dp)
-            .border(
-                width = 3.dp,
-                color = if (isCompleted) Color(0xFF22B27D).copy(alpha = 0.3f) else Color(0xFF1E9ECD).copy(alpha = 0.3f),
-                shape = RoundedCornerShape(16.dp)
-            )
-            .background(
-                color = if (isCompleted) Color(0xFF22B27D) else Color(0xFF1E9ECD),
-                shape = RoundedCornerShape(16.dp)
-            )
-            .clickable { onToggleComplete(habit.id) }
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = habit.title,
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f)
-            )
-            
-            // Completion indicator
-            Card(
-                modifier = Modifier.size(28.dp),
-                shape = CircleShape,
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isCompleted) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Completed",
-                            tint = Color(0xFF22B27D),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
 fun CoachScreen() {

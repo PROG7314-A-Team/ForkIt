@@ -95,6 +95,16 @@
             android:exported="false"
             android:label="About"
             android:theme="@style/Theme.ForkIt" />
+        <activity
+            android:name=".HabitsActivity"
+            android:exported="false"
+            android:label="Habits"
+            android:theme="@style/Theme.ForkIt" />
+        <activity
+            android:name=".AddHabitActivity"
+            android:exported="false"
+            android:label="Add Habit"
+            android:theme="@style/Theme.ForkIt" />
     </application>
 
 </manifest>

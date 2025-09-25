@@ -93,13 +93,13 @@ fun AppSettingsScreen(
                 text = "App Settings",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = ThemeManager.forkItBlue
+                color = MaterialTheme.colorScheme.secondary
             )
             
             Text(
                 text = "Customize your app experience",
                 fontSize = 16.sp,
-                color = ThemeManager.onBackgroundColor
+                color = MaterialTheme.colorScheme.onBackground
             )
             
             Spacer(modifier = Modifier.height(8.dp))
@@ -109,7 +109,7 @@ fun AppSettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp)
@@ -122,7 +122,7 @@ fun AppSettingsScreen(
                             painter = painterResource(id = R.drawable.ic_appearance),
                             contentDescription = "Appearance",
                             modifier = Modifier.size(24.dp),
-                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(ThemeManager.forkItBlue)
+                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.secondary)
                         )
                         
                         Spacer(modifier = Modifier.width(16.dp))
@@ -134,12 +134,12 @@ fun AppSettingsScreen(
                                 text = "Appearance",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = ThemeManager.onSurfaceColor
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = "Choose between light and dark mode",
                                 fontSize = 14.sp,
-                                color = ThemeManager.onBackgroundColor
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                         }
                         
@@ -160,7 +160,7 @@ fun AppSettingsScreen(
                     Text(
                         text = if (isDarkMode) "Dark Mode" else "Light Mode",
                         fontSize = 14.sp,
-                        color = if (isDarkMode) ThemeManager.forkItBlue else ThemeManager.onBackgroundColor,
+                        color = if (isDarkMode) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onBackground,
                         fontWeight = if (isDarkMode) FontWeight.Medium else FontWeight.Normal
                     )
                 }
@@ -171,7 +171,7 @@ fun AppSettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp)
@@ -184,7 +184,7 @@ fun AppSettingsScreen(
                             painter = painterResource(id = R.drawable.ic_language),
                             contentDescription = "Language",
                             modifier = Modifier.size(24.dp),
-                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(ThemeManager.forkItBlue)
+                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.secondary)
                         )
                         
                         Spacer(modifier = Modifier.width(16.dp))
@@ -196,19 +196,19 @@ fun AppSettingsScreen(
                                 text = "Language",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = ThemeManager.onSurfaceColor
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = "Select your preferred language",
                                 fontSize = 14.sp,
-                                color = ThemeManager.onBackgroundColor
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                         }
                         
                         Text(
                             text = selectedLanguage,
                             fontSize = 16.sp,
-                            color = ThemeManager.forkItBlue,
+                            color = MaterialTheme.colorScheme.secondary,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -218,7 +218,7 @@ fun AppSettingsScreen(
                     Text(
                         text = "Language options coming soon",
                         fontSize = 12.sp,
-                        color = ThemeManager.onBackgroundColor,
+                        color = MaterialTheme.colorScheme.onBackground,
                         fontStyle = FontStyle.Italic
                     )
                 }

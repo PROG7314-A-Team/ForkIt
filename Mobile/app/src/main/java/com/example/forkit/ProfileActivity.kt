@@ -32,7 +32,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
-import com.example.forkit.ThemeManager
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,7 +87,7 @@ fun ProfileScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(ThemeManager.backgroundColor)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Header
         Row(
@@ -106,7 +105,7 @@ fun ProfileScreen() {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
-                    tint = ThemeManager.onBackgroundColor
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
             
@@ -116,7 +115,7 @@ fun ProfileScreen() {
                 text = "Profile",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = ThemeManager.forkItGreen // ForkIt Green
+                color = MaterialTheme.colorScheme.primary // ForkIt Green
             )
         }
         
@@ -172,7 +171,7 @@ fun ProfileOptionCard(
             .clickable { onClick() },
         shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = ThemeManager.cardColor)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -184,7 +183,7 @@ fun ProfileOptionCard(
             Icon(
                 imageVector = option.icon,
                 contentDescription = option.title,
-                tint = ThemeManager.forkItBlue, // ForkIt Blue
+                tint = MaterialTheme.colorScheme.secondary, // ForkIt Blue
                 modifier = Modifier.size(24.dp)
             )
             
@@ -198,12 +197,12 @@ fun ProfileOptionCard(
                     text = option.title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
-                    color = ThemeManager.forkItBlue // ForkIt Blue
+                    color = MaterialTheme.colorScheme.secondary // ForkIt Blue
                 )
                 Text(
                     text = option.description,
                     fontSize = 14.sp,
-                    color = ThemeManager.onBackgroundColor
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
             
@@ -211,7 +210,7 @@ fun ProfileOptionCard(
             Icon(
                 imageVector = Icons.Default.KeyboardArrowRight,
                 contentDescription = "Arrow",
-                tint = ThemeManager.onBackgroundColor,
+                tint = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.size(20.dp)
             )
         }

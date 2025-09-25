@@ -64,7 +64,7 @@ fun AddWaterScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -82,14 +82,14 @@ fun AddWaterScreen(
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        tint = Color.Black
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
                 Text(
                     text = "Add Water",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
-                    color = ThemeManager.forkItGreen,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
@@ -114,11 +114,11 @@ fun AddWaterScreen(
                             .height(68.dp)
                             .border(
                                 width = 3.dp,
-                                color = ThemeManager.forkItBlue.copy(alpha = 0.3f),
+                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .background(
-                                color = ThemeManager.forkItBlue.copy(alpha = 0.05f),
+                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                     ) {
@@ -131,13 +131,13 @@ fun AddWaterScreen(
                             Text(
                                 text = if (amount.isEmpty()) "Amount" else amount,
                                 fontSize = 18.sp,
-                                color = if (amount.isEmpty()) Color(0xFF90A4AE) else Color.Black,
+                                color = if (amount.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
                                 modifier = Modifier.weight(1f)
                             )
                             Text(
                                 text = "ml",
                                 fontSize = 18.sp,
-                                color = ThemeManager.forkItBlue,
+                                color = MaterialTheme.colorScheme.secondary,
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -150,11 +150,11 @@ fun AddWaterScreen(
                             .height(68.dp)
                             .border(
                                 width = 3.dp,
-                                color = ThemeManager.forkItBlue.copy(alpha = 0.3f),
+                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .background(
-                                color = ThemeManager.forkItBlue.copy(alpha = 0.05f),
+                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .clickable { showDatePicker = true }
@@ -162,7 +162,7 @@ fun AddWaterScreen(
                         Text(
                             text = selectedDateString,
                             fontSize = 18.sp,
-                            color = Color.Black,
+                            color = MaterialTheme.colorScheme.onBackground,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 24.dp)
@@ -181,7 +181,7 @@ fun AddWaterScreen(
                     Text(
                         text = "Quick Adds",
                         fontSize = 16.sp,
-                        color = Color(0xFF666666),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
@@ -232,8 +232,8 @@ fun AddWaterScreen(
                             .background(
                                 brush = Brush.horizontalGradient(
                                     colors = listOf(
-                                        ThemeManager.forkItGreen,
-                                        ThemeManager.forkItBlue
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.secondary
                                     )
                                 ),
                                 shape = RoundedCornerShape(16.dp)
@@ -270,7 +270,7 @@ fun AddWaterScreen(
                     ) {
                         Text(
                             "OK",
-                            color = ThemeManager.forkItBlue,
+                            color = MaterialTheme.colorScheme.secondary,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -290,8 +290,8 @@ fun AddWaterScreen(
                 DatePicker(
                     state = datePickerState,
                     colors = DatePickerDefaults.colors(
-                        selectedDayContainerColor = ThemeManager.forkItBlue,
-                        todayDateBorderColor = ThemeManager.forkItGreen,
+                        selectedDayContainerColor = MaterialTheme.colorScheme.secondary,
+                        todayDateBorderColor = MaterialTheme.colorScheme.primary,
                         selectedDayContentColor = Color.White
                     )
                 )
@@ -311,11 +311,11 @@ fun QuickAddButton(
             .height(64.dp)
             .border(
                 width = 3.dp,
-                color = ThemeManager.forkItBlue.copy(alpha = 0.3f),
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(16.dp)
             )
             .background(
-                color = ThemeManager.forkItBlue.copy(alpha = 0.05f),
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
                 shape = RoundedCornerShape(16.dp)
             )
             .clickable { onClick() },
@@ -324,7 +324,7 @@ fun QuickAddButton(
         Text(
             text = text,
             fontSize = 18.sp,
-            color = ThemeManager.forkItBlue,
+            color = MaterialTheme.colorScheme.secondary,
             fontWeight = FontWeight.Medium
         )
     }
