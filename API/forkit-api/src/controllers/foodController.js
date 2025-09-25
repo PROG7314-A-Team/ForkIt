@@ -25,15 +25,16 @@ exports.getFoodByBarcode = async (req, res) => {
       name: foodData.product?.product_name || "Unknown Product",
       brand: foodData.product?.brands || "Unknown Brand",
       barcode: code,
-      calories: foodData.product?.nutriments?.["energy-kcal_100g"] || 0,
-      protein: foodData.product?.nutriments?.proteins_100g || 0,
-      carbs: foodData.product?.nutriments?.carbohydrates_100g || 0,
-      fat: foodData.product?.nutriments?.fat_100g || 0,
-      fiber: foodData.product?.nutriments?.fiber_100g || 0,
-      sugar: foodData.product?.nutriments?.sugars_100g || 0,
+      nutrients: {
+        carbs: foodData.product?.nutriments?.carbohydrates_100g || 0,
+        protein: foodData.product?.nutriments?.proteins_100g || 0,
+        fat: foodData.product?.nutriments?.fat_100g || 0,
+        fiber: foodData.product?.nutriments?.fiber_100g || 0,
+        sugar: foodData.product?.nutriments?.sugars_100g || 0,
+      },
+      calories: foodData.product?.nutriments?.["energy-kcal"] || 0,
       image: foodData.product?.image_url || null,
       ingredients: foodData.product?.ingredients_text || null,
-      nutritionGrade: foodData.product?.nutrition_grade_fr || null,
     };
 
     res.json({
@@ -51,19 +52,52 @@ exports.getFoodByBarcode = async (req, res) => {
   }
 };
 
-// Get food by ID
+// Get food by name
 exports.getFoodByName = async (req, res) => {
   try {
     const { name } = req.params;
     const response = await axios.get(
       `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${name}&json=1&fields=product_name,image_small_url,nutriments&countries_tags=South_Africa`
     );
-    const foodData = response.data;
-    res.json({
-      success: true,
-      data: foodData,
-      message: "Food item found by name",
-    });
+    if (response.data.count > 0) {
+      let foodData = {};
+      for (let i = 0; i < response.data.count; i++) {
+        foodData[i] = {
+          name: response.data.products[i].product_name,
+          image: response.data.products[i].image_small_url,
+          nutrients: {
+            carbs: response.data.products[i].nutriments.carbohydrates,
+            protein: response.data.products[i].nutriments.proteins,
+            fat: response.data.products[i].nutriments.fat,
+            fiber: response.data.products[i].nutriments.fiber,
+            sugar: response.data.products[i].nutriments.sugars,
+          },
+          calories: response.data.products[i].nutriments["energy-kcal"],
+        };
+        console.log("Food Data", foodData[i]);
+      }
+      //let foodData = response.data;
+      return res.status(200).json({
+        success: true,
+        data: foodData,
+        message: "Food item found by name from OpenFoodFacts",
+      });
+    } else {
+      const foodData = await foodService.query([
+        { field: "name", operator: "==", value: name },
+      ]);
+      if (foodData.length > 0) {
+        return res.status(200).json({
+          success: true,
+          data: foodData,
+          message: "Food item found by name from ForkIt Database",
+        });
+      }
+      return res.status(404).json({
+        success: false,
+        message: "Food item not found by name ",
+      });
+    }
   } catch (error) {
     res.status(500).json({
       success: false,
