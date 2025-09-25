@@ -67,9 +67,12 @@ fun DevelopmentScreen() {
             name = "Biometric Screen",
             description = "Screen requires biometric when opened",
             activityClass = AccountActivity::class.java
+        ),
+        ScreenItem(
+            name = "API Testing Screen",
+            description = "Test all API endpoints with input fields and response display",
+            activityClass = TestingActivity::class.java
         )
-
-
 
         // Add more screens here as you develop them
         // ScreenItem(
