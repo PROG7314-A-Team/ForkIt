@@ -5,11 +5,12 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
-    @POST("api/users/register")
+    // Register User
+    @POST("api/auth/createUser")
     suspend fun registerUser(@Body request: RegisterRequest): Response<RegisterResponse>
     
     // Login User
-    @POST("api/users/login")
+    @POST("api/auth/loginUser")
     suspend fun loginUser(@Body request: LoginRequest): Response<LoginResponse>
 
     // Get user by id
@@ -47,6 +48,7 @@ interface ApiService {
     
     // Delete food
     @DELETE("api/food/{id}")
+    suspend fun deleteFood(@Path("id") foodId: String): Response<DeleteFoodResponse>
 // ==================== FOOD MANAGEMENT ====================
     
     // Get Food by Barcode
