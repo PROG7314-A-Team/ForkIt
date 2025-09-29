@@ -69,6 +69,12 @@ fun DevelopmentScreen() {
             activityClass = AccountActivity::class.java
         ),
         ScreenItem(
+            name = "API Testing Screen",
+            description = "Test all API endpoints with input fields and response display",
+            activityClass = TestingActivity::class.java
+        )
+        ),
+        ScreenItem(
             name = "Habits Screen",
             description = "Habit tracking and management with time-based filtering",
             activityClass = HabitsActivity::class.java

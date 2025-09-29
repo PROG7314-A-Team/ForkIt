@@ -220,8 +220,6 @@ fun SignUpScreen() {
                                 isLoading = false
                             }
                         }
-
-
                     },
                 contentAlignment = Alignment.Center
             ) {
