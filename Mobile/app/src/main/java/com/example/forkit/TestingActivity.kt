@@ -176,7 +176,7 @@ fun TestingScreen() {
             makeApiCall {
                 val request = CreateFoodRequest(foodData)
                 val response = apiService.createFood(request)
-                responseText = "Create Food Response:\n${response.body()}"
+                responseText = "Create Food Response:\n${response}"
             }
         }
         
@@ -185,7 +185,7 @@ fun TestingScreen() {
             makeApiCall {
                 val request = UpdateFoodRequest(foodData)
                 val response = apiService.updateFood(foodId, request)
-                responseText = "Update Food Response:\n${response.body()}"
+                responseText = "Update Food Response:\n${response}"
             }
         }
         
@@ -193,7 +193,7 @@ fun TestingScreen() {
         DeleteFoodSection { foodId ->
             makeApiCall {
                 val response = apiService.deleteFood(foodId)
-                responseText = "Delete Food Response:\n${response.body()}"
+                responseText = "Delete Food Response:\n${response}"
             }
         }
         
@@ -796,7 +796,6 @@ fun CreateFoodSection(onTest: (Food) -> Unit) {
             Button(
                 onClick = { 
                     val nutrients = Nutrients(
-                        calories = calories.toIntOrNull() ?: 0,
                         protein = protein.toDoubleOrNull() ?: 0.0,
                         carbs = carbs.toDoubleOrNull() ?: 0.0,
                         fat = fat.toDoubleOrNull() ?: 0.0,
@@ -960,7 +959,6 @@ fun UpdateFoodSection(onTest: (String, Food) -> Unit) {
             Button(
                 onClick = { 
                     val nutrients = Nutrients(
-                        calories = calories.toIntOrNull() ?: 0,
                         protein = protein.toDoubleOrNull() ?: 0.0,
                         carbs = carbs.toDoubleOrNull() ?: 0.0,
                         fat = fat.toDoubleOrNull() ?: 0.0,
@@ -1391,7 +1389,7 @@ fun CreateMealLogSection(onTest: (MealLog) -> Unit) {
                         userId = userId,
                         name = name,
                         description = description,
-                        ingredients = emptyList(),
+                        ingredients = emptyList<Ingredient>(),
                         instructions = emptyList(),
                         totalCalories = totalCalories.toDoubleOrNull() ?: 0.0,
                         totalCarbs = totalCarbs.toDoubleOrNull() ?: 0.0,
@@ -1634,7 +1632,7 @@ fun CreateExerciseLogSection(onTest: (ExerciseLog) -> Unit) {
                     label = { Text("Type") },
                     modifier = Modifier.weight(1f)
                 )
-            )
+            }
             Spacer(modifier = Modifier.height(8.dp))
             
             Row(
@@ -1653,7 +1651,7 @@ fun CreateExerciseLogSection(onTest: (ExerciseLog) -> Unit) {
                     label = { Text("Duration (min)") },
                     modifier = Modifier.weight(1f)
                 )
-            )
+            }
             Spacer(modifier = Modifier.height(8.dp))
             
             OutlinedTextField(
@@ -1769,7 +1767,7 @@ fun CalculateCaloriesSection(onTest: (Double?, Double?, Double?) -> Unit) {
                     label = { Text("Protein (g)") },
                     modifier = Modifier.weight(1f)
                 )
-            )
+            }
             Spacer(modifier = Modifier.height(8.dp))
             
             OutlinedTextField(
