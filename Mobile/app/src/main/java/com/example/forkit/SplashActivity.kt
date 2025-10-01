@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
+import com.example.forkit.utils.AuthPreferences
 import kotlinx.coroutines.delay
 
 class SplashActivity : ComponentActivity() {
@@ -39,14 +40,42 @@ class SplashActivity : ComponentActivity() {
             ForkItTheme {
                 SplashScreen(
                     onTimeout = {
-                        // Navigate to Login after splash
-                        val intent = Intent(this, LoginActivity::class.java)
-                        startActivity(intent)
-                        finish()
+                        checkAutoSignIn()
                     }
                 )
             }
         }
+    }
+    
+    private fun checkAutoSignIn() {
+        val authPreferences = AuthPreferences(this)
+        
+        // Check if user is logged in and login is still valid
+        if (authPreferences.isLoggedIn() && authPreferences.isLoginValid()) {
+            val userId = authPreferences.getUserId()
+            val idToken = authPreferences.getIdToken()
+            
+            if (userId != null && idToken != null) {
+                // Auto sign-in: Navigate directly to Dashboard
+                val intent = Intent(this, DashboardActivity::class.java)
+                intent.putExtra("USER_ID", userId)
+                intent.putExtra("ID_TOKEN", idToken)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
+                return
+            }
+        }
+        
+        // Clear invalid login data and navigate to Login
+        if (authPreferences.isLoggedIn() && !authPreferences.isLoginValid()) {
+            authPreferences.logout()
+        }
+        
+        // Navigate to Login after splash
+        val intent = Intent(this, LoginActivity::class.java)
+        startActivity(intent)
+        finish()
     }
 }
 

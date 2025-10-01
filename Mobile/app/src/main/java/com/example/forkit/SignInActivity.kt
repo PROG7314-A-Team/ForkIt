@@ -34,6 +34,7 @@ import com.example.forkit.data.RetrofitClient
 import com.example.forkit.data.models.LoginRequest
 import com.example.forkit.data.models.LoginResponse
 import com.example.forkit.ui.theme.ForkItTheme
+import com.example.forkit.utils.AuthPreferences
 import kotlinx.coroutines.launch
 
 class SignInActivity : ComponentActivity() {
@@ -177,7 +178,15 @@ fun SignInScreen(prefilledEmail: String = "") {
                                 if (response.isSuccessful) {
                                     val body: LoginResponse? = response.body()
                                     message = body?.message ?: "Login successful!"
-                                    // TODO: Save token (body?.idToken) and userId (body?.userId) securely
+                                    
+                                    // Save login credentials for auto sign-in
+                                    val authPreferences = AuthPreferences(context)
+                                    body?.userId?.let { userId ->
+                                        body.idToken?.let { idToken ->
+                                            authPreferences.saveLoginData(userId, idToken, email)
+                                        }
+                                    }
+                                    
                                     // Navigate to DashboardActivity with userId
                                     val intent = Intent(context, DashboardActivity::class.java)
                                     intent.putExtra("USER_ID", body?.userId)

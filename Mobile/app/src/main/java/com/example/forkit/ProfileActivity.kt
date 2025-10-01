@@ -38,6 +38,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
+import com.example.forkit.utils.AuthPreferences
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -191,6 +192,10 @@ fun ProfileScreen(userId: String = "") {
             item {
                 Button(
                     onClick = {
+                        // Clear saved login credentials
+                        val authPreferences = AuthPreferences(context)
+                        authPreferences.logout()
+                        
                         // Navigate to Login screen and clear back stack
                         val intent = Intent(context, LoginActivity::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
