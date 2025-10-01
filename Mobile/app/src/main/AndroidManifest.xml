@@ -7,6 +7,9 @@
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
     <!-- Internet Permission for API -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Step tracking permissions -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
 
 
     <application

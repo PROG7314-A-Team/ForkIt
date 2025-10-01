@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.forkit"
-        minSdk = 24
+        minSdk = 31
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -59,6 +59,9 @@ dependencies {
     // RetroFIt Implementation for API Calls in the application
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // Health Connect for step tracking
+    implementation("androidx.health.connect:connect-client:1.1.0-alpha07")
 
 
     testImplementation(libs.junit)

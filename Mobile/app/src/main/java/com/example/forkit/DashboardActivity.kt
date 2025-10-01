@@ -1,11 +1,19 @@
 package com.example.forkit
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.DisposableEffect
+import androidx.core.content.ContextCompat
+import androidx.health.connect.client.PermissionController
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -107,6 +115,11 @@ fun DashboardScreen(
     var dailyStepsGoal by remember { mutableStateOf(8000) }
     var weeklyExercisesGoal by remember { mutableStateOf(3) }
     
+    // Step tracking state
+    var currentSteps by remember { mutableStateOf(0) }
+    var isStepTrackingAvailable by remember { mutableStateOf(false) }
+    var stepTracker by remember { mutableStateOf<StepTracker?>(null) }
+    
     // Calculate totals
     val total = (consumed - burned).toInt()
     
@@ -136,6 +149,88 @@ fun DashboardScreen(
             calendar.get(java.util.Calendar.DAY_OF_MONTH))
     }
     
+    // Health Connect permission launcher
+    val healthConnectPermissionLauncher = rememberLauncherForActivityResult(
+        contract = PermissionController.createRequestPermissionResultContract()
+    ) { granted ->
+        android.util.Log.d("DashboardActivity", "Health Connect permissions granted: $granted")
+        if (granted.isNotEmpty()) {
+            // Permissions granted, fetch steps
+            scope.launch {
+                val steps = stepTracker?.fetchTodaySteps() ?: 0
+                currentSteps = steps
+            }
+        }
+    }
+    
+    // Activity Recognition permission launcher (for Android 10+)
+    val activityRecognitionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        android.util.Log.d("DashboardActivity", "Activity Recognition permission granted: $isGranted")
+        if (isGranted) {
+            // Permission granted, start sensor tracking
+            stepTracker?.startSensorTracking()
+            scope.launch {
+                val steps = stepTracker?.fetchTodaySteps() ?: 0
+                currentSteps = steps
+            }
+        }
+    }
+    
+    // Initialize step tracker
+    LaunchedEffect(Unit) {
+        stepTracker = StepTracker(context)
+        isStepTrackingAvailable = stepTracker?.isHealthConnectAvailable() == true || 
+                                   stepTracker?.isSensorAvailable() == true
+        
+        // Request permissions and fetch steps
+        if (stepTracker?.isHealthConnectAvailable() == true) {
+            // Try Health Connect first
+            if (stepTracker?.hasHealthConnectPermissions() == false) {
+                // Request Health Connect permissions
+                val permissions = stepTracker?.getHealthConnectPermissions() ?: emptySet()
+                healthConnectPermissionLauncher.launch(permissions)
+            } else {
+                // Already have permissions, fetch steps
+                currentSteps = stepTracker?.fetchTodaySteps() ?: 0
+            }
+        } else if (stepTracker?.isSensorAvailable() == true) {
+            // Use sensor fallback
+            // Check if we need to request ACTIVITY_RECOGNITION permission (Android 10+)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                if (ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACTIVITY_RECOGNITION
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    activityRecognitionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+                } else {
+                    stepTracker?.startSensorTracking()
+                    currentSteps = stepTracker?.fetchTodaySteps() ?: 0
+                }
+            } else {
+                // No permission needed for Android 9 and below
+                stepTracker?.startSensorTracking()
+                currentSteps = stepTracker?.fetchTodaySteps() ?: 0
+            }
+        }
+    }
+    
+    // Observe step count changes from sensor
+    LaunchedEffect(stepTracker) {
+        stepTracker?.stepCount?.collect { steps ->
+            currentSteps = steps
+        }
+    }
+    
+    // Cleanup step tracker on dispose
+    DisposableEffect(Unit) {
+        onDispose {
+            stepTracker?.cleanup()
+        }
+    }
+    
     // Refresh function to fetch all data
     val refreshData: () -> Unit = {
         scope.launch {
@@ -143,6 +238,9 @@ fun DashboardScreen(
                 try {
                     isRefreshing = true
                     android.util.Log.d("DashboardActivity", "Refreshing data for userId: $userId on date: $todayDate")
+                    
+                    // Refresh step count
+                    currentSteps = stepTracker?.fetchTodaySteps() ?: 0
                     
                     // Fetch user goals first
                     try {
@@ -759,35 +857,50 @@ fun DashboardScreen(
                                 fontWeight = FontWeight.Medium
                             )
                             
-                            // Note: Steps tracking not yet implemented in API
-                            Text(
-                                text = "Goal: $dailyStepsGoal",
-                                fontSize = 16.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                            
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            // Placeholder progress bar (no API data yet)
-                            LinearProgressIndicator(
-                                progress = 0f,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(3.dp)),
-                                color = Color.White,
-                                trackColor = Color.White.copy(alpha = 0.3f)
-                            )
-                            
-                            Spacer(modifier = Modifier.height(4.dp))
-                            
-                            Text(
-                                text = "Coming soon",
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-                            )
+                            if (isLoading) {
+                                Text(
+                                    text = "Loading...",
+                                    fontSize = 14.sp,
+                                    color = Color.White.copy(alpha = 0.8f)
+                                )
+                            } else if (!isStepTrackingAvailable) {
+                                Text(
+                                    text = "Not available",
+                                    fontSize = 14.sp,
+                                    color = Color.White.copy(alpha = 0.8f)
+                                )
+                            } else {
+                                // Steps and Goal
+                                Text(
+                                    text = "$currentSteps / $dailyStepsGoal",
+                                    fontSize = 16.sp,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // Progress bar with actual data
+                                val stepsProgress = (currentSteps.toFloat() / dailyStepsGoal.toFloat()).coerceIn(0f, 1f)
+                                LinearProgressIndicator(
+                                    progress = stepsProgress,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp)),
+                                    color = Color.White,
+                                    trackColor = Color.White.copy(alpha = 0.3f)
+                                )
+                                
+                                Spacer(modifier = Modifier.height(4.dp))
+                                
+                                // Percentage
+                                Text(
+                                    text = "${(stepsProgress * 100).toInt()}%",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.9f)
+                                )
+                            }
                         }
                     }
                 }
