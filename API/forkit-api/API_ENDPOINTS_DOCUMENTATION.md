@@ -12,6 +12,68 @@ All endpoints require a `userId` to identify the user making the request.
 
 ---
 
+## 🎯 User Goals Endpoints (`/api/users/:id/goals`)
+
+### Get User Goals
+```
+GET /api/users/:id/goals
+```
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "userId": "user123",
+    "dailyCalories": 2500,
+    "dailyWater": 2500,
+    "dailySteps": 10000,
+    "weeklyExercises": 5,
+    "updatedAt": "2025-10-01T12:00:00.000Z"
+  },
+  "message": "User goals retrieved successfully"
+}
+```
+
+### Update User Goals
+```
+PUT /api/users/:id/goals
+```
+**Request Body:**
+```json
+{
+  "dailyCalories": 2500,
+  "dailyWater": 2500,
+  "dailySteps": 10000,
+  "weeklyExercises": 5
+}
+```
+
+**Validation Rules:**
+- `dailyCalories`: 1200 - 10000 kcal
+- `dailyWater`: 500 - 10000 ml
+- `dailySteps`: 0 - 50000 steps
+- `weeklyExercises`: 0 - 21 sessions
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "userId": "user123",
+    "dailyCalories": 2500,
+    "dailyWater": 2500,
+    "dailySteps": 10000,
+    "weeklyExercises": 5,
+    "updatedAt": "2025-10-01T12:00:00.000Z"
+  },
+  "message": "User goals updated successfully"
+}
+```
+
+**Note:** You can update individual goals or all at once. Unspecified goals will retain their current values.
+
+---
+
 ## 📝 Food Logging Endpoints (`/api/food-logs`)
 
 ### Get All Food Logs

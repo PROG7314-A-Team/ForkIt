@@ -91,8 +91,11 @@ fun DashboardScreen(userId: String = "") {
     var isRefreshing by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     
-    // Daily calorie goal - hardcoded for now as there's no API endpoint
-    val dailyGoal = 2000
+    // User goals - fetched from API
+    var dailyGoal by remember { mutableStateOf(2000) }
+    var dailyWaterGoal by remember { mutableStateOf(2000) }
+    var dailyStepsGoal by remember { mutableStateOf(8000) }
+    var weeklyExercisesGoal by remember { mutableStateOf(3) }
     
     // Calculate totals
     val total = (consumed - burned).toInt()
@@ -130,6 +133,23 @@ fun DashboardScreen(userId: String = "") {
                 try {
                     isRefreshing = true
                     android.util.Log.d("DashboardActivity", "Refreshing data for userId: $userId on date: $todayDate")
+                    
+                    // Fetch user goals first
+                    try {
+                        val goalsResponse = com.example.forkit.data.RetrofitClient.api.getUserGoals(userId)
+                        
+                        if (goalsResponse.isSuccessful) {
+                            val goals = goalsResponse.body()?.data
+                            dailyGoal = goals?.dailyCalories ?: 2000
+                            dailyWaterGoal = goals?.dailyWater ?: 2000
+                            dailyStepsGoal = goals?.dailySteps ?: 8000
+                            weeklyExercisesGoal = goals?.weeklyExercises ?: 3
+                            android.util.Log.d("DashboardActivity", "User goals loaded: Calories=$dailyGoal, Water=$dailyWaterGoal")
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("DashboardActivity", "Error fetching goals: ${e.message}", e)
+                        // Use defaults if goals fetch fails
+                    }
                     
                     // Fetch daily food summary
                     try {
@@ -302,6 +322,7 @@ fun DashboardScreen(userId: String = "") {
                     Card(
                         modifier = Modifier.clickable { 
                             val intent = Intent(context, ProfileActivity::class.java)
+                            intent.putExtra("USER_ID", userId)
                             context.startActivity(intent)
                         },
                         shape = RoundedCornerShape(20.dp),
@@ -632,7 +653,7 @@ fun DashboardScreen(userId: String = "") {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(20.dp),
+                                .padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -646,12 +667,45 @@ fun DashboardScreen(userId: String = "") {
                                 color = Color.White,
                                 fontWeight = FontWeight.Medium
                             )
-                            Text(
-                                text = if (isLoading) "Loading..." else "${(waterAmount / 250).toInt()} glasses",
-                                fontSize = 16.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
+                            
+                            if (isLoading) {
+                                Text(
+                                    text = "Loading...",
+                                    fontSize = 14.sp,
+                                    color = Color.White.copy(alpha = 0.8f)
+                                )
+                            } else {
+                                // Amount and Goal
+                                Text(
+                                    text = "${waterAmount.toInt()} / $dailyWaterGoal ml",
+                                    fontSize = 16.sp,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // Progress bar
+                                val waterProgress = (waterAmount.toFloat() / dailyWaterGoal.toFloat()).coerceIn(0f, 1f)
+                                LinearProgressIndicator(
+                                    progress = waterProgress,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp)),
+                                    color = Color.White,
+                                    trackColor = Color.White.copy(alpha = 0.3f)
+                                )
+                                
+                                Spacer(modifier = Modifier.height(4.dp))
+                                
+                                // Percentage
+                                Text(
+                                    text = "${(waterProgress * 100).toInt()}%",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.9f)
+                                )
+                            }
                         }
                     }
                     
@@ -665,7 +719,7 @@ fun DashboardScreen(userId: String = "") {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(20.dp),
+                                .padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -679,11 +733,35 @@ fun DashboardScreen(userId: String = "") {
                                 color = Color.White,
                                 fontWeight = FontWeight.Medium
                             )
+                            
+                            // Note: Steps tracking not yet implemented in API
                             Text(
-                                text = "8,247",
+                                text = "Goal: $dailyStepsGoal",
                                 fontSize = 16.sp,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            // Placeholder progress bar (no API data yet)
+                            LinearProgressIndicator(
+                                progress = 0f,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                                color = Color.White,
+                                trackColor = Color.White.copy(alpha = 0.3f)
+                            )
+                            
+                            Spacer(modifier = Modifier.height(4.dp))
+                            
+                            Text(
+                                text = "Coming soon",
+                                fontSize = 11.sp,
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                             )
                         }
                     }

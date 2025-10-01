@@ -34,10 +34,19 @@ const createUser = async (req, res) => {
           lastLogDate: null,
           streakStartDate: null,
         },
+        goals: {
+          dailyCalories: 2000,      // Default calorie goal in kcal
+          dailyWater: 2000,          // Default water goal in ml
+          dailySteps: 8000,          // Default steps goal
+          weeklyExercises: 3,        // Default weekly exercise sessions
+        },
         ...otherData,
         createdAt: new Date(
           new Date().getTime() + 2 * 60 * 60 * 1000
         ).toISOString(), // e.g. "2025-09-19T08:48:34.806Z"
+        goalsUpdatedAt: new Date(
+          new Date().getTime() + 2 * 60 * 60 * 1000
+        ).toISOString(),
       });
 
     //3. Return response

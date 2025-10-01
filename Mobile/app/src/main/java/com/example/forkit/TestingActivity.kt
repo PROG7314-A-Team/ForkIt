@@ -119,6 +119,28 @@ fun TestingScreen() {
             }
         }
         
+        // Get User Goals
+        GetUserGoalsSection { userId ->
+            makeApiCall {
+                val response = apiService.getUserGoals(userId)
+                responseText = "Get User Goals Response:\n${response.body()}"
+            }
+        }
+        
+        // Update User Goals
+        UpdateUserGoalsSection { userId, dailyCalories, dailyWater, dailySteps, weeklyExercises ->
+            makeApiCall {
+                val request = UpdateUserGoalsRequest(
+                    dailyCalories = dailyCalories,
+                    dailyWater = dailyWater,
+                    dailySteps = dailySteps,
+                    weeklyExercises = weeklyExercises
+                )
+                val response = apiService.updateUserGoals(userId, request)
+                responseText = "Update User Goals Response:\n${response.body()}"
+            }
+        }
+        
         // Update User
         UpdateUserSection { userId, email, age, height, weight ->
             makeApiCall {
@@ -1789,6 +1811,143 @@ fun CalculateCaloriesSection(onTest: (Double?, Double?, Double?) -> Unit) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Test Calculate Calories")
+            }
+        }
+    }
+}
+
+// USER GOALS UI COMPONENTS
+@Composable
+fun GetUserGoalsSection(onTest: (String) -> Unit) {
+    var userId by remember { mutableStateOf("") }
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "🎯 Get User Goals",
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("User ID") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { onTest(userId) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("Test Get Goals")
+            }
+        }
+    }
+}
+
+@Composable
+fun UpdateUserGoalsSection(onTest: (String, Int?, Int?, Int?, Int?) -> Unit) {
+    var userId by remember { mutableStateOf("") }
+    var dailyCalories by remember { mutableStateOf("") }
+    var dailyWater by remember { mutableStateOf("") }
+    var dailySteps by remember { mutableStateOf("") }
+    var weeklyExercises by remember { mutableStateOf("") }
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "🎯 Update User Goals",
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = userId,
+                onValueChange = { userId = it },
+                label = { Text("User ID *") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = "Leave fields empty to keep current values",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = dailyCalories,
+                    onValueChange = { dailyCalories = it },
+                    label = { Text("Calories (kcal)") },
+                    placeholder = { Text("1200-10000") },
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = dailyWater,
+                    onValueChange = { dailyWater = it },
+                    label = { Text("Water (ml)") },
+                    placeholder = { Text("500-10000") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = dailySteps,
+                    onValueChange = { dailySteps = it },
+                    label = { Text("Steps") },
+                    placeholder = { Text("0-50000") },
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = weeklyExercises,
+                    onValueChange = { weeklyExercises = it },
+                    label = { Text("Weekly Exercise") },
+                    placeholder = { Text("0-21") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { 
+                    onTest(
+                        userId,
+                        dailyCalories.toIntOrNull(),
+                        dailyWater.toIntOrNull(),
+                        dailySteps.toIntOrNull(),
+                        weeklyExercises.toIntOrNull()
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary
+                )
+            ) {
+                Text("Test Update Goals")
             }
         }
     }

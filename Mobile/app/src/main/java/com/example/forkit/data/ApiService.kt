@@ -21,6 +21,14 @@ interface ApiService {
     @GET("api/users/{id}/streak")
     suspend fun getUserStreak(@Path("id") userId: String): Response<GetUserStreakResponse>
 
+    // Get user goals
+    @GET("api/users/{id}/goals")
+    suspend fun getUserGoals(@Path("id") userId: String): Response<GetUserGoalsResponse>
+
+    // Update user goals
+    @PUT("api/users/{id}/goals")
+    suspend fun updateUserGoals(@Path("id") userId: String, @Body request: UpdateUserGoalsRequest): Response<UpdateUserGoalsResponse>
+
     // Update user
     @PUT("api/users/{id}")
     suspend fun updateUser(@Path("id") userId: String, @Body request: UpdateUserRequest): Response<UpdateUserResponse>
