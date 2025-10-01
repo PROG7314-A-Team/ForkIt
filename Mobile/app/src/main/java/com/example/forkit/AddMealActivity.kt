@@ -1,10 +1,20 @@
 package com.example.forkit
 
+import android.Manifest
+import android.R.attr.button
+import android.content.ContentValues.TAG
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.*
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,6 +28,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,17 +39,27 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.data.RetrofitClient
-import com.example.forkit.data.models.CreateFoodLogRequest
-import com.example.forkit.data.models.RecentActivityEntry
+import com.example.forkit.data.models.*
 import com.example.forkit.ui.theme.ForkItTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.String
 
 class AddMealActivity : ComponentActivity() {
+    companion object {
+        private const val TAG = "AddMealActivity"
+    }
+    
+    // Use a mutable state to hold the scanned food
+    private var scannedFoodState by mutableStateOf<Food?>(null)
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -53,10 +74,80 @@ class AddMealActivity : ComponentActivity() {
                     onSuccess = {
                         Toast.makeText(this, "Food logged successfully! 🍽️", Toast.LENGTH_SHORT).show()
                         finish()
-                    }
+                    },
+                    onBarcodeScan = { startBarcodeScanner() },
+                    scannedFood = scannedFoodState, // Pass the scanned food state
+                    onScannedFoodProcessed = { scannedFoodState = null } // Clear after processing
                 )
             }
         }
+    }
+
+    private val barcodeLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val barcodeValue = result.data?.getStringExtra("BARCODE_VALUE")
+            barcodeValue?.let { barcode ->
+                // Handle the scanned barcode in a coroutine scope
+                CoroutineScope(Dispatchers.Main).launch {
+                    handleScannedBarcode(barcode)
+                }
+            }
+        }
+    }
+
+    private suspend fun handleScannedBarcode(barcode: String) {
+        try {
+            val response = RetrofitClient.api.getFoodFromBarcode(barcode)
+            
+            if (response.isSuccessful && response.body()?.success == true) {
+                val foodData = response.body()?.data
+                
+                if (foodData != null) {
+                    // Create a new Food object from the API response
+                    val scannedFood = Food(
+                        id = foodData.id,
+                        name = foodData.name,
+                        brand = foodData.brand,
+                        barcode = foodData.barcode,
+                        calories = foodData.calories,
+                        nutrients = Nutrients(
+                            carbs = foodData.nutrients.carbs,
+                            protein = foodData.nutrients.protein,
+                            fat = foodData.nutrients.fat,
+                            fiber = foodData.nutrients.fiber,
+                            sugar = foodData.nutrients.sugar
+                        ),
+                        image = foodData.image ?: "",
+                        ingredients = foodData.ingredients ?: ""
+                    )
+                    
+                    Log.d(TAG, "Scanned food: ${scannedFood}")
+
+                    
+                    // Show success message
+                    Toast.makeText(this, "Found: ${scannedFood.name}", Toast.LENGTH_SHORT).show()
+                    
+                    // Update the state - this will trigger the UI to update
+                    scannedFoodState = scannedFood
+                    
+                } else {
+                    Toast.makeText(this, "No food data found for this barcode", Toast.LENGTH_LONG).show()
+                }
+            } else {
+                val errorMessage = response.body()?.message ?: "Unknown error"
+                Toast.makeText(this, "Failed to get food: $errorMessage", Toast.LENGTH_LONG).show()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting food from barcode", e)
+            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    private fun startBarcodeScanner() {
+        val intent = Intent(this, BarcodeScannerActivity::class.java)
+        barcodeLauncher.launch(intent)
     }
 }
 
@@ -65,7 +156,10 @@ class AddMealActivity : ComponentActivity() {
 fun AddMealScreen(
     userId: String,
     onBackPressed: () -> Unit,
-    onSuccess: () -> Unit
+    onSuccess: () -> Unit,
+    onBarcodeScan: () -> Unit,
+    scannedFood: Food?,
+    onScannedFoodProcessed: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var currentScreen by remember { mutableStateOf("main") }
@@ -82,6 +176,23 @@ fun AddMealScreen(
     var fat by remember { mutableStateOf("") }
     var protein by remember { mutableStateOf("") }
     
+    // Handle scanned food when it changes
+    LaunchedEffect(scannedFood) {
+        scannedFood?.let { food ->
+            Log.d(TAG, "switching current screen to adjust")
+            // Pre-populate form fields with scanned food data
+            foodName = food.name
+            calories = food.calories.toString()
+            carbs = food.nutrients.carbs.toString()
+            fat = food.nutrients.fat.toString()
+            protein = food.nutrients.protein.toString()
+            // Navigate to adjust screen
+            currentScreen = "adjust"
+            // Clear the scanned food state
+            onScannedFoodProcessed()
+        }
+    }
+    
     when (currentScreen) {
         "main" -> AddFoodMainScreen(
             userId = userId,
@@ -95,6 +206,11 @@ fun AddMealScreen(
                     // Pre-fill with historical data if needed
                 }
                 currentScreen = "adjust"
+            },
+            onBarcodeScan = onBarcodeScan,
+            onScannedFood = { food -> 
+                // Handle scanned food - this will be called from the Activity
+                Log.d(TAG, "Received scanned food in main screen: ${food.name}")
             }
         )
         "adjust" -> AdjustServingScreen(
@@ -109,7 +225,8 @@ fun AddMealScreen(
             onDateChange = { selectedDate = it },
             onMealTypeChange = { mealType = it },
             onBackPressed = { currentScreen = "main" },
-            onContinue = { currentScreen = "details" }
+            onContinue = { currentScreen = "details" },
+            scannedFood = scannedFood
         )
         "details" -> AddDetailsScreen(
             calories = calories,
@@ -141,7 +258,9 @@ fun AddFoodMainScreen(
     onBackPressed: () -> Unit,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
-    onNavigateToAdjustServing: (RecentActivityEntry?) -> Unit
+    onNavigateToAdjustServing: (RecentActivityEntry?) -> Unit,
+    onBarcodeScan: () -> Unit,
+    onScannedFood: (Food) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -197,7 +316,7 @@ fun AddFoodMainScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -215,14 +334,14 @@ fun AddFoodMainScreen(
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onBackground
+                        tint = colorScheme.onBackground
                     )
                 }
                 Text(
                     text = "Add Food",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = colorScheme.primary,
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
@@ -242,11 +361,11 @@ fun AddFoodMainScreen(
                         .height(68.dp)
                         .border(
                             width = 3.dp,
-                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
+                            color = colorScheme.secondary.copy(alpha = 0.3f),
                             shape = RoundedCornerShape(16.dp)
                         )
                         .background(
-                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
+                            color = colorScheme.secondary.copy(alpha = 0.05f),
                             shape = RoundedCornerShape(16.dp)
                         )
                 ) {
@@ -259,13 +378,13 @@ fun AddFoodMainScreen(
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Search",
-                            tint = MaterialTheme.colorScheme.secondary,
+                            tint = colorScheme.secondary,
                             modifier = Modifier.padding(end = 12.dp)
                         )
                         Text(
                             text = if (searchQuery.isEmpty()) "Search food" else searchQuery,
                             fontSize = 18.sp,
-                            color = if (searchQuery.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
+                            color = if (searchQuery.isEmpty()) colorScheme.onSurfaceVariant else colorScheme.onBackground,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -277,7 +396,7 @@ fun AddFoodMainScreen(
                 Text(
                     text = "My Foods",
                     fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
@@ -296,7 +415,7 @@ fun AddFoodMainScreen(
                         Text(
                             text = errorMessage,
                             fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.error,
+                            color = colorScheme.error,
                             modifier = Modifier.padding(vertical = 16.dp)
                         )
                     }
@@ -304,7 +423,7 @@ fun AddFoodMainScreen(
                         Text(
                             text = "No foods logged yet. Start by adding your first meal!",
                             fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 16.dp)
                         )
                     }
@@ -385,28 +504,28 @@ fun AddFoodMainScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Scan Barcode button
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(64.dp)
-                            .border(
-                                width = 3.dp,
-                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
-                                shape = RoundedCornerShape(16.dp)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(64.dp)
+                                .border(
+                                    width = 3.dp,
+                                    color = colorScheme.secondary.copy(alpha = 0.3f),
+                                )
+                                .background(
+                                    color = colorScheme.secondary.copy(alpha = 0.05f),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .clickable { onBarcodeScan() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Scan Barcode",
+                                fontSize = 18.sp,
+                                color = colorScheme.secondary,
+                                fontWeight = FontWeight.Medium
                             )
-                            .background(
-                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            .clickable { /* Handle scan barcode */ },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Scan Barcode",
-                            fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.secondary,
-                            fontWeight = FontWeight.Medium
-                        )
+                        }
                     }
                     
                     // Add Food button
@@ -427,8 +546,8 @@ fun AddFoodMainScreen(
                                 .background(
                                     brush = Brush.horizontalGradient(
                                         colors = listOf(
-                                            MaterialTheme.colorScheme.primary,
-                                            MaterialTheme.colorScheme.secondary
+                                            colorScheme.primary,
+                                            colorScheme.secondary
                                         )
                                     ),
                                     shape = RoundedCornerShape(16.dp)
@@ -437,7 +556,7 @@ fun AddFoodMainScreen(
                         ) {
                             if (isLoading) {
                                 CircularProgressIndicator(
-                                    color = MaterialTheme.colorScheme.background,
+                                    color = colorScheme.background,
                                     modifier = Modifier.size(24.dp)
                                 )
                             } else {
@@ -445,7 +564,7 @@ fun AddFoodMainScreen(
                                     text = "Add Food",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.background
+                                    color = colorScheme.background
                                 )
                             }
                         }
@@ -456,7 +575,6 @@ fun AddFoodMainScreen(
             }
         }
     }
-}
 
 data class FoodHistoryItem(
     val name: String,
@@ -480,12 +598,12 @@ fun FoodHistoryCard(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                color = MaterialTheme.colorScheme.background,
+                color = colorScheme.background,
                 shape = RoundedCornerShape(12.dp)
             )
             .border(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.outline,
+                color = colorScheme.outline,
                 shape = RoundedCornerShape(12.dp)
             )
             .padding(16.dp)
@@ -504,12 +622,12 @@ fun FoodHistoryCard(
                     text = foodName,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = colorScheme.onBackground
                 )
                 Text(
                     text = servingInfo,
                     fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = colorScheme.secondary,
                     fontWeight = FontWeight.Medium
                 )
                 Row(
@@ -519,17 +637,17 @@ fun FoodHistoryCard(
                     Text(
                         text = date,
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "•",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = mealType,
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -542,7 +660,7 @@ fun FoodHistoryCard(
                     text = calories,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = colorScheme.primary
                 )
                 
                 // Delete button
@@ -607,7 +725,8 @@ fun AdjustServingScreen(
     onDateChange: (Date) -> Unit,
     onMealTypeChange: (String) -> Unit,
     onBackPressed: () -> Unit,
-    onContinue: () -> Unit
+    onContinue: () -> Unit,
+    scannedFood: Food? // This will contain the scanned food data
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
     var showMeasuringUnitDialog by remember { mutableStateOf(false) }
@@ -639,7 +758,7 @@ fun AdjustServingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -657,14 +776,14 @@ fun AdjustServingScreen(
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onBackground
+                        tint = colorScheme.onBackground
                     )
                 }
                 Text(
                     text = "Adjust Serving",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = colorScheme.primary,
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
@@ -689,18 +808,18 @@ fun AdjustServingScreen(
                             .height(68.dp)
                             .border(
                                 width = 3.dp,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                color = colorScheme.primary.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .background(
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                                color = colorScheme.primary.copy(alpha = 0.05f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                     ) {
                         TextField(
                             value = foodName,
                             onValueChange = onFoodNameChange,
-                            placeholder = { Text("Food name*", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            placeholder = { Text("Food name*", color = colorScheme.onSurfaceVariant) },
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 24.dp),
@@ -709,11 +828,11 @@ fun AdjustServingScreen(
                                 unfocusedContainerColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
-                                cursorColor = MaterialTheme.colorScheme.primary
+                                cursorColor = colorScheme.primary
                             ),
                             textStyle = androidx.compose.ui.text.TextStyle(
                                 fontSize = 18.sp,
-                                color = MaterialTheme.colorScheme.onBackground
+                                color = colorScheme.onBackground
                             )
                         )
                     }
@@ -725,11 +844,11 @@ fun AdjustServingScreen(
                             .height(68.dp)
                             .border(
                                 width = 3.dp,
-                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
+                                color = colorScheme.secondary.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .background(
-                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
+                                color = colorScheme.secondary.copy(alpha = 0.05f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                     ) {
@@ -742,25 +861,25 @@ fun AdjustServingScreen(
                             TextField(
                                 value = servingSize,
                                 onValueChange = onServingSizeChange,
-                                placeholder = { Text("Serving size*", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                placeholder = { Text("Serving size*", color = colorScheme.onSurfaceVariant) },
                                 modifier = Modifier.weight(1f),
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent,
                                     unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
-                                    cursorColor = MaterialTheme.colorScheme.secondary
+                                    cursorColor = colorScheme.secondary
                                 ),
                                 textStyle = androidx.compose.ui.text.TextStyle(
                                     fontSize = 18.sp,
-                                    color = MaterialTheme.colorScheme.onBackground
+                                    color = colorScheme.onBackground
                                 ),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                             )
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f))
+                                    .background(colorScheme.secondary.copy(alpha = 0.15f))
                                     .clickable { showMeasuringUnitDialog = true }
                                     .padding(horizontal = 12.dp, vertical = 4.dp)
                             ) {
@@ -771,13 +890,13 @@ fun AdjustServingScreen(
                                     Text(
                                         text = measuringUnit.lowercase(),
                                         fontSize = 18.sp,
-                                        color = MaterialTheme.colorScheme.secondary,
+                                        color = colorScheme.secondary,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
                                         text = "▼",
                                         fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.secondary
+                                        color = colorScheme.secondary
                                     )
                                 }
                             }
@@ -791,11 +910,11 @@ fun AdjustServingScreen(
                             .height(68.dp)
                             .border(
                                 width = 3.dp,
-                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
+                                color = colorScheme.secondary.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .background(
-                                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
+                                color = colorScheme.secondary.copy(alpha = 0.05f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .clickable { showDatePicker = true }
@@ -803,7 +922,7 @@ fun AdjustServingScreen(
                         Text(
                             text = selectedDateString,
                             fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.onBackground,
+                            color = colorScheme.onBackground,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 24.dp)
@@ -822,7 +941,7 @@ fun AdjustServingScreen(
                     Text(
                         text = "Select Type",
                         fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
@@ -892,8 +1011,8 @@ fun AdjustServingScreen(
                             .background(
                                 brush = Brush.horizontalGradient(
                                     colors = listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.secondary
+                                        colorScheme.primary,
+                                        colorScheme.secondary
                                     )
                                 ),
                                 shape = RoundedCornerShape(16.dp)
@@ -904,7 +1023,7 @@ fun AdjustServingScreen(
                             text = "Continue",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.background
+                            color = colorScheme.background
                         )
                     }
                 }
@@ -964,7 +1083,7 @@ fun AdjustServingScreen(
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(
                                         if (unit == measuringUnit) 
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) 
+                                            colorScheme.primary.copy(alpha = 0.1f)
                                         else 
                                             Color.Transparent
                                     )
@@ -982,14 +1101,14 @@ fun AdjustServingScreen(
                                     Text(
                                         text = unit,
                                         fontSize = 16.sp,
-                                        color = if (unit == measuringUnit) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+                                        color = if (unit == measuringUnit) colorScheme.primary else colorScheme.onBackground,
                                         fontWeight = if (unit == measuringUnit) FontWeight.Bold else FontWeight.Normal
                                     )
                                     if (unit == measuringUnit) {
                                         Text(
                                             text = "✓",
                                             fontSize = 18.sp,
-                                            color = MaterialTheme.colorScheme.primary,
+                                            color = colorScheme.primary,
                                             fontWeight = FontWeight.Bold
                                         )
                                     }
@@ -1114,7 +1233,7 @@ fun AddDetailsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -1132,14 +1251,14 @@ fun AddDetailsScreen(
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onBackground
+                        tint = colorScheme.onBackground
                     )
                 }
                 Text(
                     text = "Add Details",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = colorScheme.primary,
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
@@ -1164,11 +1283,11 @@ fun AddDetailsScreen(
                             .height(68.dp)
                             .border(
                                 width = 3.dp,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                                color = colorScheme.primary.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .background(
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                                color = colorScheme.primary.copy(alpha = 0.05f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                     ) {
@@ -1181,25 +1300,25 @@ fun AddDetailsScreen(
                             TextField(
                                 value = calories,
                                 onValueChange = onCaloriesChange,
-                                placeholder = { Text("Calories*", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                placeholder = { Text("Calories*", color = colorScheme.onSurfaceVariant) },
                                 modifier = Modifier.weight(1f),
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent,
                                     unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
-                                    cursorColor = MaterialTheme.colorScheme.primary
+                                    cursorColor = colorScheme.primary
                                 ),
                                 textStyle = androidx.compose.ui.text.TextStyle(
                                     fontSize = 18.sp,
-                                    color = MaterialTheme.colorScheme.onBackground
+                                    color = colorScheme.onBackground
                                 ),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                             )
                             Text(
                                 text = "kcal",
                                 fontSize = 18.sp,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = colorScheme.primary,
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -1209,7 +1328,7 @@ fun AddDetailsScreen(
                     Text(
                         text = "ForkIt can calculate this for you!",
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 8.dp)
                     )
                     
@@ -1218,7 +1337,7 @@ fun AddDetailsScreen(
                         Text(
                             text = "Carbs",
                             fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.padding(bottom = 8.dp, start = 8.dp)
                         )
@@ -1228,11 +1347,11 @@ fun AddDetailsScreen(
                                 .height(68.dp)
                                 .border(
                                     width = 3.dp,
-                                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
+                                    color = colorScheme.secondary.copy(alpha = 0.3f),
                                     shape = RoundedCornerShape(16.dp)
                                 )
                                 .background(
-                                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
+                                    color = colorScheme.secondary.copy(alpha = 0.05f),
                                     shape = RoundedCornerShape(16.dp)
                                 )
                         ) {
@@ -1245,25 +1364,25 @@ fun AddDetailsScreen(
                                 TextField(
                                     value = carbs,
                                     onValueChange = onCarbsChange,
-                                    placeholder = { Text("Enter amount", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                    placeholder = { Text("Enter amount", color = colorScheme.onSurfaceVariant) },
                                     modifier = Modifier.weight(1f),
                                     colors = TextFieldDefaults.colors(
                                         focusedContainerColor = Color.Transparent,
                                         unfocusedContainerColor = Color.Transparent,
                                         focusedIndicatorColor = Color.Transparent,
                                         unfocusedIndicatorColor = Color.Transparent,
-                                        cursorColor = MaterialTheme.colorScheme.secondary
+                                        cursorColor = colorScheme.secondary
                                     ),
                                     textStyle = androidx.compose.ui.text.TextStyle(
                                         fontSize = 18.sp,
-                                        color = MaterialTheme.colorScheme.onBackground
+                                        color = colorScheme.onBackground
                                     ),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                                 )
                                 Text(
                                     text = "g",
                                     fontSize = 18.sp,
-                                    color = MaterialTheme.colorScheme.secondary,
+                                    color = colorScheme.secondary,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -1275,7 +1394,7 @@ fun AddDetailsScreen(
                         Text(
                             text = "Fat",
                             fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.padding(bottom = 8.dp, start = 8.dp)
                         )
@@ -1285,11 +1404,11 @@ fun AddDetailsScreen(
                                 .height(68.dp)
                                 .border(
                                     width = 3.dp,
-                                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
+                                    color = colorScheme.secondary.copy(alpha = 0.3f),
                                     shape = RoundedCornerShape(16.dp)
                                 )
                                 .background(
-                                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
+                                    color = colorScheme.secondary.copy(alpha = 0.05f),
                                     shape = RoundedCornerShape(16.dp)
                                 )
                         ) {
@@ -1302,25 +1421,25 @@ fun AddDetailsScreen(
                                 TextField(
                                     value = fat,
                                     onValueChange = onFatChange,
-                                    placeholder = { Text("Enter amount", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                    placeholder = { Text("Enter amount", color = colorScheme.onSurfaceVariant) },
                                     modifier = Modifier.weight(1f),
                                     colors = TextFieldDefaults.colors(
                                         focusedContainerColor = Color.Transparent,
                                         unfocusedContainerColor = Color.Transparent,
                                         focusedIndicatorColor = Color.Transparent,
                                         unfocusedIndicatorColor = Color.Transparent,
-                                        cursorColor = MaterialTheme.colorScheme.secondary
+                                        cursorColor = colorScheme.secondary
                                     ),
                                     textStyle = androidx.compose.ui.text.TextStyle(
                                         fontSize = 18.sp,
-                                        color = MaterialTheme.colorScheme.onBackground
+                                        color = colorScheme.onBackground
                                     ),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                                 )
                                 Text(
                                     text = "g",
                                     fontSize = 18.sp,
-                                    color = MaterialTheme.colorScheme.secondary,
+                                    color = colorScheme.secondary,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -1332,7 +1451,7 @@ fun AddDetailsScreen(
                         Text(
                             text = "Protein",
                             fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.padding(bottom = 8.dp, start = 8.dp)
                         )
@@ -1342,11 +1461,11 @@ fun AddDetailsScreen(
                                 .height(68.dp)
                                 .border(
                                     width = 3.dp,
-                                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
+                                    color = colorScheme.secondary.copy(alpha = 0.3f),
                                     shape = RoundedCornerShape(16.dp)
                                 )
                                 .background(
-                                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.05f),
+                                    color = colorScheme.secondary.copy(alpha = 0.05f),
                                     shape = RoundedCornerShape(16.dp)
                                 )
                         ) {
@@ -1359,25 +1478,25 @@ fun AddDetailsScreen(
                                 TextField(
                                     value = protein,
                                     onValueChange = onProteinChange,
-                                    placeholder = { Text("Enter amount", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                    placeholder = { Text("Enter amount", color = colorScheme.onSurfaceVariant) },
                                     modifier = Modifier.weight(1f),
                                     colors = TextFieldDefaults.colors(
                                         focusedContainerColor = Color.Transparent,
                                         unfocusedContainerColor = Color.Transparent,
                                         focusedIndicatorColor = Color.Transparent,
                                         unfocusedIndicatorColor = Color.Transparent,
-                                        cursorColor = MaterialTheme.colorScheme.secondary
+                                        cursorColor = colorScheme.secondary
                                     ),
                                     textStyle = androidx.compose.ui.text.TextStyle(
                                         fontSize = 18.sp,
-                                        color = MaterialTheme.colorScheme.onBackground
+                                        color = colorScheme.onBackground
                                     ),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                                 )
                                 Text(
                                     text = "g",
                                     fontSize = 18.sp,
-                                    color = MaterialTheme.colorScheme.secondary,
+                                    color = colorScheme.secondary,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -1406,8 +1525,8 @@ fun AddDetailsScreen(
                             .background(
                                 brush = Brush.horizontalGradient(
                                     colors = listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.secondary
+                                        colorScheme.primary,
+                                        colorScheme.secondary
                                     )
                                 ),
                                 shape = RoundedCornerShape(16.dp)
@@ -1418,7 +1537,7 @@ fun AddDetailsScreen(
                             text = "Add Food",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.background
+                            color = colorScheme.background
                         )
                     }
                 }
