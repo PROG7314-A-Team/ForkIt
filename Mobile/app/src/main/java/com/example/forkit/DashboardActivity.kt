@@ -60,10 +60,14 @@ class DashboardActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         val userId = intent.getStringExtra("USER_ID") ?: ""
+        val initialTab = intent.getIntExtra("SELECTED_TAB", 0)
         
         setContent {
             ForkItTheme {
-                DashboardScreen(userId = userId)
+                DashboardScreen(
+                    userId = userId,
+                    initialSelectedTab = initialTab
+                )
             }
         }
     }
@@ -71,12 +75,15 @@ class DashboardActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun DashboardScreen(userId: String = "") {
+fun DashboardScreen(
+    userId: String = "",
+    initialSelectedTab: Int = 0
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableStateOf(initialSelectedTab) }
     
     // State variables for API data
     var consumed by remember { mutableStateOf(0.0) }

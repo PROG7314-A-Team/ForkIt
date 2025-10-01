@@ -278,12 +278,14 @@ fun HabitsScreen(
                         // Home - Navigate to Dashboard
                         val intent = Intent(context, DashboardActivity::class.java)
                         intent.putExtra("USER_ID", userId)
+                        intent.putExtra("SELECTED_TAB", 0)
                         context.startActivity(intent)
                     }
                     1 -> {
                         // Meals - Navigate to Dashboard and select Meals tab
                         val intent = Intent(context, DashboardActivity::class.java)
                         intent.putExtra("USER_ID", userId)
+                        intent.putExtra("SELECTED_TAB", 1)
                         context.startActivity(intent)
                     }
                     2 -> {
@@ -297,6 +299,7 @@ fun HabitsScreen(
                         // Coach - Navigate to Dashboard and select Coach tab
                         val intent = Intent(context, DashboardActivity::class.java)
                         intent.putExtra("USER_ID", userId)
+                        intent.putExtra("SELECTED_TAB", 4)
                         context.startActivity(intent)
                     }
                 }
