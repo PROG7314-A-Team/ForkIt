@@ -1212,6 +1212,7 @@ fun FloatingIcons(
                 label = "Workout",
                 onClick = { 
                     val intent = Intent(context, AddWorkoutActivity::class.java)
+                    intent.putExtra("USER_ID", userId)
                     context.startActivity(intent)
                     onDismiss()
                 },
