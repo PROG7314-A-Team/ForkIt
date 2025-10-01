@@ -19,11 +19,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,44 +42,64 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.example.forkit.ui.theme.ForkItTheme
+import kotlinx.coroutines.launch
 
 class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
+        val userId = intent.getStringExtra("USER_ID") ?: ""
+        
         setContent {
             ForkItTheme {
-                DashboardScreen()
+                DashboardScreen(userId = userId)
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun DashboardScreen() {
+fun DashboardScreen(userId: String = "") {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    
     var selectedTab by remember { mutableStateOf(0) }
     
-    // Daily calorie goal (user will set this later)
+    // State variables for API data
+    var consumed by remember { mutableStateOf(0.0) }
+    var burned by remember { mutableStateOf(0.0) }
+    var carbsCalories by remember { mutableStateOf(0.0) }
+    var proteinCalories by remember { mutableStateOf(0.0) }
+    var fatCalories by remember { mutableStateOf(0.0) }
+    var waterAmount by remember { mutableStateOf(0.0) }
+    var waterEntries by remember { mutableStateOf(0) }
+    var recentMeals by remember { mutableStateOf<List<com.example.forkit.data.models.RecentActivityEntry>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+    
+    // Daily calorie goal - hardcoded for now as there's no API endpoint
     val dailyGoal = 2000
     
-    // Today's data only
-    val consumed = 1650
-    val burned = 300
-    val total = 1350
-    val remaining = consumed - burned
+    // Calculate totals
+    val total = (consumed - burned).toInt()
     
     // Progress bar calculations
     val progressPercentage = (consumed.toFloat() / dailyGoal).coerceIn(0f, 1f)
-    val caloriesRemaining = dailyGoal - consumed
+    val caloriesRemaining = (dailyGoal - consumed).toInt()
     val isGoalReached = consumed >= dailyGoal
     
     // Animated progress for smooth transitions
@@ -84,14 +108,130 @@ fun DashboardScreen() {
         animationSpec = tween(1000)
     )
     
-    // Macronutrient constants (testing data)
-    val carbsCalories = 600
-    val proteinCalories = 400
-    val fatCalories = 200
-    val totalCalories = carbsCalories + proteinCalories + fatCalories
+    // Total macronutrient calories
+    val totalCalories = (carbsCalories + proteinCalories + fatCalories).toInt()
     
     // State for showing floating icons overlay
     var showFloatingIcons by remember { mutableStateOf(false) }
+    
+    // Get today's date in YYYY-MM-DD format
+    val todayDate = remember {
+        val calendar = java.util.Calendar.getInstance()
+        String.format("%04d-%02d-%02d", 
+            calendar.get(java.util.Calendar.YEAR),
+            calendar.get(java.util.Calendar.MONTH) + 1,
+            calendar.get(java.util.Calendar.DAY_OF_MONTH))
+    }
+    
+    // Refresh function to fetch all data
+    val refreshData: () -> Unit = {
+        scope.launch {
+            if (userId.isNotEmpty()) {
+                try {
+                    isRefreshing = true
+                    android.util.Log.d("DashboardActivity", "Refreshing data for userId: $userId on date: $todayDate")
+                    
+                    // Fetch daily food summary
+                    try {
+                        val foodSummaryResponse = com.example.forkit.data.RetrofitClient.api.getDailyCalorieSummary(
+                            userId = userId,
+                            date = todayDate
+                        )
+                        
+                        if (foodSummaryResponse.isSuccessful) {
+                            val foodData = foodSummaryResponse.body()?.data
+                            consumed = foodData?.totalCalories ?: 0.0
+                            carbsCalories = (foodData?.totalCarbs ?: 0.0) * 4
+                            proteinCalories = (foodData?.totalProtein ?: 0.0) * 4
+                            fatCalories = (foodData?.totalFat ?: 0.0) * 9
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("DashboardActivity", "Error fetching food summary: ${e.message}", e)
+                    }
+                    
+                    // Fetch daily exercise total
+                    try {
+                        val exerciseResponse = com.example.forkit.data.RetrofitClient.api.getDailyExerciseTotal(
+                            userId = userId,
+                            date = todayDate
+                        )
+                        
+                        if (exerciseResponse.isSuccessful) {
+                            val exerciseData = exerciseResponse.body()?.data
+                            burned = exerciseData?.totalCaloriesBurnt ?: 0.0
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("DashboardActivity", "Error fetching exercise: ${e.message}", e)
+                    }
+                    
+                    // Fetch daily water total
+                    try {
+                        val waterResponse = com.example.forkit.data.RetrofitClient.api.getDailyWaterTotal(
+                            userId = userId,
+                            date = todayDate
+                        )
+                        
+                        if (waterResponse.isSuccessful) {
+                            val waterData = waterResponse.body()?.data
+                            waterAmount = waterData?.totalAmount ?: 0.0
+                            waterEntries = waterData?.entries ?: 0
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("DashboardActivity", "Error fetching water: ${e.message}", e)
+                    }
+                    
+                    // Fetch recent food activity
+                    try {
+                        val recentResponse = com.example.forkit.data.RetrofitClient.api.getRecentFoodActivity(
+                            userId = userId,
+                            limit = 3
+                        )
+                        
+                        if (recentResponse.isSuccessful) {
+                            val recentData = recentResponse.body()?.data
+                            recentMeals = recentData?.recentActivity ?: emptyList()
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("DashboardActivity", "Error fetching recent activity: ${e.message}", e)
+                    }
+                    
+                } catch (e: Exception) {
+                    android.util.Log.e("DashboardActivity", "Fatal error loading data: ${e.message}", e)
+                    errorMessage = "Error loading data: ${e.message}\n\nPlease check:\n1. API is running\n2. Network connection\n3. User ID: $userId"
+                } finally {
+                    isRefreshing = false
+                    isLoading = false
+                }
+            }
+        }
+    }
+    
+    // Pull refresh state
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = refreshData
+    )
+    
+    // Initial data load when screen first loads
+    LaunchedEffect(userId) {
+        isLoading = true
+        refreshData()
+    }
+    
+    // Refresh data when activity resumes (user returns from another screen)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                android.util.Log.d("DashboardActivity", "Activity resumed - refreshing data")
+                refreshData()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
     
     Box(
         modifier = Modifier
@@ -101,8 +241,39 @@ fun DashboardScreen() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .pullRefresh(pullRefreshState)
                 .statusBarsPadding()
         ) {
+            // Show error message if there's an error
+            if (errorMessage.isNotEmpty()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFFEBEE)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "⚠️ Error",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFD32F2F)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = errorMessage,
+                            fontSize = 14.sp,
+                            color = Color(0xFF555555)
+                        )
+                    }
+                }
+            }
+            
             // Screen Content based on selected tab
             when (selectedTab) {
                 0 -> {
@@ -387,28 +558,58 @@ fun DashboardScreen() {
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(32.dp)
-                    ) {
-                        // Calorie Wheel (Left side)
-                        CalorieWheel(
-                            carbsCalories = carbsCalories,
-                            proteinCalories = proteinCalories,
-                            fatCalories = fatCalories,
-                            totalCalories = totalCalories
-                        )
-                        
-                        // Macronutrient Breakdown (Right side)
-                        MacronutrientBreakdown(
-                            carbsCalories = carbsCalories,
-                            proteinCalories = proteinCalories,
-                            fatCalories = fatCalories,
-                            totalCalories = totalCalories
-                        )
+                    if (!isLoading && totalCalories == 0) {
+                        // Empty state when no food logged
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "🍽️",
+                                fontSize = 48.sp
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "No food logged today",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Start logging your meals to see your nutrition breakdown",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(32.dp)
+                        ) {
+                            // Calorie Wheel (Left side)
+                            CalorieWheel(
+                                carbsCalories = carbsCalories.toInt(),
+                                proteinCalories = proteinCalories.toInt(),
+                                fatCalories = fatCalories.toInt(),
+                                totalCalories = totalCalories,
+                                isLoading = isLoading
+                            )
+                            
+                            // Macronutrient Breakdown (Right side)
+                            MacronutrientBreakdown(
+                                carbsCalories = carbsCalories.toInt(),
+                                proteinCalories = proteinCalories.toInt(),
+                                fatCalories = fatCalories.toInt(),
+                                totalCalories = totalCalories
+                            )
+                        }
                     }
                 }
                 
@@ -446,7 +647,7 @@ fun DashboardScreen() {
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = "6/8 glasses",
+                                text = if (isLoading) "Loading..." else "${(waterAmount / 250).toInt()} glasses",
                                 fontSize = 16.sp,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold
@@ -514,29 +715,48 @@ fun DashboardScreen() {
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        // Meal items
-                        listOf(
-                            "🍳 Breakfast - 450 kcal",
-                            "🥗 Lunch - 320 kcal", 
-                            "🍎 Snack - 150 kcal"
-                        ).forEach { meal ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = meal,
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
-                                Text(
-                                    text = "2h ago",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
+                        // Show loading or meals
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.CenterHorizontally),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else if (recentMeals.isEmpty()) {
+                            Text(
+                                text = "No recent meals logged",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        } else {
+                            // Display real meal items from API
+                            recentMeals.forEach { meal ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = meal.foodName,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onBackground
+                                        )
+                                        Text(
+                                            text = "${meal.mealType} - ${meal.calories} kcal",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                    Text(
+                                        text = meal.time,
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onBackground
+                                    )
+                                }
                             }
                         }
                     }
@@ -593,6 +813,17 @@ fun DashboardScreen() {
             )
         }
         
+        // Pull to refresh indicator
+        PullRefreshIndicator(
+            refreshing = isRefreshing,
+            state = pullRefreshState,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 56.dp), // Below the status bar
+            backgroundColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary
+        )
+        
         // Floating Icons Overlay (when add button is clicked)
         if (showFloatingIcons) {
             Box(
@@ -602,6 +833,7 @@ fun DashboardScreen() {
             ) {
                 FloatingIcons(
                     context = context,
+                    userId = userId,
                     onDismiss = { showFloatingIcons = false } // Hide the overlay
                 )
             }
@@ -615,11 +847,12 @@ fun CalorieWheel(
     carbsCalories: Int,
     proteinCalories: Int,
     fatCalories: Int,
-    totalCalories: Int
+    totalCalories: Int,
+    isLoading: Boolean = false
 ) {
-    val carbsProgress = carbsCalories.toFloat() / totalCalories
-    val proteinProgress = proteinCalories.toFloat() / totalCalories
-    val fatProgress = fatCalories.toFloat() / totalCalories
+    val carbsProgress = if (totalCalories > 0) carbsCalories.toFloat() / totalCalories else 0f
+    val proteinProgress = if (totalCalories > 0) proteinCalories.toFloat() / totalCalories else 0f
+    val fatProgress = if (totalCalories > 0) fatCalories.toFloat() / totalCalories else 0f
     
     val animatedCarbs by animateFloatAsState(
         targetValue = carbsProgress,
@@ -693,18 +926,25 @@ fun CalorieWheel(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = totalCalories.toString(),
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary // ForkIt Green
-            )
-            Text(
-                text = "Today's Calories",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(32.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            } else {
+                Text(
+                    text = totalCalories.toString(),
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary // ForkIt Green
+                )
+                Text(
+                    text = "Today's Calories",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
@@ -725,7 +965,7 @@ fun MacronutrientBreakdown(
             name = "Carbs",
             calories = carbsCalories,
             color = MaterialTheme.colorScheme.tertiary,
-            percentage = (carbsCalories * 100 / totalCalories)
+            percentage = if (totalCalories > 0) (carbsCalories * 100 / totalCalories) else 0
         )
         
         // Protein
@@ -733,7 +973,7 @@ fun MacronutrientBreakdown(
             name = "Protein",
             calories = proteinCalories,
             color = MaterialTheme.colorScheme.secondary,
-            percentage = (proteinCalories * 100 / totalCalories)
+            percentage = if (totalCalories > 0) (proteinCalories * 100 / totalCalories) else 0
         )
         
         // Fat
@@ -741,7 +981,7 @@ fun MacronutrientBreakdown(
             name = "Fat",
             calories = fatCalories,
             color = MaterialTheme.colorScheme.primaryContainer,
-            percentage = (fatCalories * 100 / totalCalories)
+            percentage = if (totalCalories > 0) (fatCalories * 100 / totalCalories) else 0
         )
     }
 }
@@ -915,6 +1155,7 @@ fun BottomNavigationBar(
 @Composable
 fun FloatingIcons(
     context: android.content.Context,
+    userId: String,
     onDismiss: () -> Unit
 ) {
     val animatedAlpha by animateFloatAsState(
@@ -958,6 +1199,7 @@ fun FloatingIcons(
                 label = "Water",
                 onClick = { 
                     val intent = Intent(context, AddWaterActivity::class.java)
+                    intent.putExtra("USER_ID", userId)
                     context.startActivity(intent)
                     onDismiss()
                 },

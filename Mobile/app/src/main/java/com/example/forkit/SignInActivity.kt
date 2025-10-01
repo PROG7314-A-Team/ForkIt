@@ -40,18 +40,21 @@ class SignInActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        val prefilledEmail = intent.getStringExtra("EMAIL") ?: ""
+        
         setContent {
             ForkItTheme {
-                SignInScreen()
+                SignInScreen(prefilledEmail = prefilledEmail)
             }
         }
     }
 }
 
 @Composable
-fun SignInScreen() {
+fun SignInScreen(prefilledEmail: String = "") {
     val context = LocalContext.current
-    var email by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf(prefilledEmail) }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
@@ -175,9 +178,13 @@ fun SignInScreen() {
                                     val body: LoginResponse? = response.body()
                                     message = body?.message ?: "Login successful!"
                                     // TODO: Save token (body?.idToken) and userId (body?.userId) securely
-                                    // Navigate to MainActivity
+                                    // Navigate to DashboardActivity with userId
                                     val intent = Intent(context, DashboardActivity::class.java)
+                                    intent.putExtra("USER_ID", body?.userId)
+                                    intent.putExtra("ID_TOKEN", body?.idToken)
+                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                     context.startActivity(intent)
+                                    (context as? ComponentActivity)?.finish()
                                 } else {
                                     message = "Login failed: ${response.errorBody()?.string()}"
                                 }

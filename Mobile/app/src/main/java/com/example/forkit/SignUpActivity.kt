@@ -207,10 +207,14 @@ fun SignUpScreen() {
                                     RegisterRequest(email, password)
                                 )
                                 if (response.isSuccessful) {
-                                    message = response.body()?.message ?: "Registered successfully"
-                                    // Navigate to SignInActivity
+                                    val body = response.body()
+                                    message = body?.message ?: "Registered successfully"
+                                    // Navigate to SignInActivity with email prefilled
                                     val intent = Intent(context, SignInActivity::class.java)
+                                    intent.putExtra("EMAIL", email)
+                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                     context.startActivity(intent)
+                                    (context as? ComponentActivity)?.finish()
                                 } else {
                                     message = "Registration failed: ${response.errorBody()?.string()}"
                                 }
