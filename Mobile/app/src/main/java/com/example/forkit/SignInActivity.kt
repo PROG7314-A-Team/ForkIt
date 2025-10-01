@@ -173,8 +173,8 @@ fun SignInScreen() {
                                 )
                                 if (response.isSuccessful) {
                                     val body: LoginResponse? = response.body()
-                                    message = "Login successful!"
-                                    // TODO: Save token (body?.token) securely
+                                    message = body?.message ?: "Login successful!"
+                                    // TODO: Save token (body?.idToken) and userId (body?.userId) securely
                                     // Navigate to MainActivity
                                     val intent = Intent(context, DashboardActivity::class.java)
                                     context.startActivity(intent)
