@@ -2,6 +2,7 @@ package com.example.forkit
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -22,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -51,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.example.forkit.data.RetrofitClient
 import com.example.forkit.ui.theme.ForkItTheme
 import kotlinx.coroutines.launch
 
@@ -207,19 +210,34 @@ fun DashboardScreen(
                         android.util.Log.e("DashboardActivity", "Error fetching water: ${e.message}", e)
                     }
                     
-                    // Fetch recent food activity
+                    // Fetch today's food logs only
                     try {
-                        val recentResponse = com.example.forkit.data.RetrofitClient.api.getRecentFoodActivity(
+                        val todayLogsResponse = com.example.forkit.data.RetrofitClient.api.getFoodLogs(
                             userId = userId,
-                            limit = 3
+                            date = todayDate
                         )
                         
-                        if (recentResponse.isSuccessful) {
-                            val recentData = recentResponse.body()?.data
-                            recentMeals = recentData?.recentActivity ?: emptyList()
+                        if (todayLogsResponse.isSuccessful) {
+                            val todayLogs = todayLogsResponse.body()?.data ?: emptyList()
+                            // Convert FoodLog to RecentActivityEntry for display
+                            recentMeals = todayLogs.map { log ->
+                                com.example.forkit.data.models.RecentActivityEntry(
+                                    id = log.id,
+                                    foodName = log.foodName,
+                                    servingSize = log.servingSize,
+                                    measuringUnit = log.measuringUnit,
+                                    calories = log.calories.toInt(),
+                                    mealType = log.mealType,
+                                    date = log.date,
+                                    createdAt = log.createdAt,
+                                    time = log.createdAt.substring(11, 16) // Extract time HH:MM
+                                )
+                            }.sortedByDescending { it.createdAt } // Most recent first
+                            
+                            android.util.Log.d("DashboardActivity", "Today's meals loaded: ${recentMeals.size} items")
                         }
                     } catch (e: Exception) {
-                        android.util.Log.e("DashboardActivity", "Error fetching recent activity: ${e.message}", e)
+                        android.util.Log.e("DashboardActivity", "Error fetching today's meals: ${e.message}", e)
                     }
                     
                 } catch (e: Exception) {
@@ -792,7 +810,7 @@ fun DashboardScreen(
                             .padding(24.dp)
                     ) {
                         Text(
-                            text = "Recent Meals",
+                            text = "Today's Meals",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
@@ -808,13 +826,15 @@ fun DashboardScreen(
                             )
                         } else if (recentMeals.isEmpty()) {
                             Text(
-                                text = "No recent meals logged",
+                                text = "No meals logged today",
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onBackground,
                                 modifier = Modifier.padding(vertical = 16.dp)
                             )
                         } else {
                             // Display real meal items from API
+                            var mealToDelete by remember { mutableStateOf<com.example.forkit.data.models.RecentActivityEntry?>(null) }
+                            
                             recentMeals.forEach { meal ->
                                 Row(
                                     modifier = Modifier
@@ -823,7 +843,9 @@ fun DashboardScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column {
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
                                         Text(
                                             text = meal.foodName,
                                             fontSize = 14.sp,
@@ -836,12 +858,79 @@ fun DashboardScreen(
                                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                                         )
                                     }
-                                    Text(
-                                        text = meal.time,
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onBackground
-                                    )
+                                    
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = meal.time,
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onBackground
+                                        )
+                                        
+                                        // Delete button
+                                        IconButton(
+                                            onClick = { mealToDelete = meal },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Delete",
+                                                tint = Color(0xFFE53935),
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
                                 }
+                            }
+                            
+                            // Delete confirmation dialog
+                            mealToDelete?.let { meal ->
+                                AlertDialog(
+                                    onDismissRequest = { mealToDelete = null },
+                                    title = { 
+                                        Text(
+                                            "Delete Food Log?",
+                                            fontWeight = FontWeight.Bold
+                                        ) 
+                                    },
+                                    text = { 
+                                        Text("Are you sure you want to delete \"${meal.foodName}\" from your log?") 
+                                    },
+                                    confirmButton = {
+                                        TextButton(
+                                            onClick = {
+                                                scope.launch {
+                                                    try {
+                                                        val response = RetrofitClient.api.deleteFoodLog(meal.id)
+                                                        if (response.isSuccessful && response.body()?.success == true) {
+                                                            // Remove from local list and refresh data
+                                                            recentMeals = recentMeals.filter { it.id != meal.id }
+                                                            mealToDelete = null
+                                                            
+                                                            // Refresh dashboard data
+                                                            refreshData()
+                                                            
+                                                            Toast.makeText(context, "Food deleted successfully", Toast.LENGTH_SHORT).show()
+                                                        } else {
+                                                            Toast.makeText(context, "Failed to delete food", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            }
+                                        ) {
+                                            Text("Delete", color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
+                                        }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { mealToDelete = null }) {
+                                            Text("Cancel")
+                                        }
+                                    }
+                                )
                             }
                         }
                     }
@@ -953,11 +1042,11 @@ fun CalorieWheel(
         animationSpec = tween(1000)
     )
     
-    // Get colors outside Canvas
+    // ForkIt brand colors for macronutrients
     val outlineColor = MaterialTheme.colorScheme.outline
-    val tertiaryColor = MaterialTheme.colorScheme.tertiary
-    val secondaryColor = MaterialTheme.colorScheme.secondary
-    val primaryContainerColor = MaterialTheme.colorScheme.primaryContainer
+    val carbsColor = Color(0xFF1E9ECD) // ForkIt Blue
+    val proteinColor = Color(0xFF22B27D) // ForkIt Green
+    val fatColor = Color(0xFF6B4FA0) // Dark Purple
     
     Box(
         modifier = Modifier.size(140.dp),
@@ -978,9 +1067,9 @@ fun CalorieWheel(
             
             var currentAngle = -90f
             
-            // Carbs segment (Dark Blue)
+            // Carbs segment (ForkIt Blue)
             drawArc(
-                color = tertiaryColor,
+                color = carbsColor,
                 startAngle = currentAngle,
                 sweepAngle = 360f * animatedCarbs,
                 useCenter = false,
@@ -988,9 +1077,9 @@ fun CalorieWheel(
             )
             currentAngle += 360f * animatedCarbs
             
-            // Protein segment (Blue)
+            // Protein segment (ForkIt Green)
             drawArc(
-                color = secondaryColor,
+                color = proteinColor,
                 startAngle = currentAngle,
                 sweepAngle = 360f * animatedProtein,
                 useCenter = false,
@@ -998,9 +1087,9 @@ fun CalorieWheel(
             )
             currentAngle += 360f * animatedProtein
             
-            // Fat segment (Light Blue)
+            // Fat segment (Dark Purple)
             drawArc(
-                color = primaryContainerColor,
+                color = fatColor,
                 startAngle = currentAngle,
                 sweepAngle = 360f * animatedFat,
                 useCenter = false,
@@ -1050,7 +1139,7 @@ fun MacronutrientBreakdown(
         MacronutrientItem(
             name = "Carbs",
             calories = carbsCalories,
-            color = MaterialTheme.colorScheme.tertiary,
+            color = Color(0xFF1E9ECD), // ForkIt Blue
             percentage = if (totalCalories > 0) (carbsCalories * 100 / totalCalories) else 0
         )
         
@@ -1058,7 +1147,7 @@ fun MacronutrientBreakdown(
         MacronutrientItem(
             name = "Protein",
             calories = proteinCalories,
-            color = MaterialTheme.colorScheme.secondary,
+            color = Color(0xFF22B27D), // ForkIt Green
             percentage = if (totalCalories > 0) (proteinCalories * 100 / totalCalories) else 0
         )
         
@@ -1066,7 +1155,7 @@ fun MacronutrientBreakdown(
         MacronutrientItem(
             name = "Fat",
             calories = fatCalories,
-            color = MaterialTheme.colorScheme.primaryContainer,
+            color = Color(0xFF6B4FA0), // Dark Purple
             percentage = if (totalCalories > 0) (fatCalories * 100 / totalCalories) else 0
         )
     }
@@ -1273,6 +1362,7 @@ fun FloatingIcons(
                 label = "Meal",
                 onClick = { 
                     val intent = Intent(context, AddMealActivity::class.java)
+                    intent.putExtra("USER_ID", userId)
                     context.startActivity(intent)
                     onDismiss()
                 },
