@@ -881,6 +881,7 @@ fun DashboardScreen(userId: String = "") {
                     if (tabIndex == 3) {
                         // Navigate to HabitsActivity
                         val intent = Intent(context, HabitsActivity::class.java)
+                        intent.putExtra("USER_ID", userId)
                         context.startActivity(intent)
                     } else {
                         selectedTab = tabIndex
