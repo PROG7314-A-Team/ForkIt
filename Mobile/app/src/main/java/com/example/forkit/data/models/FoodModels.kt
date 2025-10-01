@@ -26,10 +26,17 @@ data class GetFoodFromBarcodeResponse(
     val data: Food
 )
 
+data class SearchFoodItem(
+    val name: String,
+    val image: String?,
+    val nutrients: Nutrients,
+    val calories: Double?
+)
+
 data class GetFoodFromNameResponse(
     val success: Boolean,
     val message: String,
-    val data: Any
+    val data: Map<String, SearchFoodItem>
 )
 
 // Create food 

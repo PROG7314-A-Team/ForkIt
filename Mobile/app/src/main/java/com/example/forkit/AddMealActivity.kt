@@ -164,6 +164,7 @@ fun AddMealScreen(
     var searchQuery by remember { mutableStateOf("") }
     var currentScreen by remember { mutableStateOf("main") }
     var selectedFood by remember { mutableStateOf<RecentActivityEntry?>(null) }
+    var selectedSearchFood by remember { mutableStateOf<Food?>(null) }
     
     // Food data to be collected across screens
     var foodName by remember { mutableStateOf("") }
@@ -193,6 +194,23 @@ fun AddMealScreen(
         }
     }
     
+    // Handle selected search food when it changes
+    LaunchedEffect(selectedSearchFood) {
+        selectedSearchFood?.let { food ->
+            Log.d(TAG, "switching current screen to adjust for search food")
+            // Pre-populate form fields with selected search food data
+            foodName = food.name
+            calories = food.calories.toString()
+            carbs = food.nutrients.carbs.toString()
+            fat = food.nutrients.fat.toString()
+            protein = food.nutrients.protein.toString()
+            // Navigate to adjust screen
+            currentScreen = "adjust"
+            // Clear the selected search food state
+            selectedSearchFood = null
+        }
+    }
+    
     when (currentScreen) {
         "main" -> AddFoodMainScreen(
             userId = userId,
@@ -211,6 +229,9 @@ fun AddMealScreen(
             onScannedFood = { food -> 
                 // Handle scanned food - this will be called from the Activity
                 Log.d(TAG, "Received scanned food in main screen: ${food.name}")
+            },
+            onSearchFoodSelected = { food ->
+                selectedSearchFood = food
             }
         )
         "adjust" -> AdjustServingScreen(
@@ -260,7 +281,8 @@ fun AddFoodMainScreen(
     onSearchQueryChange: (String) -> Unit,
     onNavigateToAdjustServing: (RecentActivityEntry?) -> Unit,
     onBarcodeScan: () -> Unit,
-    onScannedFood: (Food) -> Unit
+    onScannedFood: (Food) -> Unit,
+    onSearchFoodSelected: (Food) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -269,6 +291,60 @@ fun AddFoodMainScreen(
     var historyItems by remember { mutableStateOf<List<RecentActivityEntry>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
+    
+    // Search functionality state
+    var searchResults by remember { mutableStateOf<List<SearchFoodItem>>(emptyList()) }
+    var isSearching by remember { mutableStateOf(false) }
+    var showSearchResults by remember { mutableStateOf(false) }
+    
+    // Search function
+    fun performSearch(query: String) {
+        if (query.isBlank()) {
+            showSearchResults = false
+            searchResults = emptyList()
+            return
+        }
+        
+        scope.launch {
+            isSearching = true
+            try {
+                val response = RetrofitClient.api.getFoodFromName(query)
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val data = response.body()?.data
+                    if (data != null) {
+                        // Convert map to list of SearchFoodItem
+                        searchResults = data.values.toList()
+                        showSearchResults = true
+                    } else {
+                        searchResults = emptyList()
+                        showSearchResults = false
+                    }
+                } else {
+                    searchResults = emptyList()
+                    showSearchResults = false
+                    Toast.makeText(context, "No results found", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                searchResults = emptyList()
+                showSearchResults = false
+                Toast.makeText(context, "Search error: ${e.message}", Toast.LENGTH_SHORT).show()
+            } finally {
+                isSearching = false
+            }
+        }
+    }
+    
+    // Handle search query changes
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isNotBlank()) {
+            // Debounce search - wait 500ms after user stops typing
+            kotlinx.coroutines.delay(500)
+            performSearch(searchQuery)
+        } else {
+            showSearchResults = false
+            searchResults = emptyList()
+        }
+    }
     
     // Fetch all food logs and create unique list when screen loads
     LaunchedEffect(userId) {
@@ -381,16 +457,82 @@ fun AddFoodMainScreen(
                             tint = colorScheme.secondary,
                             modifier = Modifier.padding(end = 12.dp)
                         )
-                        Text(
-                            text = if (searchQuery.isEmpty()) "Search food" else searchQuery,
-                            fontSize = 18.sp,
-                            color = if (searchQuery.isEmpty()) colorScheme.onSurfaceVariant else colorScheme.onBackground,
-                            modifier = Modifier.weight(1f)
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = onSearchQueryChange,
+                            placeholder = { Text("Search food", color = colorScheme.onSurfaceVariant) },
+                            modifier = Modifier.weight(1f),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                cursorColor = colorScheme.secondary
+                            ),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                fontSize = 18.sp,
+                                color = colorScheme.onBackground
+                            )
                         )
+                        if (isSearching) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = colorScheme.secondary,
+                                strokeWidth = 2.dp
+                            )
+                        }
                     }
                 }
                 
                 Spacer(modifier = Modifier.height(32.dp))
+                
+                // Search Results
+                if (showSearchResults && searchResults.isNotEmpty()) {
+                    Text(
+                        text = "Search Results",
+                        fontSize = 16.sp,
+                        color = colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    // Make search results scrollable with a maximum height
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 300.dp) // Limit height to prevent taking too much space
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            searchResults.forEach { foodItem ->
+                                SearchResultCard(
+                                    foodItem = foodItem,
+                                    onClick = {
+                                        // Convert SearchFoodItem to Food and navigate to adjust screen
+                                        val selectedFood = Food(
+                                            id = "",
+                                            name = foodItem.name,
+                                            brand = "",
+                                            barcode = "",
+                                            calories = foodItem.calories ?: 0.0,
+                                            nutrients = foodItem.nutrients,
+                                            image = foodItem.image ?: "",
+                                            ingredients = ""
+                                        )
+                                        // Call the search food selected callback
+                                        onSearchFoodSelected(selectedFood)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
                 
                 // My Foods section
                 Text(
@@ -582,6 +724,92 @@ data class FoodHistoryItem(
     val mealType: String,
     val calories: String
 )
+
+@Composable
+fun SearchResultCard(
+    foodItem: SearchFoodItem,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = colorScheme.background,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .border(
+                width = 1.dp,
+                color = colorScheme.outline,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable { onClick() }
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = foodItem.name,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.onBackground
+                )
+                if (foodItem.calories != null) {
+                    Text(
+                        text = "${foodItem.calories.toInt()} kcal",
+                        fontSize = 14.sp,
+                        color = colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "C: ${foodItem.nutrients.carbs.toInt()}g",
+                        fontSize = 12.sp,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "P: ${foodItem.nutrients.protein.toInt()}g",
+                        fontSize = 12.sp,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "F: ${foodItem.nutrients.fat.toInt()}g",
+                        fontSize = 12.sp,
+                        color = colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            
+            if (foodItem.image != null) {
+                // You could add an image here if needed
+                // For now, just show a placeholder
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(
+                            color = colorScheme.secondary.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "📷",
+                        fontSize = 20.sp
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun FoodHistoryCard(
