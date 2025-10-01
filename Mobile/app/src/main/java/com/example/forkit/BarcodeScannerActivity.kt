@@ -128,32 +128,32 @@ fun BarcodeScannerScreen(
 
     LaunchedEffect(Unit) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-        cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
-            
-            // Preview
-            val previewUseCase = Preview.Builder().build()
-            preview = previewUseCase
-            
-            // ImageCapture
-            val imageCaptureUseCase = ImageCapture.Builder().build()
-            imageCapture = imageCaptureUseCase
-            
-            // ImageAnalysis for barcode scanning
-            val imageAnalysisUseCase = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-                .also { analysis ->
-                    analysis.setAnalyzer(
-                        Executors.newSingleThreadExecutor()
-                    ) { imageProxy ->
-                        processImageProxy(scanner, imageProxy, onBarcodeScanned)
-                    }
-                }
-            imageAnalyzer = imageAnalysisUseCase
-
-            // Bind use cases to camera
+        cameraProviderFuture.addListener(Runnable {
             try {
+                val cameraProvider = cameraProviderFuture.get()
+                
+                // Preview
+                val previewUseCase = Preview.Builder().build()
+                preview = previewUseCase
+                
+                // ImageCapture
+                val imageCaptureUseCase = ImageCapture.Builder().build()
+                imageCapture = imageCaptureUseCase
+                
+                // ImageAnalysis for barcode scanning
+                val imageAnalysisUseCase = ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
+                    .also { analysis ->
+                        analysis.setAnalyzer(
+                            Executors.newSingleThreadExecutor()
+                        ) { imageProxy ->
+                            processImageProxy(scanner, imageProxy, onBarcodeScanned)
+                        }
+                    }
+                imageAnalyzer = imageAnalysisUseCase
+
+                // Bind use cases to camera
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(
                     lifecycleOwner,

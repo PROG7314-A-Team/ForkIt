@@ -257,7 +257,10 @@ fun DashboardScreen(
                     
                     // Fetch user goals first
                     try {
+                        android.util.Log.d("DashboardActivity", "Fetching user goals for userId: $userId")
                         val goalsResponse = com.example.forkit.data.RetrofitClient.api.getUserGoals(userId)
+                        android.util.Log.d("DashboardActivity", "Goals response code: ${goalsResponse.code()}")
+                        android.util.Log.d("DashboardActivity", "Goals response body: ${goalsResponse.body()}")
                         
                         if (goalsResponse.isSuccessful) {
                             val goals = goalsResponse.body()?.data
@@ -266,6 +269,8 @@ fun DashboardScreen(
                             dailyStepsGoal = goals?.dailySteps ?: 8000
                             weeklyExercisesGoal = goals?.weeklyExercises ?: 3
                             android.util.Log.d("DashboardActivity", "User goals loaded: Calories=$dailyGoal, Water=$dailyWaterGoal")
+                        } else {
+                            android.util.Log.e("DashboardActivity", "Goals API failed: ${goalsResponse.code()} - ${goalsResponse.message()}")
                         }
                     } catch (e: Exception) {
                         android.util.Log.e("DashboardActivity", "Error fetching goals: ${e.message}", e)
@@ -408,7 +413,9 @@ fun DashboardScreen(
                     
                 } catch (e: Exception) {
                     android.util.Log.e("DashboardActivity", "Fatal error loading data: ${e.message}", e)
-                    errorMessage = "Error loading data: ${e.message}\n\nPlease check:\n1. API is running\n2. Network connection\n3. User ID: $userId"
+                    android.util.Log.e("DashboardActivity", "Error details: ${e.javaClass.simpleName}", e)
+                    android.util.Log.e("DashboardActivity", "Stack trace: ${e.stackTrace.joinToString("\n")}")
+                    errorMessage = "Error loading data: ${e.message}\n\nPlease check:\n1. API is running\n2. Network connection\n3. User ID: $userId\n4. Check logs for details"
                 } finally {
                     isRefreshing = false
                     isLoading = false
@@ -783,7 +790,7 @@ fun DashboardScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
                 ) {
-                    if (!isLoading && totalCalories == 0) {
+                    if (!isLoading && consumed == 0.0) {
                         // Empty state when no food logged
                         Column(
                             modifier = Modifier
@@ -823,7 +830,7 @@ fun DashboardScreen(
                                 carbsCalories = carbsCalories.toInt(),
                                 proteinCalories = proteinCalories.toInt(),
                                 fatCalories = fatCalories.toInt(),
-                                totalCalories = totalCalories,
+                                totalCalories = consumed.toInt(),
                                 isLoading = isLoading
                             )
                             
@@ -832,7 +839,7 @@ fun DashboardScreen(
                                 carbsCalories = carbsCalories.toInt(),
                                 proteinCalories = proteinCalories.toInt(),
                                 fatCalories = fatCalories.toInt(),
-                                totalCalories = totalCalories
+                                totalCalories = consumed.toInt()
                             )
                         }
                     }

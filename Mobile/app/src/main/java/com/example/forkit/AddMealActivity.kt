@@ -1,10 +1,6 @@
 package com.example.forkit
 
-import android.Manifest
-import android.R.attr.button
-import android.content.ContentValues.TAG
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -12,9 +8,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.*
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,7 +32,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.data.RetrofitClient
@@ -50,7 +42,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.String
 
 class AddMealActivity : ComponentActivity() {
     companion object {
@@ -180,7 +171,7 @@ fun AddMealScreen(
     // Handle scanned food when it changes
     LaunchedEffect(scannedFood) {
         scannedFood?.let { food ->
-            Log.d(TAG, "switching current screen to adjust")
+            Log.d("AddMealActivity", "switching current screen to adjust")
             // Pre-populate form fields with scanned food data
             foodName = food.name
             calories = food.calories.toString()
@@ -197,7 +188,7 @@ fun AddMealScreen(
     // Handle selected search food when it changes
     LaunchedEffect(selectedSearchFood) {
         selectedSearchFood?.let { food ->
-            Log.d(TAG, "switching current screen to adjust for search food")
+            Log.d("AddMealActivity", "switching current screen to adjust for search food")
             // Pre-populate form fields with selected search food data
             foodName = food.name
             calories = food.calories.toString()
@@ -228,7 +219,7 @@ fun AddMealScreen(
             onBarcodeScan = onBarcodeScan,
             onScannedFood = { food -> 
                 // Handle scanned food - this will be called from the Activity
-                Log.d(TAG, "Received scanned food in main screen: ${food.name}")
+                Log.d("AddMealActivity", "Received scanned food in main screen: ${food.name}")
             },
             onSearchFoodSelected = { food ->
                 selectedSearchFood = food
@@ -590,6 +581,12 @@ fun AddFoodMainScreen(
                                                 val todayDate = apiDateFormatter.format(Date())
                                                 
                                                 // Create food log request with the same details
+                                                // Estimate macronutrients based on calories (rough approximation)
+                                                val totalCalories = item.calories.toDouble()
+                                                val estimatedCarbs = (totalCalories * 0.5) / 4.0 // 50% carbs, 4 cal/g
+                                                val estimatedProtein = (totalCalories * 0.2) / 4.0 // 20% protein, 4 cal/g  
+                                                val estimatedFat = (totalCalories * 0.3) / 9.0 // 30% fat, 9 cal/g
+                                                
                                                 val request = CreateFoodLogRequest(
                                                     userId = userId,
                                                     foodName = item.foodName,
@@ -597,14 +594,16 @@ fun AddFoodMainScreen(
                                                     measuringUnit = item.measuringUnit,
                                                     date = todayDate,
                                                     mealType = item.mealType,
-                                                    calories = item.calories.toDouble(),
-                                                    carbs = 0.0, // Historical data doesn't have macros
-                                                    fat = 0.0,
-                                                    protein = 0.0,
+                                                    calories = totalCalories,
+                                                    carbs = estimatedCarbs,
+                                                    fat = estimatedFat,
+                                                    protein = estimatedProtein,
                                                     foodId = null
                                                 )
                                                 
+                                                Log.d("AddMealActivity", "Creating food log for My Foods: ${item.foodName}, Calories: $totalCalories")
                                                 val response = RetrofitClient.api.createFoodLog(request)
+                                                Log.d("AddMealActivity", "Food log response: ${response.code()}, Success: ${response.body()?.success}")
                                                 
                                                 if (response.isSuccessful && response.body()?.success == true) {
                                                     Toast.makeText(context, "✓ ${item.foodName} added to today!", Toast.LENGTH_SHORT).show()

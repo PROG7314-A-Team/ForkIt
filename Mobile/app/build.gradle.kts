@@ -10,8 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.forkit"
-        minSdk = 33
-       // minSdk = 31
+        minSdk = 31
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -69,7 +68,10 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.3.1")
     implementation("androidx.camera:camera-lifecycle:1.3.1")
     implementation("androidx.camera:camera-view:1.3.1")
-    implementation(libs.androidx.camera.core)
+    implementation("androidx.camera:camera-extensions:1.3.1")
+    
+    // Google Guava for ListenableFuture
+    implementation("com.google.guava:guava:31.1-android")
 
     // Health Connect for step tracking
     implementation("androidx.health.connect:connect-client:1.1.0-alpha07")
