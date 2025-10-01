@@ -105,9 +105,7 @@ fun SignUpScreen() {
                 value = email,
                 onValueChange = { email = it },
                 label = { Text(stringResource(id = R.string.email)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF1E9ECD),
@@ -115,7 +113,9 @@ fun SignUpScreen() {
                     focusedLabelColor = Color(0xFF1E9ECD),
                     unfocusedLabelColor = Color(0xFFB4B4B4)
                 ),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 16.sp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -125,9 +125,7 @@ fun SignUpScreen() {
                 value = password,
                 onValueChange = { password = it },
                 label = { Text(stringResource(id = R.string.password)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF1E9ECD),
@@ -144,7 +142,9 @@ fun SignUpScreen() {
                             fontSize = 20.sp
                         )
                     }
-                }
+                },
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 16.sp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -154,9 +154,7 @@ fun SignUpScreen() {
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
                 label = { Text(stringResource(id = R.string.confirm_password)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF1E9ECD),
@@ -173,7 +171,9 @@ fun SignUpScreen() {
                             fontSize = 20.sp
                         )
                     }
-                }
+                },
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 16.sp)
             )
 
             Spacer(modifier = Modifier.height(32.dp))

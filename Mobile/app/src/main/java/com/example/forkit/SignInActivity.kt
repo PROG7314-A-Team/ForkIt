@@ -107,9 +107,7 @@ fun SignInScreen(prefilledEmail: String = "") {
                 value = email,
                 onValueChange = { email = it },
                 label = { Text(stringResource(id = R.string.email)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF1E9ECD),
@@ -117,7 +115,9 @@ fun SignInScreen(prefilledEmail: String = "") {
                     focusedLabelColor = Color(0xFF1E9ECD),
                     unfocusedLabelColor = Color(0xFFB4B4B4)
                 ),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 16.sp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -127,9 +127,7 @@ fun SignInScreen(prefilledEmail: String = "") {
                 value = password,
                 onValueChange = { password = it },
                 label = { Text(stringResource(id = R.string.password)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF1E9ECD),
@@ -146,7 +144,9 @@ fun SignInScreen(prefilledEmail: String = "") {
                             fontSize = 20.sp
                         )
                     }
-                }
+                },
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 16.sp)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
