@@ -53,7 +53,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -65,6 +65,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.example.forkit.data.RetrofitClient
 import com.example.forkit.ui.theme.ForkItTheme
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 
 class DashboardActivity : ComponentActivity() {
     private var refreshCallback: (() -> Unit)? = null
@@ -255,87 +257,131 @@ fun DashboardScreen(
                     // Refresh step count
                     currentSteps = stepTracker?.fetchTodaySteps() ?: 0
                     
-                    // Fetch user goals first
-                    try {
-                        android.util.Log.d("DashboardActivity", "Fetching user goals for userId: $userId")
-                        val goalsResponse = com.example.forkit.data.RetrofitClient.api.getUserGoals(userId)
-                        android.util.Log.d("DashboardActivity", "Goals response code: ${goalsResponse.code()}")
-                        android.util.Log.d("DashboardActivity", "Goals response body: ${goalsResponse.body()}")
-                        
-                        if (goalsResponse.isSuccessful) {
-                            val goals = goalsResponse.body()?.data
+                    // **OPTIMIZED: Fetch all data in parallel using async**
+                    android.util.Log.d("DashboardActivity", "Starting parallel API calls...")
+                    val startTime = System.currentTimeMillis()
+                    
+                    // Launch all API calls simultaneously
+                    val goalsDeferred = async {
+                        try {
+                            android.util.Log.d("DashboardActivity", "Fetching user goals...")
+                            com.example.forkit.data.RetrofitClient.api.getUserGoals(userId)
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching goals: ${e.message}", e)
+                            null
+                        }
+                    }
+                    
+                    val foodSummaryDeferred = async {
+                        try {
+                            com.example.forkit.data.RetrofitClient.api.getDailyCalorieSummary(userId, todayDate)
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching food summary: ${e.message}", e)
+                            null
+                        }
+                    }
+                    
+                    val exerciseDeferred = async {
+                        try {
+                            com.example.forkit.data.RetrofitClient.api.getDailyExerciseTotal(userId, todayDate)
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching exercise: ${e.message}", e)
+                            null
+                        }
+                    }
+                    
+                    val waterDeferred = async {
+                        try {
+                            com.example.forkit.data.RetrofitClient.api.getDailyWaterTotal(userId, todayDate)
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching water: ${e.message}", e)
+                            null
+                        }
+                    }
+                    
+                    val foodLogsDeferred = async {
+                        try {
+                            com.example.forkit.data.RetrofitClient.api.getFoodLogs(userId, todayDate)
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching food logs: ${e.message}", e)
+                            null
+                        }
+                    }
+                    
+                    val exerciseLogsDeferred = async {
+                        try {
+                            com.example.forkit.data.RetrofitClient.api.getExerciseLogs(userId, todayDate)
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching exercise logs: ${e.message}", e)
+                            null
+                        }
+                    }
+                    
+                    val waterLogsDeferred = async {
+                        try {
+                            com.example.forkit.data.RetrofitClient.api.getWaterLogs(userId, todayDate)
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching water logs: ${e.message}", e)
+                            null
+                        }
+                    }
+                    
+                    // Wait for all API calls to complete in parallel
+                    val goalsResponse = goalsDeferred.await()
+                    val foodSummaryResponse = foodSummaryDeferred.await()
+                    val exerciseResponse = exerciseDeferred.await()
+                    val waterResponse = waterDeferred.await()
+                    val foodLogsResponse = foodLogsDeferred.await()
+                    val exerciseLogsResponse = exerciseLogsDeferred.await()
+                    val waterLogsResponse = waterLogsDeferred.await()
+                    
+                    val endTime = System.currentTimeMillis()
+                    android.util.Log.d("DashboardActivity", "✅ All API calls completed in ${endTime - startTime}ms")
+                    
+                    // Process goals response
+                    goalsResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val goals = response.body()?.data
                             dailyGoal = goals?.dailyCalories ?: 2000
                             dailyWaterGoal = goals?.dailyWater ?: 2000
                             dailyStepsGoal = goals?.dailySteps ?: 8000
                             weeklyExercisesGoal = goals?.weeklyExercises ?: 3
-                            android.util.Log.d("DashboardActivity", "User goals loaded: Calories=$dailyGoal, Water=$dailyWaterGoal")
-                        } else {
-                            android.util.Log.e("DashboardActivity", "Goals API failed: ${goalsResponse.code()} - ${goalsResponse.message()}")
+                            android.util.Log.d("DashboardActivity", "Goals loaded: Calories=$dailyGoal, Water=$dailyWaterGoal")
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.e("DashboardActivity", "Error fetching goals: ${e.message}", e)
-                        // Use defaults if goals fetch fails
                     }
                     
-                    // Fetch daily food summary
-                    try {
-                        val foodSummaryResponse = com.example.forkit.data.RetrofitClient.api.getDailyCalorieSummary(
-                            userId = userId,
-                            date = todayDate
-                        )
-                        
-                        if (foodSummaryResponse.isSuccessful) {
-                            val foodData = foodSummaryResponse.body()?.data
+                    // Process food summary response
+                    foodSummaryResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val foodData = response.body()?.data
                             consumed = foodData?.totalCalories ?: 0.0
                             carbsCalories = (foodData?.totalCarbs ?: 0.0) * 4
                             proteinCalories = (foodData?.totalProtein ?: 0.0) * 4
                             fatCalories = (foodData?.totalFat ?: 0.0) * 9
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.e("DashboardActivity", "Error fetching food summary: ${e.message}", e)
                     }
                     
-                    // Fetch daily exercise total
-                    try {
-                        val exerciseResponse = com.example.forkit.data.RetrofitClient.api.getDailyExerciseTotal(
-                            userId = userId,
-                            date = todayDate
-                        )
-                        
-                        if (exerciseResponse.isSuccessful) {
-                            val exerciseData = exerciseResponse.body()?.data
+                    // Process exercise response
+                    exerciseResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val exerciseData = response.body()?.data
                             burned = exerciseData?.totalCaloriesBurnt ?: 0.0
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.e("DashboardActivity", "Error fetching exercise: ${e.message}", e)
                     }
                     
-                    // Fetch daily water total
-                    try {
-                        val waterResponse = com.example.forkit.data.RetrofitClient.api.getDailyWaterTotal(
-                            userId = userId,
-                            date = todayDate
-                        )
-                        
-                        if (waterResponse.isSuccessful) {
-                            val waterData = waterResponse.body()?.data
+                    // Process water response
+                    waterResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val waterData = response.body()?.data
                             waterAmount = waterData?.totalAmount ?: 0.0
                             waterEntries = waterData?.entries ?: 0
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.e("DashboardActivity", "Error fetching water: ${e.message}", e)
                     }
                     
-                    // Fetch today's food logs only
-                    try {
-                        val todayLogsResponse = com.example.forkit.data.RetrofitClient.api.getFoodLogs(
-                            userId = userId,
-                            date = todayDate
-                        )
-                        
-                        if (todayLogsResponse.isSuccessful) {
-                            val todayLogs = todayLogsResponse.body()?.data ?: emptyList()
-                            // Convert FoodLog to RecentActivityEntry for display
+                    // Process food logs response
+                    foodLogsResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val todayLogs = response.body()?.data ?: emptyList()
                             recentMeals = todayLogs.map { log ->
                                 com.example.forkit.data.models.RecentActivityEntry(
                                     id = log.id,
@@ -346,26 +392,17 @@ fun DashboardScreen(
                                     mealType = log.mealType,
                                     date = log.date,
                                     createdAt = log.createdAt,
-                                    time = log.createdAt.substring(11, 16) // Extract time HH:MM
+                                    time = log.createdAt.substring(11, 16)
                                 )
-                            }.sortedByDescending { it.createdAt } // Most recent first
-                            
-                            android.util.Log.d("DashboardActivity", "Today's meals loaded: ${recentMeals.size} items")
+                            }.sortedByDescending { it.createdAt }
+                            android.util.Log.d("DashboardActivity", "Meals loaded: ${recentMeals.size} items")
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.e("DashboardActivity", "Error fetching today's meals: ${e.message}", e)
                     }
                     
-                    // Fetch today's exercise logs
-                    try {
-                        val todayExerciseLogsResponse = com.example.forkit.data.RetrofitClient.api.getExerciseLogs(
-                            userId = userId,
-                            date = todayDate
-                        )
-                        
-                        if (todayExerciseLogsResponse.isSuccessful) {
-                            val todayExerciseLogs = todayExerciseLogsResponse.body()?.data ?: emptyList()
-                            // Convert ExerciseLog to RecentExerciseActivityEntry for display
+                    // Process exercise logs response
+                    exerciseLogsResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val todayExerciseLogs = response.body()?.data ?: emptyList()
                             recentWorkouts = todayExerciseLogs.map { log ->
                                 com.example.forkit.data.models.RecentExerciseActivityEntry(
                                     id = log.id,
@@ -375,40 +412,28 @@ fun DashboardScreen(
                                     duration = log.duration?.toInt(),
                                     date = log.date,
                                     createdAt = log.createdAt,
-                                    time = log.createdAt.substring(11, 16) // Extract time HH:MM
+                                    time = log.createdAt.substring(11, 16)
                                 )
-                            }.sortedByDescending { it.createdAt } // Most recent first
-                            
-                            android.util.Log.d("DashboardActivity", "Today's workouts loaded: ${recentWorkouts.size} items")
+                            }.sortedByDescending { it.createdAt }
+                            android.util.Log.d("DashboardActivity", "Workouts loaded: ${recentWorkouts.size} items")
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.e("DashboardActivity", "Error fetching today's workouts: ${e.message}", e)
                     }
                     
-                    // Fetch today's water logs
-                    try {
-                        val todayWaterLogsResponse = com.example.forkit.data.RetrofitClient.api.getWaterLogs(
-                            userId = userId,
-                            date = todayDate
-                        )
-                        
-                        if (todayWaterLogsResponse.isSuccessful) {
-                            val todayWaterLogs = todayWaterLogsResponse.body()?.data ?: emptyList()
-                            // Convert WaterLog to RecentWaterActivityEntry for display
+                    // Process water logs response
+                    waterLogsResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val todayWaterLogs = response.body()?.data ?: emptyList()
                             recentWaterLogs = todayWaterLogs.map { log ->
                                 com.example.forkit.data.models.RecentWaterActivityEntry(
                                     id = log.id,
                                     amount = log.amount.toInt(),
                                     date = log.date,
                                     createdAt = log.createdAt,
-                                    time = log.createdAt.substring(11, 16) // Extract time HH:MM
+                                    time = log.createdAt.substring(11, 16)
                                 )
-                            }.sortedByDescending { it.createdAt } // Most recent first
-                            
-                            android.util.Log.d("DashboardActivity", "Today's water logs loaded: ${recentWaterLogs.size} items")
+                            }.sortedByDescending { it.createdAt }
+                            android.util.Log.d("DashboardActivity", "Water logs loaded: ${recentWaterLogs.size} items")
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.e("DashboardActivity", "Error fetching today's water logs: ${e.message}", e)
                     }
                     
                 } catch (e: Exception) {
@@ -747,7 +772,7 @@ fun DashboardScreen(
                         
                         // Progress Bar
                         LinearProgressIndicator(
-                            progress = animatedProgress,
+                            progress = { animatedProgress },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(12.dp)
@@ -899,7 +924,7 @@ fun DashboardScreen(
                                 // Progress bar
                                 val waterProgress = (waterAmount.toFloat() / dailyWaterGoal.toFloat()).coerceIn(0f, 1f)
                                 LinearProgressIndicator(
-                                    progress = waterProgress,
+                                    progress = { waterProgress },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(6.dp)
@@ -971,7 +996,7 @@ fun DashboardScreen(
                                 // Progress bar with actual data
                                 val stepsProgress = (currentSteps.toFloat() / dailyStepsGoal.toFloat()).coerceIn(0f, 1f)
                                 LinearProgressIndicator(
-                                    progress = stepsProgress,
+                                    progress = { stepsProgress },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(6.dp)
