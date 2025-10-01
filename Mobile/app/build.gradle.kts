@@ -10,7 +10,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.forkit"
-        minSdk = 31
+        minSdk = 33
+       // minSdk = 31
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -59,6 +60,16 @@ dependencies {
     // RetroFIt Implementation for API Calls in the application
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // ML Kit Barcode Scanning
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    
+    // CameraX for camera functionality
+    implementation("androidx.camera:camera-core:1.3.1")
+    implementation("androidx.camera:camera-camera2:1.3.1")
+    implementation("androidx.camera:camera-lifecycle:1.3.1")
+    implementation("androidx.camera:camera-view:1.3.1")
+    implementation(libs.androidx.camera.core)
 
     // Health Connect for step tracking
     implementation("androidx.health.connect:connect-client:1.1.0-alpha07")

@@ -67,6 +67,8 @@ import com.example.forkit.ui.theme.ForkItTheme
 import kotlinx.coroutines.launch
 
 class DashboardActivity : ComponentActivity() {
+    private var refreshCallback: (() -> Unit)? = null
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -78,10 +80,17 @@ class DashboardActivity : ComponentActivity() {
             ForkItTheme {
                 DashboardScreen(
                     userId = userId,
-                    initialSelectedTab = initialTab
+                    initialSelectedTab = initialTab,
+                    onRefreshCallbackSet = { callback -> refreshCallback = callback }
                 )
             }
         }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Refresh data when activity resumes (e.g., returning from AddMealActivity)
+        refreshCallback?.invoke()
     }
 }
 
@@ -89,7 +98,8 @@ class DashboardActivity : ComponentActivity() {
 @Composable
 fun DashboardScreen(
     userId: String = "",
-    initialSelectedTab: Int = 0
+    initialSelectedTab: Int = 0,
+    onRefreshCallbackSet: ((() -> Unit) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -432,6 +442,19 @@ fun DashboardScreen(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
+    }
+    
+    // Refresh data when switching to home tab (index 0)
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == 0) {
+            android.util.Log.d("DashboardActivity", "Switched to home tab - refreshing data")
+            refreshData()
+        }
+    }
+    
+    // Set the refresh callback for the activity
+    LaunchedEffect(Unit) {
+        onRefreshCallbackSet?.invoke(refreshData)
     }
     
     Box(

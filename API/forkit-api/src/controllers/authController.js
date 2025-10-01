@@ -35,10 +35,10 @@ const createUser = async (req, res) => {
           streakStartDate: null,
         },
         goals: {
-          dailyCalories: 2000,      // Default calorie goal in kcal
-          dailyWater: 2000,          // Default water goal in ml
-          dailySteps: 8000,          // Default steps goal
-          weeklyExercises: 3,        // Default weekly exercise sessions
+          dailyCalories: 2000, // Default calorie goal in kcal
+          dailyWater: 2000, // Default water goal in ml
+          dailySteps: 8000, // Default steps goal
+          weeklyExercises: 3, // Default weekly exercise sessions
         },
         ...otherData,
         createdAt: new Date(
@@ -94,7 +94,7 @@ const loginUser = async (req, res) => {
   } catch (error) {
     console.error("Login error:", error.response?.data || error.message);
     res.status(401).json({
-      message: "Invalid email or password",
+      message: error.response?.data?.error?.message || error.message,
       error: error.response?.data?.error?.message || error.message,
     });
   }
