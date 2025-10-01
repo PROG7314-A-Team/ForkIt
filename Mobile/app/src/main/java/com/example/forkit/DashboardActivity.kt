@@ -15,6 +15,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.core.content.ContextCompat
 import androidx.health.connect.client.PermissionController
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -105,6 +106,8 @@ fun DashboardScreen(
     var waterAmount by remember { mutableStateOf(0.0) }
     var waterEntries by remember { mutableStateOf(0) }
     var recentMeals by remember { mutableStateOf<List<com.example.forkit.data.models.RecentActivityEntry>>(emptyList()) }
+    var recentWorkouts by remember { mutableStateOf<List<com.example.forkit.data.models.RecentExerciseActivityEntry>>(emptyList()) }
+    var recentWaterLogs by remember { mutableStateOf<List<com.example.forkit.data.models.RecentWaterActivityEntry>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var isRefreshing by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
@@ -336,6 +339,61 @@ fun DashboardScreen(
                         }
                     } catch (e: Exception) {
                         android.util.Log.e("DashboardActivity", "Error fetching today's meals: ${e.message}", e)
+                    }
+                    
+                    // Fetch today's exercise logs
+                    try {
+                        val todayExerciseLogsResponse = com.example.forkit.data.RetrofitClient.api.getExerciseLogs(
+                            userId = userId,
+                            date = todayDate
+                        )
+                        
+                        if (todayExerciseLogsResponse.isSuccessful) {
+                            val todayExerciseLogs = todayExerciseLogsResponse.body()?.data ?: emptyList()
+                            // Convert ExerciseLog to RecentExerciseActivityEntry for display
+                            recentWorkouts = todayExerciseLogs.map { log ->
+                                com.example.forkit.data.models.RecentExerciseActivityEntry(
+                                    id = log.id,
+                                    name = log.name,
+                                    type = log.type,
+                                    caloriesBurnt = log.caloriesBurnt.toInt(),
+                                    duration = log.duration?.toInt(),
+                                    date = log.date,
+                                    createdAt = log.createdAt,
+                                    time = log.createdAt.substring(11, 16) // Extract time HH:MM
+                                )
+                            }.sortedByDescending { it.createdAt } // Most recent first
+                            
+                            android.util.Log.d("DashboardActivity", "Today's workouts loaded: ${recentWorkouts.size} items")
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("DashboardActivity", "Error fetching today's workouts: ${e.message}", e)
+                    }
+                    
+                    // Fetch today's water logs
+                    try {
+                        val todayWaterLogsResponse = com.example.forkit.data.RetrofitClient.api.getWaterLogs(
+                            userId = userId,
+                            date = todayDate
+                        )
+                        
+                        if (todayWaterLogsResponse.isSuccessful) {
+                            val todayWaterLogs = todayWaterLogsResponse.body()?.data ?: emptyList()
+                            // Convert WaterLog to RecentWaterActivityEntry for display
+                            recentWaterLogs = todayWaterLogs.map { log ->
+                                com.example.forkit.data.models.RecentWaterActivityEntry(
+                                    id = log.id,
+                                    amount = log.amount.toInt(),
+                                    date = log.date,
+                                    createdAt = log.createdAt,
+                                    time = log.createdAt.substring(11, 16) // Extract time HH:MM
+                                )
+                            }.sortedByDescending { it.createdAt } // Most recent first
+                            
+                            android.util.Log.d("DashboardActivity", "Today's water logs loaded: ${recentWaterLogs.size} items")
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("DashboardActivity", "Error fetching today's water logs: ${e.message}", e)
                     }
                     
                 } catch (e: Exception) {
@@ -1051,6 +1109,274 @@ fun DashboardScreen(
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
+                // Today's Workouts Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary) // ForkIt blue border
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Today's Workouts",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                        
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.CenterHorizontally),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else if (recentWorkouts.isEmpty()) {
+                            Text(
+                                text = "No workouts logged today",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        } else {
+                            // Display real workout items from API
+                            var workoutToDelete by remember { mutableStateOf<com.example.forkit.data.models.RecentExerciseActivityEntry?>(null) }
+                            
+                            recentWorkouts.forEach { workout ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = workout.name,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "${workout.type} • ${workout.caloriesBurnt} cal${if (workout.duration != null) " • ${workout.duration}min" else ""}",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onBackground
+                                        )
+                                        Text(
+                                            text = workout.time,
+                                            fontSize = 10.sp,
+                                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                    
+                                    IconButton(
+                                        onClick = { workoutToDelete = workout }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete workout",
+                                            tint = Color(0xFFE53935),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Delete confirmation dialog
+                            workoutToDelete?.let { workout ->
+                                AlertDialog(
+                                    onDismissRequest = { workoutToDelete = null },
+                                    title = { 
+                                        Text(
+                                            "Delete Workout?",
+                                            fontWeight = FontWeight.Bold
+                                        ) 
+                                    },
+                                    text = { 
+                                        Text("Are you sure you want to delete \"${workout.name}\" from your log?") 
+                                    },
+                                    confirmButton = {
+                                        TextButton(
+                                            onClick = {
+                                                scope.launch {
+                                                    try {
+                                                        val response = RetrofitClient.api.deleteExerciseLog(workout.id)
+                                                        if (response.isSuccessful && response.body()?.success == true) {
+                                                            // Remove from local list and refresh data
+                                                            recentWorkouts = recentWorkouts.filter { it.id != workout.id }
+                                                            workoutToDelete = null
+                                                            
+                                                            // Refresh dashboard data
+                                                            refreshData()
+                                                            
+                                                            Toast.makeText(context, "Workout deleted successfully", Toast.LENGTH_SHORT).show()
+                                                        } else {
+                                                            Toast.makeText(context, "Failed to delete workout", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            }
+                                        ) {
+                                            Text("Delete", color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
+                                        }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { workoutToDelete = null }) {
+                                            Text("Cancel")
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Today's Water Logs Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(2.dp, Color(0xFF1E9ECD)) // ForkIt blue border
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Today's Water Logs",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E9ECD), // ForkIt blue
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                        
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.CenterHorizontally),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else if (recentWaterLogs.isEmpty()) {
+                            Text(
+                                text = "No water logged today",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        } else {
+                            // Display real water log items from API
+                            var waterLogToDelete by remember { mutableStateOf<com.example.forkit.data.models.RecentWaterActivityEntry?>(null) }
+                            
+                            recentWaterLogs.forEach { waterLog ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = "${waterLog.amount}ml",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "Water intake",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onBackground
+                                        )
+                                        Text(
+                                            text = waterLog.time,
+                                            fontSize = 10.sp,
+                                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                    
+                                    IconButton(
+                                        onClick = { waterLogToDelete = waterLog }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete water log",
+                                            tint = Color(0xFFE53935),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Delete confirmation dialog
+                            waterLogToDelete?.let { waterLog ->
+                                AlertDialog(
+                                    onDismissRequest = { waterLogToDelete = null },
+                                    title = { 
+                                        Text(
+                                            "Delete Water Log?",
+                                            fontWeight = FontWeight.Bold
+                                        ) 
+                                    },
+                                    text = { 
+                                        Text("Are you sure you want to delete ${waterLog.amount}ml of water from your log?") 
+                                    },
+                                    confirmButton = {
+                                        TextButton(
+                                            onClick = {
+                                                scope.launch {
+                                                    try {
+                                                        val response = RetrofitClient.api.deleteWaterLog(waterLog.id)
+                                                        if (response.isSuccessful && response.body()?.success == true) {
+                                                            // Remove from local list and refresh data
+                                                            recentWaterLogs = recentWaterLogs.filter { it.id != waterLog.id }
+                                                            waterLogToDelete = null
+                                                            
+                                                            // Refresh dashboard data
+                                                            refreshData()
+                                                            
+                                                            Toast.makeText(context, "Water log deleted successfully", Toast.LENGTH_SHORT).show()
+                                                        } else {
+                                                            Toast.makeText(context, "Failed to delete water log", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            }
+                                        ) {
+                                            Text("Delete", color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
+                                        }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { waterLogToDelete = null }) {
+                                            Text("Cancel")
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
                         // Bottom padding to ensure last content is visible above navigation
                         Spacer(modifier = Modifier.height(80.dp))
                     }
@@ -1317,7 +1643,9 @@ fun BottomNavigationBar(
     onAddButtonClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding(),
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF22B27D)) // ForkIt Green background
