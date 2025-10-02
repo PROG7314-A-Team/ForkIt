@@ -34,6 +34,10 @@ class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Load theme preference
+        ThemeManager.loadThemeMode(this)
+        
         setContent {
             ForkItTheme {
                 LoginScreen()
@@ -49,7 +53,7 @@ fun LoginScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -94,7 +98,7 @@ fun LoginScreen() {
                 text = stringResource(id = R.string.app_tagline),
                 fontSize = 21.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFB4B4B4), // ForkIt Grey
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center,
                 lineHeight = 20.sp
             )
@@ -107,7 +111,7 @@ fun LoginScreen() {
                     .fillMaxWidth()
                     .height(56.dp)
                     .background(
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(12.dp)
                     )
                     .border(
@@ -128,7 +132,7 @@ fun LoginScreen() {
             ) {
                 Text(
                     text = stringResource(id = R.string.login),
-                    color = Color(0xFF20B2AA), // Teal green text to match gradient
+                    color = Color(0xFF1E9ECD), // ForkIt Blue
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )

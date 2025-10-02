@@ -42,6 +42,9 @@ class SignInActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
+        // Load theme preference
+        ThemeManager.loadThemeMode(this)
+        
         val prefilledEmail = intent.getStringExtra("EMAIL") ?: ""
         
         setContent {
@@ -66,7 +69,7 @@ fun SignInScreen(prefilledEmail: String = "") {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -97,7 +100,7 @@ fun SignInScreen(prefilledEmail: String = "") {
             Text(
                 text = stringResource(id = R.string.create_account_here),
                 fontSize = 16.sp,
-                color = Color(0xFFB4B4B4),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center
             )
 
@@ -112,9 +115,11 @@ fun SignInScreen(prefilledEmail: String = "") {
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF1E9ECD),
-                    unfocusedBorderColor = Color(0xFFB4B4B4),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                     focusedLabelColor = Color(0xFF1E9ECD),
-                    unfocusedLabelColor = Color(0xFFB4B4B4)
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
@@ -132,9 +137,11 @@ fun SignInScreen(prefilledEmail: String = "") {
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF1E9ECD),
-                    unfocusedBorderColor = Color(0xFFB4B4B4),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                     focusedLabelColor = Color(0xFF1E9ECD),
-                    unfocusedLabelColor = Color(0xFFB4B4B4)
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                 ),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -238,7 +245,7 @@ fun SignInScreen(prefilledEmail: String = "") {
             ) {
                 Text(
                     text = stringResource(id = R.string.dont_have_account),
-                    color = Color(0xFFB4B4B4),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                     fontSize = 14.sp
                 )
                 Spacer(modifier = Modifier.width(4.dp))
@@ -262,7 +269,7 @@ fun SignInScreen(prefilledEmail: String = "") {
                     .fillMaxWidth()
                     .height(56.dp)
                     .background(
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(12.dp)
                     )
                     .border(

@@ -36,6 +36,9 @@ class SplashActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
+        // Load theme preference before setting content
+        ThemeManager.loadThemeMode(this)
+        
         setContent {
             ForkItTheme {
                 SplashScreen(

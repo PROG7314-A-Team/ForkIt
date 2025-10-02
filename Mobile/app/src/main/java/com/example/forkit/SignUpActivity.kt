@@ -39,6 +39,10 @@ class SignUpActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Load theme preference
+        ThemeManager.loadThemeMode(this)
+        
         setContent {
             ForkItTheme {
                 SignUpScreen()
@@ -63,7 +67,7 @@ fun SignUpScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -94,7 +98,7 @@ fun SignUpScreen() {
             Text(
                 text = stringResource(id = R.string.create_account_here),
                 fontSize = 16.sp,
-                color = Color(0xFFB4B4B4),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center
             )
 
@@ -109,9 +113,11 @@ fun SignUpScreen() {
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF1E9ECD),
-                    unfocusedBorderColor = Color(0xFFB4B4B4),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                     focusedLabelColor = Color(0xFF1E9ECD),
-                    unfocusedLabelColor = Color(0xFFB4B4B4)
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
@@ -129,9 +135,11 @@ fun SignUpScreen() {
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF1E9ECD),
-                    unfocusedBorderColor = Color(0xFFB4B4B4),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                     focusedLabelColor = Color(0xFF1E9ECD),
-                    unfocusedLabelColor = Color(0xFFB4B4B4)
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                 ),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -158,9 +166,11 @@ fun SignUpScreen() {
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF1E9ECD),
-                    unfocusedBorderColor = Color(0xFFB4B4B4),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                     focusedLabelColor = Color(0xFF1E9ECD),
-                    unfocusedLabelColor = Color(0xFFB4B4B4)
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                 ),
                 visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -259,7 +269,7 @@ fun SignUpScreen() {
             ) {
                 Text(
                     text = stringResource(id = R.string.already_have_account),
-                    color = Color(0xFFB4B4B4),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                     fontSize = 14.sp
                 )
                 Spacer(modifier = Modifier.width(4.dp))
