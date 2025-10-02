@@ -343,4 +343,26 @@ interface ApiService {
     @POST("api/calorie-calculator/individual")
     suspend fun calculateIndividualCalories(@Body request: CalculateIndividualCaloriesRequest): Response<CalculateIndividualCaloriesResponse>
 
+
+    // ==================== HABITS ====================
+
+    // Get Daily Habits
+    @GET("api/habits/daily/{userId}")
+    suspend fun getDailyHabits(@Path("userId") userId: String): Response<HabitsResponse>
+
+    // Get Weekly Habits
+    @GET("api/habits/weekly/{userId}")
+    suspend fun getWeeklyHabits(@Path("userId") userId: String): Response<HabitsResponse>
+
+    // Get Monthly Habits
+    @GET("api/habits/monthly/{userId}")
+    suspend fun getMonthlyHabits(@Path("userId") userId: String): Response<HabitsResponse>
+
+    // Create Habit
+    @POST("api/habits")
+    suspend fun createHabit(@Body request: CreateHabitRequest): Response<HabitResponse>
+
+    // Update Habit
+    @PUT("api/habits/{id}")
+    suspend fun updateHabit(@Path("id") id: String, @Body request: UpdateHabitRequest): Response<HabitResponse>
 }
