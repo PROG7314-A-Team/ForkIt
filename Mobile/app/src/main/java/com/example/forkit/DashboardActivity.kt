@@ -138,10 +138,11 @@ fun DashboardScreen(
     // Calculate totals
     val total = (consumed - burned).toInt()
     
-    // Progress bar calculations
+    // Progress bar calculations - treated as budget (remaining calories)
     val progressPercentage = (consumed.toFloat() / dailyGoal).coerceIn(0f, 1f)
     val caloriesRemaining = (dailyGoal - consumed).toInt()
-    val isGoalReached = consumed >= dailyGoal
+    val isOverBudget = consumed > dailyGoal
+    val isWithinBudget = consumed <= dailyGoal && consumed > 0
     
     // Animated progress for smooth transitions
     val animatedProgress by animateFloatAsState(
@@ -755,7 +756,7 @@ fun DashboardScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Today's Goal Progress",
+                                text = "Today's Calorie Budget",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -764,20 +765,20 @@ fun DashboardScreen(
                                 text = "$consumed / $dailyGoal kcal",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isGoalReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+                                color = if (isOverBudget) Color(0xFFE53935) else MaterialTheme.colorScheme.onBackground
                             )
                         }
                         
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                        // Progress Bar
+                        // Progress Bar - red when over budget, green when within budget
                         LinearProgressIndicator(
                             progress = { animatedProgress },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(12.dp)
                                 .clip(RoundedCornerShape(6.dp)),
-                            color = if (isGoalReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                            color = if (isOverBudget) Color(0xFFE53935) else MaterialTheme.colorScheme.primary,
                             trackColor = MaterialTheme.colorScheme.outline
                         )
                         
@@ -789,15 +790,15 @@ fun DashboardScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "${(animatedProgress * 100).toInt()}% Complete",
+                                text = "${(animatedProgress * 100).toInt()}% Used",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                             Text(
-                                text = if (isGoalReached) "Goal Reached! 🎉" else "$caloriesRemaining kcal remaining",
+                                text = if (isOverBudget) "Over Budget! ⚠️" else if (caloriesRemaining >= 0) "$caloriesRemaining kcal remaining" else "0 kcal remaining",
                                 fontSize = 12.sp,
-                                color = if (isGoalReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
-                                fontWeight = if (isGoalReached) FontWeight.Bold else FontWeight.Normal
+                                color = if (isOverBudget) Color(0xFFE53935) else if (isWithinBudget) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+                                fontWeight = if (isOverBudget) FontWeight.Bold else FontWeight.Normal
                             )
                         }
                     }
@@ -900,7 +901,7 @@ fun DashboardScreen(
                             Text(
                                 text = "Water",
                                 fontSize = 14.sp,
-                                color = Color.White,
+                                color = Color(0xFF333333), // Black text
                                 fontWeight = FontWeight.Medium
                             )
                             
@@ -908,14 +909,14 @@ fun DashboardScreen(
                                 Text(
                                     text = "Loading...",
                                     fontSize = 14.sp,
-                                    color = Color.White.copy(alpha = 0.8f)
+                                    color = Color(0xFF333333).copy(alpha = 0.8f)
                                 )
                             } else {
                                 // Amount and Goal
                                 Text(
                                     text = "${waterAmount.toInt()} / $dailyWaterGoal ml",
                                     fontSize = 16.sp,
-                                    color = Color.White,
+                                    color = Color(0xFF333333), // Black text
                                     fontWeight = FontWeight.Bold
                                 )
                                 
@@ -929,8 +930,8 @@ fun DashboardScreen(
                                         .fillMaxWidth()
                                         .height(6.dp)
                                         .clip(RoundedCornerShape(3.dp)),
-                                    color = Color.White,
-                                    trackColor = Color.White.copy(alpha = 0.3f)
+                                    color = Color(0xFF333333),
+                                    trackColor = Color(0xFF333333).copy(alpha = 0.3f)
                                 )
                                 
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -939,7 +940,7 @@ fun DashboardScreen(
                                 Text(
                                     text = "${(waterProgress * 100).toInt()}%",
                                     fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.9f)
+                                    color = Color(0xFF333333).copy(alpha = 0.9f)
                                 )
                             }
                         }
@@ -1172,7 +1173,7 @@ fun DashboardScreen(
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary) // ForkIt blue border
+                    border = BorderStroke(2.dp, Color(0xFF673AB7)) // Dark purple border
                 ) {
                     Column(
                         modifier = Modifier
@@ -1183,7 +1184,7 @@ fun DashboardScreen(
                             text = "Today's Workouts",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.secondary,
+                            color = Color(0xFF333333), // Black text like meals
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
                         
@@ -1454,13 +1455,8 @@ fun DashboardScreen(
                     Spacer(modifier = Modifier.weight(1f))
                 }
                 4 -> {
-                    // Coach Screen
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                    ) {
-                        CoachScreen()
-                    }
+                    // Coach Screen - Navigate to CoachActivity
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
             
@@ -1471,6 +1467,11 @@ fun DashboardScreen(
                     if (tabIndex == 3) {
                         // Navigate to HabitsActivity
                         val intent = Intent(context, HabitsActivity::class.java)
+                        intent.putExtra("USER_ID", userId)
+                        context.startActivity(intent)
+                    } else if (tabIndex == 4) {
+                        // Navigate to CoachActivity
+                        val intent = Intent(context, CoachActivity::class.java)
                         intent.putExtra("USER_ID", userId)
                         context.startActivity(intent)
                     } else {
@@ -1976,68 +1977,6 @@ fun MealsScreen() {
                 )
                 Text(
                     text = "Meal tracking features will be available here",
-                    fontSize = 14.sp,
-                    color = Color(0xFF666666),
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
-
-
-@Composable
-fun CoachScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "👨‍🏫",
-            fontSize = 64.sp
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Text(
-            text = "Coach",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF22B27D)
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = "Get personalized health guidance",
-            fontSize = 16.sp,
-            color = Color(0xFF666666),
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Coming Soon",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF333333)
-                )
-                Text(
-                    text = "AI coaching features will be available here",
                     fontSize = 14.sp,
                     color = Color(0xFF666666),
                     textAlign = TextAlign.Center

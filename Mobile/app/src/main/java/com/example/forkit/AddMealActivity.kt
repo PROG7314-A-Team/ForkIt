@@ -561,77 +561,86 @@ fun AddFoodMainScreen(
                         )
                     }
                     else -> {
-                        // History items
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        // History items - make scrollable with max height
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 250.dp) // Limit height to prevent taking too much space
                         ) {
-                            historyItems.forEach { item ->
-                                FoodHistoryCard(
-                                    foodName = item.foodName,
-                                    servingInfo = "${item.servingSize} ${item.measuringUnit}",
-                                    date = item.date,
-                                    mealType = item.mealType,
-                                    calories = "${item.calories} kcal",
-                                    onClick = {
-                                        // Quick add the food to today's intake
-                                        scope.launch {
-                                            try {
-                                                // Get today's date
-                                                val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                                                val todayDate = apiDateFormatter.format(Date())
-                                                
-                                                // Create food log request with the same details
-                                                // Estimate macronutrients based on calories (rough approximation)
-                                                val totalCalories = item.calories.toDouble()
-                                                val estimatedCarbs = (totalCalories * 0.5) / 4.0 // 50% carbs, 4 cal/g
-                                                val estimatedProtein = (totalCalories * 0.2) / 4.0 // 20% protein, 4 cal/g  
-                                                val estimatedFat = (totalCalories * 0.3) / 9.0 // 30% fat, 9 cal/g
-                                                
-                                                val request = CreateFoodLogRequest(
-                                                    userId = userId,
-                                                    foodName = item.foodName,
-                                                    servingSize = item.servingSize,
-                                                    measuringUnit = item.measuringUnit,
-                                                    date = todayDate,
-                                                    mealType = item.mealType,
-                                                    calories = totalCalories,
-                                                    carbs = estimatedCarbs,
-                                                    fat = estimatedFat,
-                                                    protein = estimatedProtein,
-                                                    foodId = null
-                                                )
-                                                
-                                                Log.d("AddMealActivity", "Creating food log for My Foods: ${item.foodName}, Calories: $totalCalories")
-                                                val response = RetrofitClient.api.createFoodLog(request)
-                                                Log.d("AddMealActivity", "Food log response: ${response.code()}, Success: ${response.body()?.success}")
-                                                
-                                                if (response.isSuccessful && response.body()?.success == true) {
-                                                    Toast.makeText(context, "✓ ${item.foodName} added to today!", Toast.LENGTH_SHORT).show()
-                                                } else {
-                                                    Toast.makeText(context, "Failed to add food", Toast.LENGTH_SHORT).show()
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                historyItems.forEach { item ->
+                                    FoodHistoryCard(
+                                        foodName = item.foodName,
+                                        servingInfo = "${item.servingSize} ${item.measuringUnit}",
+                                        date = item.date,
+                                        mealType = item.mealType,
+                                        calories = "${item.calories} kcal",
+                                        onClick = {
+                                            // Quick add the food to today's intake
+                                            scope.launch {
+                                                try {
+                                                    // Get today's date
+                                                    val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                                                    val todayDate = apiDateFormatter.format(Date())
+                                                    
+                                                    // Create food log request with the same details
+                                                    // Estimate macronutrients based on calories (rough approximation)
+                                                    val totalCalories = item.calories.toDouble()
+                                                    val estimatedCarbs = (totalCalories * 0.5) / 4.0 // 50% carbs, 4 cal/g
+                                                    val estimatedProtein = (totalCalories * 0.2) / 4.0 // 20% protein, 4 cal/g  
+                                                    val estimatedFat = (totalCalories * 0.3) / 9.0 // 30% fat, 9 cal/g
+                                                    
+                                                    val request = CreateFoodLogRequest(
+                                                        userId = userId,
+                                                        foodName = item.foodName,
+                                                        servingSize = item.servingSize,
+                                                        measuringUnit = item.measuringUnit,
+                                                        date = todayDate,
+                                                        mealType = item.mealType,
+                                                        calories = totalCalories,
+                                                        carbs = estimatedCarbs,
+                                                        fat = estimatedFat,
+                                                        protein = estimatedProtein,
+                                                        foodId = null
+                                                    )
+                                                    
+                                                    Log.d("AddMealActivity", "Creating food log for My Foods: ${item.foodName}, Calories: $totalCalories")
+                                                    val response = RetrofitClient.api.createFoodLog(request)
+                                                    Log.d("AddMealActivity", "Food log response: ${response.code()}, Success: ${response.body()?.success}")
+                                                    
+                                                    if (response.isSuccessful && response.body()?.success == true) {
+                                                        Toast.makeText(context, "✓ ${item.foodName} added to today!", Toast.LENGTH_SHORT).show()
+                                                    } else {
+                                                        Toast.makeText(context, "Failed to add food", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                } catch (e: Exception) {
+                                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                                                 }
-                                            } catch (e: Exception) {
-                                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                            }
+                                        },
+                                        onDelete = {
+                                            scope.launch {
+                                                try {
+                                                    val response = RetrofitClient.api.deleteFoodLog(item.id)
+                                                    if (response.isSuccessful && response.body()?.success == true) {
+                                                        // Remove from local list
+                                                        historyItems = historyItems.filter { it.id != item.id }
+                                                        Toast.makeText(context, "Food deleted successfully", Toast.LENGTH_SHORT).show()
+                                                    } else {
+                                                        Toast.makeText(context, "Failed to delete food", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                } catch (e: Exception) {
+                                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                }
                                             }
                                         }
-                                    },
-                                    onDelete = {
-                                        scope.launch {
-                                            try {
-                                                val response = RetrofitClient.api.deleteFoodLog(item.id)
-                                                if (response.isSuccessful && response.body()?.success == true) {
-                                                    // Remove from local list
-                                                    historyItems = historyItems.filter { it.id != item.id }
-                                                    Toast.makeText(context, "Food deleted successfully", Toast.LENGTH_SHORT).show()
-                                                } else {
-                                                    Toast.makeText(context, "Failed to delete food", Toast.LENGTH_SHORT).show()
-                                                }
-                                            } catch (e: Exception) {
-                                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-                                    }
-                                )
+                                    )
+                                }
                             }
                         }
                     }

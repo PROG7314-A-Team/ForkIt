@@ -297,10 +297,9 @@ fun HabitsScreen(
                         // Already on Habits - do nothing
                     }
                     4 -> {
-                        // Coach - Navigate to Dashboard and select Coach tab
-                        val intent = Intent(context, DashboardActivity::class.java)
+                        // Coach - Navigate to CoachActivity
+                        val intent = Intent(context, CoachActivity::class.java)
                         intent.putExtra("USER_ID", userId)
-                        intent.putExtra("SELECTED_TAB", 4)
                         context.startActivity(intent)
                     }
                 }

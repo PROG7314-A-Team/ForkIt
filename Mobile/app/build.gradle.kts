@@ -77,6 +77,10 @@ dependencies {
     // Health Connect for step tracking
     implementation("androidx.health.connect:connect-client:1.1.0-alpha07")
 
+    // Vico charting library for graphs
+    implementation("com.patrykandpatrick.vico:compose:2.0.0-alpha.28")
+    implementation("com.patrykandpatrick.vico:compose-m3:2.0.0-alpha.28")
+    implementation("com.patrykandpatrick.vico:core:2.0.0-alpha.28")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
