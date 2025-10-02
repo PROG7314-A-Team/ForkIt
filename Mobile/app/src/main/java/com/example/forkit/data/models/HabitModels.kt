@@ -33,6 +33,35 @@ data class HabitCompletion(
     val date: LocalDate
 )
 
+// API Request Models
+data class CreateHabitRequest(
+    val title: String,
+    val description: String? = null,
+    val category: HabitCategory = HabitCategory.GENERAL,
+    val frequency: HabitFrequency = HabitFrequency.DAILY
+)
+
+data class UpdateHabitRequest(
+    val title: String? = null,
+    val description: String? = null,
+    val isCompleted: Boolean? = null,
+    val category: HabitCategory? = null,
+    val frequency: HabitFrequency? = null
+)
+
+// API Response Models
+data class HabitResponse(
+    val success: Boolean,
+    val message: String,
+    val data: Habit? = null
+)
+
+data class HabitsResponse(
+    val success: Boolean,
+    val message: String,
+    val data: List<Habit> = emptyList()
+)
+
 // Mock data for testing
 object MockHabits {
     fun getTodayHabits(): List<Habit> = listOf(

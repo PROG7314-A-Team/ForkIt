@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -42,6 +44,10 @@ import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.data.models.Habit
 import com.example.forkit.data.models.MockHabits
+import com.example.forkit.data.RetrofitClient
+import com.example.forkit.data.models.HabitsResponse
+import com.example.forkit.data.models.UpdateHabitRequest
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
 class HabitsActivity : ComponentActivity() {
@@ -69,16 +75,74 @@ fun HabitsScreen(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var selectedTimeFilter by remember { mutableStateOf(0) } // 0: Today, 1: Weekly, 2: Monthly
-    var habits by remember { mutableStateOf(MockHabits.getTodayHabits()) }
+    var habits by remember { mutableStateOf<List<Habit>>(emptyList()) }
     var showFloatingIcons by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
     
-    // Update habits when time filter changes
-    LaunchedEffect(selectedTimeFilter) {
-        habits = when (selectedTimeFilter) {
-            0 -> MockHabits.getTodayHabits()
-            1 -> MockHabits.getWeeklyHabits()
-            2 -> MockHabits.getMonthlyHabits()
-            else -> MockHabits.getTodayHabits()
+    // Function to fetch habits from API
+    val fetchHabits: () -> Unit = {
+        scope.launch {
+            try {
+                isLoading = true
+                errorMessage = null
+                android.util.Log.d("HabitsActivity", "Fetching habits for userId: $userId, filter: $selectedTimeFilter")
+                
+                val response = when (selectedTimeFilter) {
+                    0 -> RetrofitClient.api.getDailyHabits(userId)
+                    1 -> RetrofitClient.api.getWeeklyHabits(userId)
+                    2 -> RetrofitClient.api.getMonthlyHabits(userId)
+                    else -> RetrofitClient.api.getDailyHabits(userId)
+                }
+                
+                if (response.isSuccessful) {
+                    val habitsResponse = response.body()
+                    if (habitsResponse?.success == true) {
+                        habits = habitsResponse.data
+                        android.util.Log.d("HabitsActivity", "Successfully loaded ${habits.size} habits")
+                    } else {
+                        errorMessage = habitsResponse?.message ?: "Failed to load habits"
+                        android.util.Log.e("HabitsActivity", "API error: ${habitsResponse?.message}")
+                        // Fallback to mock data for now
+                        habits = when (selectedTimeFilter) {
+                            0 -> MockHabits.getTodayHabits()
+                            1 -> MockHabits.getWeeklyHabits()
+                            2 -> MockHabits.getMonthlyHabits()
+                            else -> MockHabits.getTodayHabits()
+                        }
+                    }
+                } else {
+                    errorMessage = "Network error: ${response.code()}"
+                    android.util.Log.e("HabitsActivity", "Network error: ${response.code()}")
+                    // Fallback to mock data for now
+                    habits = when (selectedTimeFilter) {
+                        0 -> MockHabits.getTodayHabits()
+                        1 -> MockHabits.getWeeklyHabits()
+                        2 -> MockHabits.getMonthlyHabits()
+                        else -> MockHabits.getTodayHabits()
+                    }
+                }
+            } catch (e: Exception) {
+                errorMessage = "Error: ${e.message}"
+                android.util.Log.e("HabitsActivity", "Exception loading habits: ${e.message}", e)
+                // Fallback to mock data for now
+                habits = when (selectedTimeFilter) {
+                    0 -> MockHabits.getTodayHabits()
+                    1 -> MockHabits.getWeeklyHabits()
+                    2 -> MockHabits.getMonthlyHabits()
+                    else -> MockHabits.getTodayHabits()
+                }
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+    
+    // Update habits when time filter changes or component loads
+    LaunchedEffect(selectedTimeFilter, userId) {
+        if (userId.isNotEmpty()) {
+            fetchHabits()
         }
     }
     
@@ -115,6 +179,23 @@ fun HabitsScreen(
                 )
                 
                 Spacer(modifier = Modifier.weight(1f))
+                
+                // Refresh button
+                IconButton(
+                    onClick = { fetchHabits() },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Refresh",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .rotate(if (isLoading) 360f else 0f)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(8.dp))
                 
                 // New Habit button
                 Box(
@@ -203,6 +284,49 @@ fun HabitsScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+            // Loading state
+            if (isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+            // Error message
+            else if (errorMessage != null) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                        border = BorderStroke(1.dp, Color(0xFFE57373))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Error",
+                                tint = Color(0xFFD32F2F),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Using offline data: $errorMessage",
+                                color = Color(0xFFD32F2F),
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+            }
             // Todo Section
             item {
                 Text(
@@ -219,14 +343,53 @@ fun HabitsScreen(
                 HabitItem(
                     habit = habit,
                     isCompleted = false,
+                    isLoading = isLoading,
                     onToggleComplete = { habitId ->
-                        habits = habits.map { h ->
-                            if (h.id == habitId) {
-                                h.copy(
-                                    isCompleted = !h.isCompleted,
-                                    completedAt = if (!h.isCompleted) LocalDateTime.now() else null
-                                )
-                            } else h
+                        scope.launch {
+                            try {
+                                val habitToUpdate = habits.find { it.id == habitId }
+                                if (habitToUpdate != null) {
+                                    val updateRequest = UpdateHabitRequest(
+                                        isCompleted = !habitToUpdate.isCompleted
+                                    )
+                                    val response = RetrofitClient.api.updateHabit(habitId, updateRequest)
+                                    
+                                    if (response.isSuccessful && response.body()?.success == true) {
+                                        // Update local state
+                                        habits = habits.map { h ->
+                                            if (h.id == habitId) {
+                                                h.copy(
+                                                    isCompleted = !h.isCompleted,
+                                                    completedAt = if (!h.isCompleted) LocalDateTime.now() else null
+                                                )
+                                            } else h
+                                        }
+                                        android.util.Log.d("HabitsActivity", "Successfully updated habit: $habitId")
+                                    } else {
+                                        android.util.Log.e("HabitsActivity", "Failed to update habit: ${response.body()?.message}")
+                                        // Still update locally for better UX
+                                        habits = habits.map { h ->
+                                            if (h.id == habitId) {
+                                                h.copy(
+                                                    isCompleted = !h.isCompleted,
+                                                    completedAt = if (!h.isCompleted) LocalDateTime.now() else null
+                                                )
+                                            } else h
+                                        }
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("HabitsActivity", "Error updating habit: ${e.message}", e)
+                                // Still update locally for better UX
+                                habits = habits.map { h ->
+                                    if (h.id == habitId) {
+                                        h.copy(
+                                            isCompleted = !h.isCompleted,
+                                            completedAt = if (!h.isCompleted) LocalDateTime.now() else null
+                                        )
+                                    } else h
+                                }
+                            }
                         }
                     }
                 )
@@ -250,14 +413,53 @@ fun HabitsScreen(
                     HabitItem(
                         habit = habit,
                         isCompleted = true,
+                        isLoading = isLoading,
                         onToggleComplete = { habitId ->
-                            habits = habits.map { h ->
-                                if (h.id == habitId) {
-                                    h.copy(
-                                        isCompleted = !h.isCompleted,
-                                        completedAt = if (!h.isCompleted) LocalDateTime.now() else null
-                                    )
-                                } else h
+                            scope.launch {
+                                try {
+                                    val habitToUpdate = habits.find { it.id == habitId }
+                                    if (habitToUpdate != null) {
+                                        val updateRequest = UpdateHabitRequest(
+                                            isCompleted = !habitToUpdate.isCompleted
+                                        )
+                                        val response = RetrofitClient.api.updateHabit(habitId, updateRequest)
+                                        
+                                        if (response.isSuccessful && response.body()?.success == true) {
+                                            // Update local state
+                                            habits = habits.map { h ->
+                                                if (h.id == habitId) {
+                                                    h.copy(
+                                                        isCompleted = !h.isCompleted,
+                                                        completedAt = if (!h.isCompleted) LocalDateTime.now() else null
+                                                    )
+                                                } else h
+                                            }
+                                            android.util.Log.d("HabitsActivity", "Successfully updated habit: $habitId")
+                                        } else {
+                                            android.util.Log.e("HabitsActivity", "Failed to update habit: ${response.body()?.message}")
+                                            // Still update locally for better UX
+                                            habits = habits.map { h ->
+                                                if (h.id == habitId) {
+                                                    h.copy(
+                                                        isCompleted = !h.isCompleted,
+                                                        completedAt = if (!h.isCompleted) LocalDateTime.now() else null
+                                                    )
+                                                } else h
+                                            }
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    android.util.Log.e("HabitsActivity", "Error updating habit: ${e.message}", e)
+                                    // Still update locally for better UX
+                                    habits = habits.map { h ->
+                                        if (h.id == habitId) {
+                                            h.copy(
+                                                isCompleted = !h.isCompleted,
+                                                completedAt = if (!h.isCompleted) LocalDateTime.now() else null
+                                            )
+                                        } else h
+                                    }
+                                }
                             }
                         }
                     )
@@ -333,6 +535,7 @@ fun HabitsScreen(
 fun HabitItem(
     habit: Habit,
     isCompleted: Boolean,
+    isLoading: Boolean = false,
     onToggleComplete: (String) -> Unit
 ) {
     Box(
@@ -348,7 +551,11 @@ fun HabitItem(
                 color = if (isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
                 shape = RoundedCornerShape(16.dp)
             )
-            .clickable { onToggleComplete(habit.id) }
+            .clickable { 
+                if (!isLoading) {
+                    onToggleComplete(habit.id) 
+                }
+            }
     ) {
         Row(
             modifier = Modifier
