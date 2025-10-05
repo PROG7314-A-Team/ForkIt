@@ -177,3 +177,77 @@ exports.deleteUser = async (req, res) => {
     });
   }
 };
+
+// UPDATE user profile (age, height, weight)
+exports.updateUserProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { age, height, weight } = req.body;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    if (!age || !height || !weight) {
+      return res.status(400).json({
+        success: false,
+        message: "Age, height, and weight are required",
+      });
+    }
+
+    // Validate profile data
+    if (age < 1 || age > 120) {
+      return res.status(400).json({
+        success: false,
+        message: "Age must be between 1 and 120",
+      });
+    }
+
+    if (height < 50 || height > 250) {
+      return res.status(400).json({
+        success: false,
+        message: "Height must be between 50 and 250 cm",
+      });
+    }
+
+    if (weight < 20 || weight > 300) {
+      return res.status(400).json({
+        success: false,
+        message: "Weight must be between 20 and 300 kg",
+      });
+    }
+
+    // Update user profile data
+    const updateData = {
+      age: parseInt(age),
+      height: parseFloat(height),
+      weight: parseFloat(weight),
+      profileUpdatedAt: new Date().toISOString(),
+    };
+
+    const updatedUser = await userService.update(id, updateData);
+
+    if (updatedUser) {
+      res.json({
+        success: true,
+        data: updatedUser,
+        message: "User profile updated successfully",
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "Failed to update user profile",
+      });
+    }
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Failed to update user profile",
+    });
+  }
+};

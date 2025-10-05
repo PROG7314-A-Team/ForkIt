@@ -77,3 +77,16 @@ data class UpdateUserGoalsResponse(
     val message: String,
     val data: UserGoals
 )
+
+// Update user profile (age, height, weight)
+data class UpdateUserProfileRequest(
+    val age: Int,
+    val height: Double,
+    val weight: Double
+)
+
+data class UpdateUserProfileResponse(
+    val success: Boolean,
+    val message: String,
+    val data: User
+)

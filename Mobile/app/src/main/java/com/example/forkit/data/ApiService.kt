@@ -33,6 +33,10 @@ interface ApiService {
     @PUT("api/users/{id}")
     suspend fun updateUser(@Path("id") userId: String, @Body request: UpdateUserRequest): Response<UpdateUserResponse>
 
+    // Update user profile (age, height, weight)
+    @PUT("api/users/{id}/profile")
+    suspend fun updateUserProfile(@Path("id") userId: String, @Body request: UpdateUserProfileRequest): Response<UpdateUserProfileResponse>
+
     // Delete user
     @DELETE("api/users/{id}")
     suspend fun deleteUser(@Path("id") userId: String): Response<DeleteUserResponse>

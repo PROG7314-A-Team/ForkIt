@@ -2,6 +2,7 @@ package com.example.forkit
 
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
  import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -374,6 +375,7 @@ fun AddHabitScreen(
                         if (!isLoading) {
                             scope.launch {
                                 createHabit(
+                                    context = context,
                                     userId = userId,
                                     habitName = habitName,
                                     selectedRepeat = selectedRepeat,
@@ -492,6 +494,7 @@ fun DatePickerDialog(
 }
 
 private suspend fun createHabit(
+    context: Context,
     userId: String,
     habitName: String,
     selectedRepeat: Int,
@@ -560,6 +563,7 @@ private suspend fun createHabit(
         
         if (response.isSuccessful && response.body()?.success == true) {
             android.util.Log.d("AddHabitActivity", "Habit created successfully")
+            Toast.makeText(context, "Habit created successfully! 🎉", Toast.LENGTH_SHORT).show()
             onSuccess()
         } else {
             val errorBody = response.errorBody()?.string()
@@ -567,11 +571,14 @@ private suspend fun createHabit(
             
             val errorMsg = response.body()?.message ?: "Failed to create habit (Code: ${response.code()})"
             android.util.Log.e("AddHabitActivity", "Failed to create habit: $errorMsg")
+            Toast.makeText(context, "Failed to create habit: $errorMsg", Toast.LENGTH_LONG).show()
             errorMessage(errorMsg)
         }
         
     } catch (e: Exception) {
-        errorMessage("Error creating habit: ${e.message}")
+        val errorMsg = "Error creating habit: ${e.message}"
+        Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+        errorMessage(errorMsg)
     } finally {
         isLoading(false)
     }

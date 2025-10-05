@@ -171,5 +171,17 @@
       android:label="Scan Barcode"
       android:theme="@style/Theme.ForkIt"
     />
+    <activity
+      android:name=".TellUsAboutYourselfActivity"
+      android:exported="false"
+      android:label="Onboarding"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".SetGoalsActivity"
+      android:exported="false"
+      android:label="Set Goals"
+      android:theme="@style/Theme.ForkIt"
+    />
   </application>
 </manifest>

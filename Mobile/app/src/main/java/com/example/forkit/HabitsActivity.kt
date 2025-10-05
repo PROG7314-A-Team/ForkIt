@@ -51,6 +51,8 @@ import com.example.forkit.data.models.UpdateHabitRequest
 import kotlinx.coroutines.launch
 
 class HabitsActivity : ComponentActivity() {
+    private var refreshTrigger by mutableStateOf(0)
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -61,16 +63,24 @@ class HabitsActivity : ComponentActivity() {
             ForkItTheme {
                 HabitsScreen(
                     userId = userId,
+                    refreshTrigger = refreshTrigger,
                     onBackPressed = { finish() }
                 )
             }
         }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Trigger refresh when returning to this activity
+        refreshTrigger++
     }
 }
 
 @Composable
 fun HabitsScreen(
     userId: String,
+    refreshTrigger: Int,
     onBackPressed: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -163,8 +173,8 @@ fun HabitsScreen(
         }
     }
     
-    // Update habits when time filter changes or component loads
-    LaunchedEffect(selectedTimeFilter, userId) {
+    // Update habits when time filter changes, component loads, or refresh is triggered
+    LaunchedEffect(selectedTimeFilter, userId, refreshTrigger) {
         if (userId.isNotEmpty()) {
             fetchHabits()
         }
@@ -235,6 +245,7 @@ fun HabitsScreen(
                         )
                         .clickable { 
                             val intent = Intent(context, AddHabitActivity::class.java)
+                            intent.putExtra("USER_ID", userId)
                             context.startActivity(intent)
                         }
                         .padding(horizontal = 16.dp, vertical = 8.dp)

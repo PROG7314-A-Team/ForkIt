@@ -219,9 +219,9 @@ fun SignUpScreen() {
                                 if (response.isSuccessful) {
                                     val body = response.body()
                                     message = body?.message ?: "Registered successfully"
-                                    // Navigate to SignInActivity with email prefilled
-                                    val intent = Intent(context, SignInActivity::class.java)
-                                    intent.putExtra("EMAIL", email)
+                                    // Navigate to onboarding flow for new users
+                                    val intent = Intent(context, TellUsAboutYourselfActivity::class.java)
+                                    intent.putExtra("USER_ID", body?.uid)
                                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                     context.startActivity(intent)
                                     (context as? ComponentActivity)?.finish()
