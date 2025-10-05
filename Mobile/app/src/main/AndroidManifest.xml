@@ -110,6 +110,13 @@
       android:theme="@style/Theme.ForkIt"
     />
     <activity
+        android:name=".ui.meals.MealsActivity"
+        android:exported="false"
+        android:label="Add Meal with Ingredients"
+        android:theme="@style/Theme.ForkIt"
+        />
+
+    <activity
       android:name=".AddWaterActivity"
       android:exported="false"
       android:label="Add Water"

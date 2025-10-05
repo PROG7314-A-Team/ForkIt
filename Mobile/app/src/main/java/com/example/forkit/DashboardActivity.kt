@@ -1,4 +1,7 @@
 package com.example.forkit
+import com.example.forkit.*
+import com.example.forkit.ui.meals.MealsScreen
+
 
 import android.Manifest
 import android.content.Intent
@@ -1438,14 +1441,17 @@ fun DashboardScreen(
                     }
                 }
                 1 -> {
-                    // Meals Screen
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                    ) {
-                        MealsScreen()
+                    Box(modifier = Modifier.weight(1f)) {
+                        MealsScreen(
+                            userId = userId,
+                            onMealSelected = { /* TODO */ },
+                            onAddMealClicked = { /* TODO */ }
+                        )
                     }
                 }
+
+
+
                 2 -> {
                     // Add functionality is handled below
                     Spacer(modifier = Modifier.weight(1f))
@@ -1921,67 +1927,6 @@ fun FloatingIcon(
                 modifier = Modifier.size(24.dp),
                 colorFilter = ColorFilter.tint(Color.White) // White icon on green background
             )
-        }
-    }
-}
-
-@Composable
-fun MealsScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "🍽️",
-            fontSize = 64.sp
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Text(
-            text = "Meals",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF22B27D)
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = "Track your meals and nutrition",
-            fontSize = 16.sp,
-            color = Color(0xFF666666),
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Coming Soon",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF333333)
-                )
-                Text(
-                    text = "Meal tracking features will be available here",
-                    fontSize = 14.sp,
-                    color = Color(0xFF666666),
-                    textAlign = TextAlign.Center
-                )
-            }
         }
     }
 }
