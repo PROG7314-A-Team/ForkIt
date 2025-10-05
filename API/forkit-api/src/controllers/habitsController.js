@@ -1,5 +1,7 @@
 const firebaseService = require("../services/firebaseService");
+const HabitSchedulingService = require("../services/habitSchedulingService");
 const habitsService = new firebaseService("habits");
+const habitSchedulingService = new HabitSchedulingService();
 
 exports.getDailyHabits = async (req, res) => {
   try {
@@ -10,11 +12,7 @@ exports.getDailyHabits = async (req, res) => {
       data: []
     });
     
-    const habits = await habitsService.getByUserId(userId);
-    // Filter for daily habits (assuming frequency field or type field exists)
-    const dailyHabits = habits.filter(habit => 
-      habit.frequency === 'DAILY' || habit.type === 'daily' || !habit.frequency
-    );
+    const dailyHabits = await habitSchedulingService.getDailyHabits(userId);
     
     res.json({
       success: true,
@@ -40,11 +38,7 @@ exports.getWeeklyHabits = async (req, res) => {
       data: []
     });
     
-    const habits = await habitsService.getByUserId(userId);
-    // Filter for weekly habits
-    const weeklyHabits = habits.filter(habit => 
-      habit.frequency === 'WEEKLY' || habit.type === 'weekly'
-    );
+    const weeklyHabits = await habitSchedulingService.getWeeklyHabits(userId);
     
     res.json({
       success: true,
@@ -71,11 +65,7 @@ exports.getMonthlyHabits = async (req, res) => {
       data: []
     });
     
-    const habits = await habitsService.getByUserId(userId);
-    // Filter for monthly habits
-    const monthlyHabits = habits.filter(habit => 
-      habit.frequency === 'MONTHLY' || habit.type === 'monthly'
-    );
+    const monthlyHabits = await habitSchedulingService.getMonthlyHabits(userId);
     
     res.json({
       success: true,
@@ -106,12 +96,7 @@ exports.createHabit = async (req, res) => {
       message: "Habit is required" 
     });
     
-    const habitData = {
-        userId,
-        ...habit
-    };
-    
-    const createdHabit = await habitsService.create(habitData);
+    const createdHabit = await habitSchedulingService.createHabit(userId, habit);
     
     res.status(201).json({
       success: true,
@@ -132,6 +117,34 @@ exports.updateHabit = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
     
+    // Handle completion/uncompletion separately from other updates
+    if (updateData.isCompleted !== undefined) {
+      // Get the habit to find userId
+      const habitDoc = await habitsService.getById(id);
+      if (!habitDoc || !habitDoc.data()) {
+        return res.status(404).json({
+          success: false,
+          message: "Habit not found"
+        });
+      }
+      
+      const userId = habitDoc.data().userId;
+      let result;
+      
+      if (updateData.isCompleted) {
+        result = await habitSchedulingService.completeHabit(id, userId);
+      } else {
+        result = await habitSchedulingService.uncompleteHabit(id, userId);
+      }
+      
+      return res.json({
+        success: true,
+        message: updateData.isCompleted ? "Habit completed successfully" : "Habit uncompleted successfully",
+        data: result
+      });
+    }
+    
+    // Handle other updates (title, description, etc.)
     const updatedHabit = await habitsService.update(id, updateData);
     
     res.json({

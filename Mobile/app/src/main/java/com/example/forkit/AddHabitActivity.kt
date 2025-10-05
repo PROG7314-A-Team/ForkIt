@@ -532,7 +532,9 @@ private suspend fun createHabit(
                 else -> ""
             },
             category = categories[selectedCategory],
-            frequency = frequencies[selectedRepeat]
+            frequency = frequencies[selectedRepeat],
+            selectedDays = if (selectedRepeat == 1) selectedDays.toList() else null,
+            dayOfMonth = if (selectedRepeat == 2) selectedDayOfMonth?.dayOfMonth else null
         )
         
         val response = RetrofitClient.api.createHabit(

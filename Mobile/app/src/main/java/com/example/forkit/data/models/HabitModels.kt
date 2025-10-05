@@ -11,7 +11,9 @@ data class Habit(
     val completedAt: LocalDateTime? = null,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val category: HabitCategory = HabitCategory.GENERAL,
-    val frequency: HabitFrequency = HabitFrequency.DAILY
+    val frequency: HabitFrequency = HabitFrequency.DAILY,
+    val selectedDays: List<Int>? = null, // For weekly habits (0-6, Sunday-Saturday)
+    val dayOfMonth: Int? = null // For monthly habits (1-31)
 )
 
 enum class HabitCategory {
@@ -38,7 +40,9 @@ data class CreateHabitRequest(
     val title: String,
     val description: String? = null,
     val category: HabitCategory = HabitCategory.GENERAL,
-    val frequency: HabitFrequency = HabitFrequency.DAILY
+    val frequency: HabitFrequency = HabitFrequency.DAILY,
+    val selectedDays: List<Int>? = null, // For weekly habits (0-6, Sunday-Saturday)
+    val dayOfMonth: Int? = null // For monthly habits (1-31)
 )
 
 data class CreateHabitApiRequest(
