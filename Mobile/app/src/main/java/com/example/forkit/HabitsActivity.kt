@@ -48,6 +48,8 @@ import com.example.forkit.data.models.MockHabits
 import com.example.forkit.data.RetrofitClient
 import com.example.forkit.data.models.HabitsResponse
 import com.example.forkit.data.models.UpdateHabitRequest
+import com.example.forkit.services.HabitNotificationScheduler
+import com.example.forkit.services.HabitNotificationHelper
 import kotlinx.coroutines.launch
 
 class HabitsActivity : ComponentActivity() {
@@ -74,6 +76,16 @@ class HabitsActivity : ComponentActivity() {
         super.onResume()
         // Trigger refresh when returning to this activity
         refreshTrigger++
+        
+        // Schedule notifications if enabled
+        val userId = intent.getStringExtra("USER_ID") ?: ""
+        if (userId.isNotEmpty()) {
+            val notificationHelper = HabitNotificationHelper(this)
+            if (notificationHelper.areNotificationsEnabled()) {
+                val scheduler = HabitNotificationScheduler(this)
+                scheduler.scheduleAllNotifications(userId)
+            }
+        }
     }
 }
 
@@ -200,7 +212,7 @@ fun HabitsScreen(
                 // "Your Habits" title with gradient
                 Text(
                     text = "Your Habits",
-                    fontSize = 24.sp,
+                    fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     style = TextStyle(
                         brush = Brush.horizontalGradient(

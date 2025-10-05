@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -164,9 +165,16 @@ fun CoachMainScreen(
         // Header
         Text(
             text = "Coach",
-            fontSize = 28.sp,
+            fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
+            style = androidx.compose.ui.text.TextStyle(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.secondary
+                    )
+                )
+            ),
             modifier = Modifier.padding(vertical = 16.dp)
         )
         
@@ -181,7 +189,7 @@ fun CoachMainScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp)
+                .height(150.dp)
                 .clickable { onNavigateToCalories() },
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -212,24 +220,31 @@ fun CoachMainScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "🍽️",
-                            fontSize = 32.sp
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_meals),
+                            contentDescription = "Calorie Tracking",
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                            modifier = Modifier.size(48.dp)
                         )
-                        Text(
-                            text = "Calorie Tracking",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Track your daily budget",
-                            fontSize = 12.sp,
-                            color = Color(0xFF666666)
-                        )
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Calorie Tracking",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Track your daily budget",
+                                fontSize = 14.sp,
+                                color = Color(0xFF666666)
+                            )
+                        }
                     }
                     Text(
                         text = "→",
@@ -246,7 +261,7 @@ fun CoachMainScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp)
+                .height(150.dp)
                 .clickable { onNavigateToWater() },
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -277,24 +292,31 @@ fun CoachMainScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "💧",
-                            fontSize = 32.sp
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_water),
+                            contentDescription = "Water Tracking",
+                            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
+                            modifier = Modifier.size(48.dp)
                         )
-                        Text(
-                            text = "Water Tracking",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                        Text(
-                            text = "Monitor your hydration",
-                            fontSize = 12.sp,
-                            color = Color(0xFF666666)
-                        )
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Water Tracking",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                            Text(
+                                text = "Monitor your hydration",
+                                fontSize = 14.sp,
+                                color = Color(0xFF666666)
+                            )
+                        }
                     }
                     Text(
                         text = "→",
@@ -311,7 +333,7 @@ fun CoachMainScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp)
+                .height(150.dp)
                 .clickable { onNavigateToWorkouts() },
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -342,24 +364,31 @@ fun CoachMainScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "💪",
-                            fontSize = 32.sp
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_workout),
+                            contentDescription = "Workout Tracking",
+                            tint = Color(0xFF673AB7).copy(alpha = 0.7f),
+                            modifier = Modifier.size(48.dp)
                         )
-                        Text(
-                            text = "Workout Tracking",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF673AB7)
-                        )
-                        Text(
-                            text = "Track your exercises",
-                            fontSize = 12.sp,
-                            color = Color(0xFF666666)
-                        )
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Workout Tracking",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF673AB7)
+                            )
+                            Text(
+                                text = "Track your exercises",
+                                fontSize = 14.sp,
+                                color = Color(0xFF666666)
+                            )
+                        }
                     }
                     Text(
                         text = "→",

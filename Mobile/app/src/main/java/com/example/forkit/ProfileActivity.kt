@@ -165,6 +165,7 @@ fun ProfileScreen(userId: String = "") {
                             }
                             "Notifications" -> {
                                 val intent = Intent(context, NotificationsActivity::class.java)
+                                intent.putExtra("USER_ID", userId)
                                 context.startActivity(intent)
                             }
                             "App Settings" -> {

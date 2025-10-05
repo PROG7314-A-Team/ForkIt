@@ -222,14 +222,14 @@ fun AddHabitScreen(
                 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     val repeatOptions = listOf("Daily", "Weekly", "Monthly")
                     repeatOptions.forEachIndexed { index, option ->
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(50.dp)
+                                .height(65.dp)
                                 .background(
                                     color = if (selectedRepeat == index) 
                                         MaterialTheme.colorScheme.primary else Color.Transparent,
@@ -247,7 +247,7 @@ fun AddHabitScreen(
                             Text(
                                 text = option,
                                 color = if (selectedRepeat == index) Color.White else MaterialTheme.colorScheme.secondary,
-                                fontSize = 16.sp,
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -258,34 +258,35 @@ fun AddHabitScreen(
             // Weekly Day Selection (only show for Weekly)
             if (selectedRepeat == 1) {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
                         text = "Select days of the week:",
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium
                     )
                     
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         val days = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
                         days.forEachIndexed { index, day ->
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .weight(1f)
+                                    .height(55.dp)
                                     .background(
                                         color = if (selectedDays.contains(index)) 
                                             MaterialTheme.colorScheme.primary else Color.Transparent,
-                                        shape = RoundedCornerShape(8.dp)
+                                        shape = RoundedCornerShape(10.dp)
                                     )
                                     .border(
-                                        width = 1.dp,
+                                        width = 2.dp,
                                         color = if (selectedDays.contains(index)) 
                                             MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
-                                        shape = RoundedCornerShape(8.dp)
+                                        shape = RoundedCornerShape(10.dp)
                                     )
                                     .clickable { 
                                         selectedDays = if (selectedDays.contains(index)) {
@@ -299,7 +300,7 @@ fun AddHabitScreen(
                                 Text(
                                     text = day,
                                     color = if (selectedDays.contains(index)) Color.White else MaterialTheme.colorScheme.secondary,
-                                    fontSize = 12.sp,
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -311,11 +312,11 @@ fun AddHabitScreen(
             // Monthly Day Selection (only show for Monthly)
             if (selectedRepeat == 2) {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
                         text = "Select day of the month:",
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium
                     )
@@ -323,7 +324,7 @@ fun AddHabitScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp)
+                            .height(65.dp)
                             .border(
                                 width = 2.dp,
                                 color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
@@ -339,7 +340,8 @@ fun AddHabitScreen(
                         Text(
                             text = selectedDayOfMonth?.format(DateTimeFormatter.ofPattern("dd MMMM")) ?: "Select day of month",
                             color = if (selectedDayOfMonth == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
-                            fontSize = 16.sp
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -432,33 +434,43 @@ fun DatePickerDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select Day of Month") },
+        title = { 
+            Text(
+                "Select Day of Month",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Medium
+            )
+        },
         text = {
             Column {
-                Text("Select the day of the month for this habit to repeat:")
-                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "Select the day of the month for this habit to repeat:",
+                    fontSize = 15.sp
+                )
+                Spacer(modifier = Modifier.height(20.dp))
                 
                 // Simple day picker (1-31)
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(7),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.height(200.dp)
                 ) {
                     items(31) { day ->
                         val dayNumber = day + 1
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(40.dp)
                                 .background(
                                     color = if (selectedDate.dayOfMonth == dayNumber) 
                                         MaterialTheme.colorScheme.primary else Color.Transparent,
-                                    shape = RoundedCornerShape(4.dp)
+                                    shape = RoundedCornerShape(8.dp)
                                 )
                                 .border(
-                                    width = 1.dp,
+                                    width = 2.dp,
                                     color = if (selectedDate.dayOfMonth == dayNumber) 
                                         MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
-                                    shape = RoundedCornerShape(4.dp)
+                                    shape = RoundedCornerShape(8.dp)
                                 )
                                 .clickable { 
                                     selectedDate = selectedDate.withDayOfMonth(dayNumber)
@@ -468,7 +480,7 @@ fun DatePickerDialog(
                             Text(
                                 text = dayNumber.toString(),
                                 color = if (selectedDate.dayOfMonth == dayNumber) Color.White else MaterialTheme.colorScheme.secondary,
-                                fontSize = 12.sp,
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -482,12 +494,20 @@ fun DatePickerDialog(
                     onDateSelected(selectedDate)
                 }
             ) {
-                Text("OK")
+                Text(
+                    "OK",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(
+                    "Cancel",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     )
