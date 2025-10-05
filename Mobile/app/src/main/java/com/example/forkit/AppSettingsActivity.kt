@@ -9,9 +9,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +29,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.ThemeManager
+import com.example.forkit.ThemeMode
+import androidx.compose.foundation.clickable
 
 class AppSettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,8 +52,10 @@ class AppSettingsActivity : ComponentActivity() {
 fun AppSettingsScreen(
     onBackPressed: () -> Unit
 ) {
-    // Use ThemeManager for dark mode state
-    val isDarkMode = ThemeManager.isDarkMode
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
+    // Use ThemeManager for theme mode state
+    val currentThemeMode = ThemeManager.themeMode
     
     // Language state
     var selectedLanguage by remember { mutableStateOf("English") }
@@ -68,7 +73,7 @@ fun AppSettingsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = Color.White
                         )
@@ -137,31 +142,56 @@ fun AppSettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Choose between light and dark mode",
+                                text = "Choose your preferred theme",
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                         }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Theme Mode Options
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // System Default Button
+                        ThemeOptionButton(
+                            text = "System",
+                            isSelected = currentThemeMode == ThemeMode.SYSTEM,
+                            onClick = { ThemeManager.saveThemeMode(context, ThemeMode.SYSTEM) },
+                            modifier = Modifier.weight(1f)
+                        )
                         
-                        Switch(
-                            checked = isDarkMode,
-                            onCheckedChange = { ThemeManager.toggleDarkMode() },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = Color(0xFF1E9ECD),
-                                uncheckedThumbColor = Color.White,
-                                uncheckedTrackColor = Color(0xFFE0E0E0)
-                            )
+                        // Light Button
+                        ThemeOptionButton(
+                            text = "Light",
+                            isSelected = currentThemeMode == ThemeMode.LIGHT,
+                            onClick = { ThemeManager.saveThemeMode(context, ThemeMode.LIGHT) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        
+                        // Dark Button
+                        ThemeOptionButton(
+                            text = "Dark",
+                            isSelected = currentThemeMode == ThemeMode.DARK,
+                            onClick = { ThemeManager.saveThemeMode(context, ThemeMode.DARK) },
+                            modifier = Modifier.weight(1f)
                         )
                     }
                     
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     
                     Text(
-                        text = if (isDarkMode) "Dark Mode" else "Light Mode",
-                        fontSize = 14.sp,
-                        color = if (isDarkMode) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onBackground,
-                        fontWeight = if (isDarkMode) FontWeight.Medium else FontWeight.Normal
+                        text = when (currentThemeMode) {
+                            ThemeMode.SYSTEM -> "Following device settings"
+                            ThemeMode.LIGHT -> "Always light mode"
+                            ThemeMode.DARK -> "Always dark mode"
+                        },
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        fontStyle = FontStyle.Italic
                     )
                 }
             }
@@ -223,6 +253,40 @@ fun AppSettingsScreen(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ThemeOptionButton(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) 
+                Color(0xFF1E9ECD) 
+            else 
+                MaterialTheme.colorScheme.surface
+        ),
+        border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE0E0E0))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                fontSize = 14.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }

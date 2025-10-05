@@ -13,17 +13,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Build
 //import androidx.compose.material.icons.filled.QuestionAnswer
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -38,6 +38,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
+import com.example.forkit.utils.AuthPreferences
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -124,7 +125,7 @@ fun ProfileScreen(userId: String = "") {
                 }
             ) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
                     tint = MaterialTheme.colorScheme.onBackground
                 )
@@ -154,6 +155,7 @@ fun ProfileScreen(userId: String = "") {
                         when (option.title) {
                             "Account" -> {
                                 val intent = Intent(context, AccountActivity::class.java)
+                                intent.putExtra("USER_ID", userId)
                                 context.startActivity(intent)
                             }
                             "Goals" -> {
@@ -163,6 +165,7 @@ fun ProfileScreen(userId: String = "") {
                             }
                             "Notifications" -> {
                                 val intent = Intent(context, NotificationsActivity::class.java)
+                                intent.putExtra("USER_ID", userId)
                                 context.startActivity(intent)
                             }
                             "App Settings" -> {
@@ -191,6 +194,10 @@ fun ProfileScreen(userId: String = "") {
             item {
                 Button(
                     onClick = {
+                        // Clear saved login credentials
+                        val authPreferences = AuthPreferences(context)
+                        authPreferences.logout()
+                        
                         // Navigate to Login screen and clear back stack
                         val intent = Intent(context, LoginActivity::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -225,7 +232,7 @@ fun ProfileScreen(userId: String = "") {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.ExitToApp,
+                                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                                 contentDescription = "Logout",
                                 tint = Color.White,
                                 modifier = Modifier.size(20.dp)
@@ -298,7 +305,7 @@ fun ProfileOptionCard(
             
             // Arrow
             Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = "Arrow",
                 tint = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.size(20.dp)

@@ -33,6 +33,10 @@ interface ApiService {
     @PUT("api/users/{id}")
     suspend fun updateUser(@Path("id") userId: String, @Body request: UpdateUserRequest): Response<UpdateUserResponse>
 
+    // Update user profile (age, height, weight)
+    @PUT("api/users/{id}/profile")
+    suspend fun updateUserProfile(@Path("id") userId: String, @Body request: UpdateUserProfileRequest): Response<UpdateUserProfileResponse>
+
     // Delete user
     @DELETE("api/users/{id}")
     suspend fun deleteUser(@Path("id") userId: String): Response<DeleteUserResponse>
@@ -347,22 +351,26 @@ interface ApiService {
     // ==================== HABITS ====================
 
     // Get Daily Habits
-//    @GET("api/habits/daily/{userId}")
-//    suspend fun getDailyHabits(@Path("userId") userId: String): Response<HabitsResponse>
-//
-//    // Get Weekly Habits
-//    @GET("api/habits/weekly/{userId}")
-//    suspend fun getWeeklyHabits(@Path("userId") userId: String): Response<HabitsResponse>
-//
-//    // Get Monthly Habits
-//    @GET("api/habits/monthly/{userId}")
-//    suspend fun getMonthlyHabits(@Path("userId") userId: String): Response<HabitsResponse>
-//
-//    // Create Habit
-//    @POST("api/habits")
-//    suspend fun createHabit(@Body request: CreateHabitRequest): Response<HabitResponse>
-//
-//    // Update Habit
-//    @PUT("api/habits/{id}")
-//    suspend fun updateHabit(@Path("id") id: String, @Body request: UpdateHabitRequest): Response<HabitResponse>
+    @GET("api/habits/daily/{userId}")
+    suspend fun getDailyHabits(@Path("userId") userId: String): Response<HabitsResponse>
+
+    // Get Weekly Habits
+    @GET("api/habits/weekly/{userId}")
+    suspend fun getWeeklyHabits(@Path("userId") userId: String): Response<HabitsResponse>
+
+    // Get Monthly Habits
+    @GET("api/habits/monthly/{userId}")
+    suspend fun getMonthlyHabits(@Path("userId") userId: String): Response<HabitsResponse>
+
+    // Create Habit
+    @POST("api/habits")
+    suspend fun createHabit(@Body request: CreateHabitApiRequest): Response<HabitResponse>
+
+    // Update Habit
+    @PUT("api/habits/{id}")
+    suspend fun updateHabit(@Path("id") id: String, @Body request: UpdateHabitRequest): Response<HabitResponse>
+
+    // Delete Habit
+    @DELETE("api/habits/{id}")
+    suspend fun deleteHabit(@Path("id") id: String): Response<HabitResponse>
 }

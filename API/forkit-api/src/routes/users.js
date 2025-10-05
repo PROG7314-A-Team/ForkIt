@@ -28,6 +28,9 @@ router.post("/login", authController.loginUser);
 // PUT user
 router.put("/:id", userController.updateUser);
 
+// PUT user profile (age, height, weight)
+router.put("/:id/profile", userController.updateUserProfile);
+
 // DELETE user
 router.delete("/:id", userController.deleteUser);
 

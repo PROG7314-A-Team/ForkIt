@@ -44,7 +44,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -56,6 +56,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.example.forkit.data.RetrofitClient
 import com.example.forkit.ui.theme.ForkItTheme
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 
 class DashboardActivity : ComponentActivity() {
     private var refreshCallback: (() -> Unit)? = null
@@ -120,10 +122,11 @@ fun DashboardScreen(
     // Calculate totals
     val total = (consumed - burned).toInt()
     
-    // Progress bar calculations
+    // Progress bar calculations - treated as budget (remaining calories)
     val progressPercentage = (consumed.toFloat() / dailyGoal).coerceIn(0f, 1f)
     val caloriesRemaining = (dailyGoal - consumed).toInt()
-    val isGoalReached = consumed >= dailyGoal
+    val isOverBudget = consumed > dailyGoal
+    val isWithinBudget = consumed <= dailyGoal && consumed > 0
     
     // Animated progress for smooth transitions
     val animatedProgress by animateFloatAsState(
@@ -154,82 +157,131 @@ fun DashboardScreen(
                     isRefreshing = true
                     android.util.Log.d("DashboardActivity", "Refreshing data for userId: $userId on date: $todayDate")
                     
-                    // Fetch user goals first
-                    try {
-                        val goalsResponse = com.example.forkit.data.RetrofitClient.api.getUserGoals(userId)
-                        
-                        if (goalsResponse.isSuccessful) {
-                            val goals = goalsResponse.body()?.data
+                    // **OPTIMIZED: Fetch all data in parallel using async**
+                    android.util.Log.d("DashboardActivity", "Starting parallel API calls...")
+                    val startTime = System.currentTimeMillis()
+                    
+                    // Launch all API calls simultaneously
+                    val goalsDeferred = async {
+                        try {
+                            android.util.Log.d("DashboardActivity", "Fetching user goals...")
+                            com.example.forkit.data.RetrofitClient.api.getUserGoals(userId)
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching goals: ${e.message}", e)
+                            null
+                        }
+                    }
+                    
+                    val foodSummaryDeferred = async {
+                        try {
+                            com.example.forkit.data.RetrofitClient.api.getDailyCalorieSummary(userId, todayDate)
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching food summary: ${e.message}", e)
+                            null
+                        }
+                    }
+                    
+                    val exerciseDeferred = async {
+                        try {
+                            com.example.forkit.data.RetrofitClient.api.getDailyExerciseTotal(userId, todayDate)
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching exercise: ${e.message}", e)
+                            null
+                        }
+                    }
+                    
+                    val waterDeferred = async {
+                        try {
+                            com.example.forkit.data.RetrofitClient.api.getDailyWaterTotal(userId, todayDate)
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching water: ${e.message}", e)
+                            null
+                        }
+                    }
+                    
+                    val foodLogsDeferred = async {
+                        try {
+                            com.example.forkit.data.RetrofitClient.api.getFoodLogs(userId, todayDate)
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching food logs: ${e.message}", e)
+                            null
+                        }
+                    }
+                    
+                    val exerciseLogsDeferred = async {
+                        try {
+                            com.example.forkit.data.RetrofitClient.api.getExerciseLogs(userId, todayDate)
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching exercise logs: ${e.message}", e)
+                            null
+                        }
+                    }
+                    
+                    val waterLogsDeferred = async {
+                        try {
+                            com.example.forkit.data.RetrofitClient.api.getWaterLogs(userId, todayDate)
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching water logs: ${e.message}", e)
+                            null
+                        }
+                    }
+                    
+                    // Wait for all API calls to complete in parallel
+                    val goalsResponse = goalsDeferred.await()
+                    val foodSummaryResponse = foodSummaryDeferred.await()
+                    val exerciseResponse = exerciseDeferred.await()
+                    val waterResponse = waterDeferred.await()
+                    val foodLogsResponse = foodLogsDeferred.await()
+                    val exerciseLogsResponse = exerciseLogsDeferred.await()
+                    val waterLogsResponse = waterLogsDeferred.await()
+                    
+                    val endTime = System.currentTimeMillis()
+                    android.util.Log.d("DashboardActivity", "✅ All API calls completed in ${endTime - startTime}ms")
+                    
+                    // Process goals response
+                    goalsResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val goals = response.body()?.data
                             dailyGoal = goals?.dailyCalories ?: 2000
                             dailyWaterGoal = goals?.dailyWater ?: 2000
                             dailyStepsGoal = goals?.dailySteps ?: 8000
                             weeklyExercisesGoal = goals?.weeklyExercises ?: 3
-                            android.util.Log.d("DashboardActivity", "User goals loaded: Calories=$dailyGoal, Water=$dailyWaterGoal")
+                            android.util.Log.d("DashboardActivity", "Goals loaded: Calories=$dailyGoal, Water=$dailyWaterGoal")
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.e("DashboardActivity", "Error fetching goals: ${e.message}", e)
-                        // Use defaults if goals fetch fails
                     }
                     
-                    // Fetch daily food summary
-                    try {
-                        val foodSummaryResponse = com.example.forkit.data.RetrofitClient.api.getDailyCalorieSummary(
-                            userId = userId,
-                            date = todayDate
-                        )
-                        
-                        if (foodSummaryResponse.isSuccessful) {
-                            val foodData = foodSummaryResponse.body()?.data
+                    // Process food summary response
+                    foodSummaryResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val foodData = response.body()?.data
                             consumed = foodData?.totalCalories ?: 0.0
                             carbsCalories = (foodData?.totalCarbs ?: 0.0) * 4
                             proteinCalories = (foodData?.totalProtein ?: 0.0) * 4
                             fatCalories = (foodData?.totalFat ?: 0.0) * 9
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.e("DashboardActivity", "Error fetching food summary: ${e.message}", e)
                     }
                     
-                    // Fetch daily exercise total
-                    try {
-                        val exerciseResponse = com.example.forkit.data.RetrofitClient.api.getDailyExerciseTotal(
-                            userId = userId,
-                            date = todayDate
-                        )
-                        
-                        if (exerciseResponse.isSuccessful) {
-                            val exerciseData = exerciseResponse.body()?.data
+                    // Process exercise response
+                    exerciseResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val exerciseData = response.body()?.data
                             burned = exerciseData?.totalCaloriesBurnt ?: 0.0
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.e("DashboardActivity", "Error fetching exercise: ${e.message}", e)
                     }
                     
-                    // Fetch daily water total
-                    try {
-                        val waterResponse = com.example.forkit.data.RetrofitClient.api.getDailyWaterTotal(
-                            userId = userId,
-                            date = todayDate
-                        )
-                        
-                        if (waterResponse.isSuccessful) {
-                            val waterData = waterResponse.body()?.data
+                    // Process water response
+                    waterResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val waterData = response.body()?.data
                             waterAmount = waterData?.totalAmount ?: 0.0
                             waterEntries = waterData?.entries ?: 0
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.e("DashboardActivity", "Error fetching water: ${e.message}", e)
                     }
                     
-                    // Fetch today's food logs only
-                    try {
-                        val todayLogsResponse = com.example.forkit.data.RetrofitClient.api.getFoodLogs(
-                            userId = userId,
-                            date = todayDate
-                        )
-                        
-                        if (todayLogsResponse.isSuccessful) {
-                            val todayLogs = todayLogsResponse.body()?.data ?: emptyList()
-                            // Convert FoodLog to RecentActivityEntry for display
+                    // Process food logs response
+                    foodLogsResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val todayLogs = response.body()?.data ?: emptyList()
                             recentMeals = todayLogs.map { log ->
                                 com.example.forkit.data.models.RecentActivityEntry(
                                     id = log.id,
@@ -240,14 +292,48 @@ fun DashboardScreen(
                                     mealType = log.mealType,
                                     date = log.date,
                                     createdAt = log.createdAt,
-                                    time = log.createdAt.substring(11, 16) // Extract time HH:MM
+                                    time = log.createdAt.substring(11, 16)
                                 )
-                            }.sortedByDescending { it.createdAt } // Most recent first
-                            
-                            android.util.Log.d("DashboardActivity", "Today's meals loaded: ${recentMeals.size} items")
+                            }.sortedByDescending { it.createdAt }
+                            android.util.Log.d("DashboardActivity", "Meals loaded: ${recentMeals.size} items")
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.e("DashboardActivity", "Error fetching today's meals: ${e.message}", e)
+                    }
+                    
+                    // Process exercise logs response
+                    exerciseLogsResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val todayExerciseLogs = response.body()?.data ?: emptyList()
+                            recentWorkouts = todayExerciseLogs.map { log ->
+                                com.example.forkit.data.models.RecentExerciseActivityEntry(
+                                    id = log.id,
+                                    name = log.name,
+                                    type = log.type,
+                                    caloriesBurnt = log.caloriesBurnt.toInt(),
+                                    duration = log.duration?.toInt(),
+                                    date = log.date,
+                                    createdAt = log.createdAt,
+                                    time = log.createdAt.substring(11, 16)
+                                )
+                            }.sortedByDescending { it.createdAt }
+                            android.util.Log.d("DashboardActivity", "Workouts loaded: ${recentWorkouts.size} items")
+                        }
+                    }
+                    
+                    // Process water logs response
+                    waterLogsResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val todayWaterLogs = response.body()?.data ?: emptyList()
+                            recentWaterLogs = todayWaterLogs.map { log ->
+                                com.example.forkit.data.models.RecentWaterActivityEntry(
+                                    id = log.id,
+                                    amount = log.amount.toInt(),
+                                    date = log.date,
+                                    createdAt = log.createdAt,
+                                    time = log.createdAt.substring(11, 16)
+                                )
+                            }.sortedByDescending { it.createdAt }
+                            android.util.Log.d("DashboardActivity", "Water logs loaded: ${recentWaterLogs.size} items")
+                        }
                     }
                     
                 } catch (e: Exception) {
@@ -567,7 +653,7 @@ fun DashboardScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Today's Goal Progress",
+                                text = "Today's Calorie Budget",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -576,20 +662,20 @@ fun DashboardScreen(
                                 text = "$consumed / $dailyGoal kcal",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isGoalReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+                                color = if (isOverBudget) Color(0xFFE53935) else MaterialTheme.colorScheme.onBackground
                             )
                         }
                         
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                        // Progress Bar
+                        // Progress Bar - red when over budget, green when within budget
                         LinearProgressIndicator(
-                            progress = animatedProgress,
+                            progress = { animatedProgress },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(12.dp)
                                 .clip(RoundedCornerShape(6.dp)),
-                            color = if (isGoalReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                            color = if (isOverBudget) Color(0xFFE53935) else MaterialTheme.colorScheme.primary,
                             trackColor = MaterialTheme.colorScheme.outline
                         )
                         
@@ -601,15 +687,15 @@ fun DashboardScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "${(animatedProgress * 100).toInt()}% Complete",
+                                text = "${(animatedProgress * 100).toInt()}% Used",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                             Text(
-                                text = if (isGoalReached) "Goal Reached! 🎉" else "$caloriesRemaining kcal remaining",
+                                text = if (isOverBudget) "Over Budget! ⚠️" else if (caloriesRemaining >= 0) "$caloriesRemaining kcal remaining" else "0 kcal remaining",
                                 fontSize = 12.sp,
-                                color = if (isGoalReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
-                                fontWeight = if (isGoalReached) FontWeight.Bold else FontWeight.Normal
+                                color = if (isOverBudget) Color(0xFFE53935) else if (isWithinBudget) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+                                fontWeight = if (isOverBudget) FontWeight.Bold else FontWeight.Normal
                             )
                         }
                     }
@@ -712,7 +798,7 @@ fun DashboardScreen(
                             Text(
                                 text = "Water",
                                 fontSize = 14.sp,
-                                color = Color.White,
+                                color = Color(0xFF333333), // Black text
                                 fontWeight = FontWeight.Medium
                             )
                             
@@ -720,14 +806,14 @@ fun DashboardScreen(
                                 Text(
                                     text = "Loading...",
                                     fontSize = 14.sp,
-                                    color = Color.White.copy(alpha = 0.8f)
+                                    color = Color(0xFF333333).copy(alpha = 0.8f)
                                 )
                             } else {
                                 // Amount and Goal
                                 Text(
                                     text = "${waterAmount.toInt()} / $dailyWaterGoal ml",
                                     fontSize = 16.sp,
-                                    color = Color.White,
+                                    color = Color(0xFF333333), // Black text
                                     fontWeight = FontWeight.Bold
                                 )
                                 
@@ -736,13 +822,13 @@ fun DashboardScreen(
                                 // Progress bar
                                 val waterProgress = (waterAmount.toFloat() / dailyWaterGoal.toFloat()).coerceIn(0f, 1f)
                                 LinearProgressIndicator(
-                                    progress = waterProgress,
+                                    progress = { waterProgress },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(6.dp)
                                         .clip(RoundedCornerShape(3.dp)),
-                                    color = Color.White,
-                                    trackColor = Color.White.copy(alpha = 0.3f)
+                                    color = Color(0xFF333333),
+                                    trackColor = Color(0xFF333333).copy(alpha = 0.3f)
                                 )
                                 
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -751,7 +837,7 @@ fun DashboardScreen(
                                 Text(
                                     text = "${(waterProgress * 100).toInt()}%",
                                     fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.9f)
+                                    color = Color(0xFF333333).copy(alpha = 0.9f)
                                 )
                             }
                         }
@@ -782,35 +868,50 @@ fun DashboardScreen(
                                 fontWeight = FontWeight.Medium
                             )
                             
-                            // Note: Steps tracking not yet implemented in API
-                            Text(
-                                text = "Goal: $dailyStepsGoal",
-                                fontSize = 16.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                            
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            // Placeholder progress bar (no API data yet)
-                            LinearProgressIndicator(
-                                progress = 0f,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(3.dp)),
-                                color = Color.White,
-                                trackColor = Color.White.copy(alpha = 0.3f)
-                            )
-                            
-                            Spacer(modifier = Modifier.height(4.dp))
-                            
-                            Text(
-                                text = "Coming soon",
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-                            )
+                            if (isLoading) {
+                                Text(
+                                    text = "Loading...",
+                                    fontSize = 14.sp,
+                                    color = Color.White.copy(alpha = 0.8f)
+                                )
+                            } else if (!isStepTrackingAvailable) {
+                                Text(
+                                    text = "Not available",
+                                    fontSize = 14.sp,
+                                    color = Color.White.copy(alpha = 0.8f)
+                                )
+                            } else {
+                                // Steps and Goal
+                                Text(
+                                    text = "$currentSteps / $dailyStepsGoal",
+                                    fontSize = 16.sp,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // Progress bar with actual data
+                                val stepsProgress = (currentSteps.toFloat() / dailyStepsGoal.toFloat()).coerceIn(0f, 1f)
+                                LinearProgressIndicator(
+                                    progress = { stepsProgress },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp)),
+                                    color = Color.White,
+                                    trackColor = Color.White.copy(alpha = 0.3f)
+                                )
+                                
+                                Spacer(modifier = Modifier.height(4.dp))
+                                
+                                // Percentage
+                                Text(
+                                    text = "${(stepsProgress * 100).toInt()}%",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.9f)
+                                )
+                            }
                         }
                     }
                 }
@@ -961,6 +1062,274 @@ fun DashboardScreen(
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
+                // Today's Workouts Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(2.dp, Color(0xFF673AB7)) // Dark purple border
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Today's Workouts",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF333333), // Black text like meals
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                        
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.CenterHorizontally),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else if (recentWorkouts.isEmpty()) {
+                            Text(
+                                text = "No workouts logged today",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        } else {
+                            // Display real workout items from API
+                            var workoutToDelete by remember { mutableStateOf<com.example.forkit.data.models.RecentExerciseActivityEntry?>(null) }
+                            
+                            recentWorkouts.forEach { workout ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = workout.name,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "${workout.type} • ${workout.caloriesBurnt} cal${if (workout.duration != null) " • ${workout.duration}min" else ""}",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onBackground
+                                        )
+                                        Text(
+                                            text = workout.time,
+                                            fontSize = 10.sp,
+                                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                    
+                                    IconButton(
+                                        onClick = { workoutToDelete = workout }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete workout",
+                                            tint = Color(0xFFE53935),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Delete confirmation dialog
+                            workoutToDelete?.let { workout ->
+                                AlertDialog(
+                                    onDismissRequest = { workoutToDelete = null },
+                                    title = { 
+                                        Text(
+                                            "Delete Workout?",
+                                            fontWeight = FontWeight.Bold
+                                        ) 
+                                    },
+                                    text = { 
+                                        Text("Are you sure you want to delete \"${workout.name}\" from your log?") 
+                                    },
+                                    confirmButton = {
+                                        TextButton(
+                                            onClick = {
+                                                scope.launch {
+                                                    try {
+                                                        val response = RetrofitClient.api.deleteExerciseLog(workout.id)
+                                                        if (response.isSuccessful && response.body()?.success == true) {
+                                                            // Remove from local list and refresh data
+                                                            recentWorkouts = recentWorkouts.filter { it.id != workout.id }
+                                                            workoutToDelete = null
+                                                            
+                                                            // Refresh dashboard data
+                                                            refreshData()
+                                                            
+                                                            Toast.makeText(context, "Workout deleted successfully", Toast.LENGTH_SHORT).show()
+                                                        } else {
+                                                            Toast.makeText(context, "Failed to delete workout", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            }
+                                        ) {
+                                            Text("Delete", color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
+                                        }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { workoutToDelete = null }) {
+                                            Text("Cancel")
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Today's Water Logs Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(2.dp, Color(0xFF1E9ECD)) // ForkIt blue border
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Today's Water Logs",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E9ECD), // ForkIt blue
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                        
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.CenterHorizontally),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else if (recentWaterLogs.isEmpty()) {
+                            Text(
+                                text = "No water logged today",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        } else {
+                            // Display real water log items from API
+                            var waterLogToDelete by remember { mutableStateOf<com.example.forkit.data.models.RecentWaterActivityEntry?>(null) }
+                            
+                            recentWaterLogs.forEach { waterLog ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = "${waterLog.amount}ml",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "Water intake",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onBackground
+                                        )
+                                        Text(
+                                            text = waterLog.time,
+                                            fontSize = 10.sp,
+                                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                    
+                                    IconButton(
+                                        onClick = { waterLogToDelete = waterLog }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete water log",
+                                            tint = Color(0xFFE53935),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Delete confirmation dialog
+                            waterLogToDelete?.let { waterLog ->
+                                AlertDialog(
+                                    onDismissRequest = { waterLogToDelete = null },
+                                    title = { 
+                                        Text(
+                                            "Delete Water Log?",
+                                            fontWeight = FontWeight.Bold
+                                        ) 
+                                    },
+                                    text = { 
+                                        Text("Are you sure you want to delete ${waterLog.amount}ml of water from your log?") 
+                                    },
+                                    confirmButton = {
+                                        TextButton(
+                                            onClick = {
+                                                scope.launch {
+                                                    try {
+                                                        val response = RetrofitClient.api.deleteWaterLog(waterLog.id)
+                                                        if (response.isSuccessful && response.body()?.success == true) {
+                                                            // Remove from local list and refresh data
+                                                            recentWaterLogs = recentWaterLogs.filter { it.id != waterLog.id }
+                                                            waterLogToDelete = null
+                                                            
+                                                            // Refresh dashboard data
+                                                            refreshData()
+                                                            
+                                                            Toast.makeText(context, "Water log deleted successfully", Toast.LENGTH_SHORT).show()
+                                                        } else {
+                                                            Toast.makeText(context, "Failed to delete water log", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            }
+                                        ) {
+                                            Text("Delete", color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
+                                        }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { waterLogToDelete = null }) {
+                                            Text("Cancel")
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
                         // Bottom padding to ensure last content is visible above navigation
                         Spacer(modifier = Modifier.height(80.dp))
                     }
@@ -983,13 +1352,8 @@ fun DashboardScreen(
                     Spacer(modifier = Modifier.weight(1f))
                 }
                 4 -> {
-                    // Coach Screen
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                    ) {
-                        CoachScreen()
-                    }
+                    // Coach Screen - Navigate to CoachActivity
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
             
@@ -1000,6 +1364,11 @@ fun DashboardScreen(
                     if (tabIndex == 3) {
                         // Navigate to HabitsActivity
                         val intent = Intent(context, HabitsActivity::class.java)
+                        intent.putExtra("USER_ID", userId)
+                        context.startActivity(intent)
+                    } else if (tabIndex == 4) {
+                        // Navigate to CoachActivity
+                        val intent = Intent(context, CoachActivity::class.java)
                         intent.putExtra("USER_ID", userId)
                         context.startActivity(intent)
                     } else {
@@ -1503,68 +1872,6 @@ fun MealsScreen() {
                 )
                 Text(
                     text = "Meal tracking features will be available here",
-                    fontSize = 14.sp,
-                    color = Color(0xFF666666),
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
-
-
-@Composable
-fun CoachScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "👨‍🏫",
-            fontSize = 64.sp
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Text(
-            text = "Coach",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF22B27D)
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = "Get personalized health guidance",
-            fontSize = 16.sp,
-            color = Color(0xFF666666),
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Coming Soon",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF333333)
-                )
-                Text(
-                    text = "AI coaching features will be available here",
                     fontSize = 14.sp,
                     color = Color(0xFF666666),
                     textAlign = TextAlign.Center
