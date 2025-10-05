@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
@@ -211,6 +212,7 @@ fun HabitsScreen(
                         )
                         .clickable { 
                             val intent = Intent(context, AddHabitActivity::class.java)
+                            intent.putExtra("USER_ID", userId)
                             context.startActivity(intent)
                         }
                         .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -391,6 +393,23 @@ fun HabitsScreen(
                                 }
                             }
                         }
+                    },
+                    onDelete = { habitId ->
+                        scope.launch {
+                            try {
+                                val response = RetrofitClient.api.deleteHabit(habitId)
+                                
+                                if (response.isSuccessful && response.body()?.success == true) {
+                                    // Remove from local state
+                                    habits = habits.filter { it.id != habitId }
+                                    android.util.Log.d("HabitsActivity", "Successfully deleted habit: $habitId")
+                                } else {
+                                    android.util.Log.e("HabitsActivity", "Failed to delete habit: ${response.body()?.message}")
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("HabitsActivity", "Error deleting habit: ${e.message}", e)
+                            }
+                        }
                     }
                 )
             }
@@ -459,6 +478,23 @@ fun HabitsScreen(
                                             )
                                         } else h
                                     }
+                                }
+                            }
+                        },
+                        onDelete = { habitId ->
+                            scope.launch {
+                                try {
+                                    val response = RetrofitClient.api.deleteHabit(habitId)
+                                    
+                                    if (response.isSuccessful && response.body()?.success == true) {
+                                        // Remove from local state
+                                        habits = habits.filter { it.id != habitId }
+                                        android.util.Log.d("HabitsActivity", "Successfully deleted habit: $habitId")
+                                    } else {
+                                        android.util.Log.e("HabitsActivity", "Failed to delete habit: ${response.body()?.message}")
+                                    }
+                                } catch (e: Exception) {
+                                    android.util.Log.e("HabitsActivity", "Error deleting habit: ${e.message}", e)
                                 }
                             }
                         }
@@ -536,7 +572,8 @@ fun HabitItem(
     habit: Habit,
     isCompleted: Boolean,
     isLoading: Boolean = false,
-    onToggleComplete: (String) -> Unit
+    onToggleComplete: (String) -> Unit,
+    onDelete: (String) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -572,23 +609,42 @@ fun HabitItem(
                 modifier = Modifier.weight(1f)
             )
             
-            // Completion indicator
-            Card(
-                modifier = Modifier.size(28.dp),
-                shape = CircleShape,
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+            // Action buttons
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                // Delete button
+                IconButton(
+                    onClick = { onDelete(habit.id) },
+                    modifier = Modifier.size(32.dp)
                 ) {
-                    if (isCompleted) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Completed",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = Color(0xFFE53935),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                
+                // Completion indicator
+                Card(
+                    modifier = Modifier.size(28.dp),
+                    shape = CircleShape,
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isCompleted) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Completed",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }

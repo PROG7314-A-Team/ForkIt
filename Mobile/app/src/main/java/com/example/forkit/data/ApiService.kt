@@ -365,4 +365,8 @@ interface ApiService {
     // Update Habit
     @PUT("api/habits/{id}")
     suspend fun updateHabit(@Path("id") id: String, @Body request: UpdateHabitRequest): Response<HabitResponse>
+
+    // Delete Habit
+    @DELETE("api/habits/{id}")
+    suspend fun deleteHabit(@Path("id") id: String): Response<HabitResponse>
 }

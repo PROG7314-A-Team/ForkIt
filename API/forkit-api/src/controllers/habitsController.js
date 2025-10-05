@@ -147,3 +147,23 @@ exports.updateHabit = async (req, res) => {
     });
   }
 };
+
+exports.deleteHabit = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const deletedHabit = await habitsService.delete(id);
+    
+    res.json({
+      success: true,
+      message: "Habit deleted successfully",
+      data: deletedHabit
+    });
+  } catch (error) {
+    console.error("Error deleting habit:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+};

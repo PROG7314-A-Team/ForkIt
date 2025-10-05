@@ -18,4 +18,7 @@ router.post("/", habitsController.createHabit);
 // PUT update habit
 router.put("/:id", habitsController.updateHabit);
 
+// DELETE habit
+router.delete("/:id", habitsController.deleteHabit);
+
 module.exports = router;
