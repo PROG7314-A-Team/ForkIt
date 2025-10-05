@@ -10,6 +10,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -27,8 +30,6 @@ import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.data.RetrofitClient
 import com.example.forkit.data.models.CreateHabitRequest
 import com.example.forkit.data.models.CreateHabitApiRequest
-import com.example.forkit.data.models.HabitCategory
-import com.example.forkit.data.models.HabitFrequency
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -437,7 +438,7 @@ fun DatePickerDialog(
                 
                 // Simple day picker (1-31)
                 LazyVerticalGrid(
-                    columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(7),
+                    columns = GridCells.Fixed(7),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -520,8 +521,8 @@ private suspend fun createHabit(
             return
         }
         
-        val categories = listOf(HabitCategory.GENERAL, HabitCategory.NUTRITION, HabitCategory.EXERCISE, HabitCategory.HEALTH)
-        val frequencies = listOf(HabitFrequency.DAILY, HabitFrequency.WEEKLY, HabitFrequency.MONTHLY)
+        val categories = listOf("GENERAL", "NUTRITION", "EXERCISE", "HEALTH")
+        val frequencies = listOf("DAILY", "WEEKLY", "MONTHLY")
         
         val habitRequest = CreateHabitRequest(
             title = habitName.trim(),
@@ -537,17 +538,36 @@ private suspend fun createHabit(
             dayOfMonth = if (selectedRepeat == 2) selectedDayOfMonth?.dayOfMonth else null
         )
         
-        val response = RetrofitClient.api.createHabit(
-            CreateHabitApiRequest(
-                userId = userId,
-                habit = habitRequest
-            )
+        android.util.Log.d("AddHabitActivity", "Creating habit: $habitRequest")
+        android.util.Log.d("AddHabitActivity", "User ID: $userId")
+        
+        if (userId.isEmpty()) {
+            errorMessage("User ID is missing. Please log in again.")
+            return
+        }
+        
+        val apiRequest = CreateHabitApiRequest(
+            userId = userId,
+            habit = habitRequest
         )
         
+        android.util.Log.d("AddHabitActivity", "API Request: $apiRequest")
+        
+        val response = RetrofitClient.api.createHabit(apiRequest)
+        
+        android.util.Log.d("AddHabitActivity", "Response code: ${response.code()}")
+        android.util.Log.d("AddHabitActivity", "Response body: ${response.body()}")
+        
         if (response.isSuccessful && response.body()?.success == true) {
+            android.util.Log.d("AddHabitActivity", "Habit created successfully")
             onSuccess()
         } else {
-            errorMessage(response.body()?.message ?: "Failed to create habit")
+            val errorBody = response.errorBody()?.string()
+            android.util.Log.e("AddHabitActivity", "Error response body: $errorBody")
+            
+            val errorMsg = response.body()?.message ?: "Failed to create habit (Code: ${response.code()})"
+            android.util.Log.e("AddHabitActivity", "Failed to create habit: $errorMsg")
+            errorMessage(errorMsg)
         }
         
     } catch (e: Exception) {

@@ -87,14 +87,33 @@ exports.createHabit = async (req, res) => {
   try {
     console.log("createHabit req.body", req.body);
     const { userId, habit } = req.body;
-    if (!userId) return res.status(400).json({ 
-      success: false, 
-      message: "User ID is required" 
-    });
-    if (!habit) return res.status(400).json({ 
-      success: false, 
-      message: "Habit is required" 
-    });
+    
+    if (!userId) {
+      console.log("Missing userId in request");
+      return res.status(400).json({ 
+        success: false, 
+        message: "User ID is required" 
+      });
+    }
+    
+    if (!habit) {
+      console.log("Missing habit in request");
+      return res.status(400).json({ 
+        success: false, 
+        message: "Habit data is required" 
+      });
+    }
+    
+    if (!habit.title || habit.title.trim() === '') {
+      console.log("Missing or empty habit title");
+      return res.status(400).json({ 
+        success: false, 
+        message: "Habit title is required" 
+      });
+    }
+    
+    console.log("Creating habit for user:", userId);
+    console.log("Habit data:", habit);
     
     const createdHabit = await habitSchedulingService.createHabit(userId, habit);
     

@@ -49,7 +49,6 @@ import com.example.forkit.data.RetrofitClient
 import com.example.forkit.data.models.HabitsResponse
 import com.example.forkit.data.models.UpdateHabitRequest
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
 
 class HabitsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,8 +97,12 @@ fun HabitsScreen(
                     else -> RetrofitClient.api.getDailyHabits(userId)
                 }
                 
+                android.util.Log.d("HabitsActivity", "Response code: ${response.code()}")
+                android.util.Log.d("HabitsActivity", "Response body: ${response.body()}")
+                
                 if (response.isSuccessful) {
                     val habitsResponse = response.body()
+                    android.util.Log.d("HabitsActivity", "Habits response: $habitsResponse")
                     if (habitsResponse?.success == true) {
                         habits = habitsResponse.data
                         android.util.Log.d("HabitsActivity", "Successfully loaded ${habits.size} habits")
@@ -381,7 +384,7 @@ fun HabitsScreen(
                                             if (h.id == habitId) {
                                                 h.copy(
                                                     isCompleted = !h.isCompleted,
-                                                    completedAt = if (!h.isCompleted) LocalDateTime.now() else null
+                                                    completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
                                                 )
                                             } else h
                                         }
@@ -393,7 +396,7 @@ fun HabitsScreen(
                                             if (h.id == habitId) {
                                                 h.copy(
                                                     isCompleted = !h.isCompleted,
-                                                    completedAt = if (!h.isCompleted) LocalDateTime.now() else null
+                                                    completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
                                                 )
                                             } else h
                                         }
@@ -406,7 +409,7 @@ fun HabitsScreen(
                                     if (h.id == habitId) {
                                         h.copy(
                                             isCompleted = !h.isCompleted,
-                                            completedAt = if (!h.isCompleted) LocalDateTime.now() else null
+                                            completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
                                         )
                                     } else h
                                 }
@@ -454,7 +457,7 @@ fun HabitsScreen(
                                                 if (h.id == habitId) {
                                                     h.copy(
                                                         isCompleted = !h.isCompleted,
-                                                        completedAt = if (!h.isCompleted) LocalDateTime.now() else null
+                                                        completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
                                                     )
                                                 } else h
                                             }
@@ -466,7 +469,7 @@ fun HabitsScreen(
                                                 if (h.id == habitId) {
                                                     h.copy(
                                                         isCompleted = !h.isCompleted,
-                                                        completedAt = if (!h.isCompleted) LocalDateTime.now() else null
+                                                        completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
                                                     )
                                                 } else h
                                             }
@@ -479,7 +482,7 @@ fun HabitsScreen(
                                         if (h.id == habitId) {
                                             h.copy(
                                                 isCompleted = !h.isCompleted,
-                                                completedAt = if (!h.isCompleted) LocalDateTime.now() else null
+                                                completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
                                             )
                                         } else h
                                     }
