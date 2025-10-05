@@ -41,6 +41,11 @@ data class CreateHabitRequest(
     val frequency: HabitFrequency = HabitFrequency.DAILY
 )
 
+data class CreateHabitApiRequest(
+    val userId: String,
+    val habit: CreateHabitRequest
+)
+
 data class UpdateHabitRequest(
     val title: String? = null,
     val description: String? = null,

@@ -80,6 +80,7 @@ fun HabitsScreen(
     var showFloatingIcons by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var habitToDelete by remember { mutableStateOf<Habit?>(null) }
     val scope = rememberCoroutineScope()
     
     // Function to fetch habits from API
@@ -136,6 +137,25 @@ fun HabitsScreen(
                 }
             } finally {
                 isLoading = false
+            }
+        }
+    }
+    
+    // Function to delete a habit
+    val deleteHabit: (String) -> Unit = { habitId ->
+        scope.launch {
+            try {
+                val response = RetrofitClient.api.deleteHabit(habitId)
+                
+                if (response.isSuccessful && response.body()?.success == true) {
+                    // Remove from local state
+                    habits = habits.filter { it.id != habitId }
+                    android.util.Log.d("HabitsActivity", "Successfully deleted habit: $habitId")
+                } else {
+                    android.util.Log.e("HabitsActivity", "Failed to delete habit: ${response.body()?.message}")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("HabitsActivity", "Error deleting habit: ${e.message}", e)
             }
         }
     }
@@ -212,7 +232,6 @@ fun HabitsScreen(
                         )
                         .clickable { 
                             val intent = Intent(context, AddHabitActivity::class.java)
-                            intent.putExtra("USER_ID", userId)
                             context.startActivity(intent)
                         }
                         .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -395,21 +414,7 @@ fun HabitsScreen(
                         }
                     },
                     onDelete = { habitId ->
-                        scope.launch {
-                            try {
-                                val response = RetrofitClient.api.deleteHabit(habitId)
-                                
-                                if (response.isSuccessful && response.body()?.success == true) {
-                                    // Remove from local state
-                                    habits = habits.filter { it.id != habitId }
-                                    android.util.Log.d("HabitsActivity", "Successfully deleted habit: $habitId")
-                                } else {
-                                    android.util.Log.e("HabitsActivity", "Failed to delete habit: ${response.body()?.message}")
-                                }
-                            } catch (e: Exception) {
-                                android.util.Log.e("HabitsActivity", "Error deleting habit: ${e.message}", e)
-                            }
-                        }
+                        habitToDelete = habit
                     }
                 )
             }
@@ -482,21 +487,7 @@ fun HabitsScreen(
                             }
                         },
                         onDelete = { habitId ->
-                            scope.launch {
-                                try {
-                                    val response = RetrofitClient.api.deleteHabit(habitId)
-                                    
-                                    if (response.isSuccessful && response.body()?.success == true) {
-                                        // Remove from local state
-                                        habits = habits.filter { it.id != habitId }
-                                        android.util.Log.d("HabitsActivity", "Successfully deleted habit: $habitId")
-                                    } else {
-                                        android.util.Log.e("HabitsActivity", "Failed to delete habit: ${response.body()?.message}")
-                                    }
-                                } catch (e: Exception) {
-                                    android.util.Log.e("HabitsActivity", "Error deleting habit: ${e.message}", e)
-                                }
-                            }
+                            habitToDelete = habit
                         }
                     )
                 }
@@ -561,6 +552,37 @@ fun HabitsScreen(
             )
         }
     }
+    
+    // Delete confirmation dialog
+    habitToDelete?.let { habit ->
+        AlertDialog(
+            onDismissRequest = { habitToDelete = null },
+            title = { 
+                Text(
+                    "Delete Habit?",
+                    fontWeight = FontWeight.Bold
+                ) 
+            },
+            text = { 
+                Text("Are you sure you want to delete \"${habit.title}\"? This action cannot be undone.") 
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        deleteHabit(habit.id)
+                        habitToDelete = null
+                    }
+                ) {
+                    Text("Delete", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { habitToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 }
 
@@ -609,7 +631,6 @@ fun HabitItem(
                 modifier = Modifier.weight(1f)
             )
             
-            // Action buttons
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -622,8 +643,8 @@ fun HabitItem(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete",
-                        tint = Color(0xFFE53935),
-                        modifier = Modifier.size(18.dp)
+                        tint = Color.White.copy(alpha = 0.8f),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
                 

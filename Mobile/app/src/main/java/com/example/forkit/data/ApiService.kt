@@ -360,7 +360,7 @@ interface ApiService {
 
     // Create Habit
     @POST("api/habits")
-    suspend fun createHabit(@Body request: CreateHabitRequest): Response<HabitResponse>
+    suspend fun createHabit(@Body request: CreateHabitApiRequest): Response<HabitResponse>
 
     // Update Habit
     @PUT("api/habits/{id}")
