@@ -477,95 +477,23 @@ fun AddFoodMainScreen(
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 
-                // Search Results
-                if (showSearchResults && searchResults.isNotEmpty()) {
-                    Text(
-                        text = "Search Results",
-                        fontSize = 16.sp,
-                        color = colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                    
-                    // Make search results scrollable with a maximum height
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 300.dp) // Limit height to prevent taking too much space
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            searchResults.forEach { foodItem ->
-                                SearchResultCard(
-                                    foodItem = foodItem,
-                                    onClick = {
-                                        // Convert SearchFoodItem to Food and navigate to adjust screen
-                                        val selectedFood = Food(
-                                            id = "",
-                                            name = foodItem.name,
-                                            brand = "",
-                                            barcode = "",
-                                            calories = foodItem.calories ?: 0.0,
-                                            nutrients = foodItem.nutrients,
-                                            image = foodItem.image ?: "",
-                                            ingredients = ""
-                                        )
-                                        // Call the search food selected callback
-                                        onSearchFoodSelected(selectedFood)
-                                    }
-                                )
-                            }
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-                
-                // My Foods section
-                Text(
-                    text = "My Foods",
-                    fontSize = 16.sp,
-                    color = colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                
-                // Loading, Error, or History items
-                when {
-                    isLoading -> {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
-                    errorMessage.isNotEmpty() -> {
+                // Show Search Results OR My Foods section, but not both
+                if (searchQuery.isNotBlank()) {
+                    // Search Results section
+                    if (showSearchResults && searchResults.isNotEmpty()) {
                         Text(
-                            text = errorMessage,
-                            fontSize = 14.sp,
-                            color = colorScheme.error,
-                            modifier = Modifier.padding(vertical = 16.dp)
-                        )
-                    }
-                    historyItems.isEmpty() -> {
-                        Text(
-                            text = "No foods logged yet. Start by adding your first meal!",
-                            fontSize = 14.sp,
+                            text = "Search Results",
+                            fontSize = 16.sp,
                             color = colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 16.dp)
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(bottom = 16.dp)
                         )
-                    }
-                    else -> {
-                        // History items - make scrollable with max height
+                        
+                        // Make search results scrollable with a maximum height
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(max = 250.dp) // Limit height to prevent taking too much space
+                                .heightIn(max = 500.dp)
                         ) {
                             Column(
                                 modifier = Modifier
@@ -573,73 +501,160 @@ fun AddFoodMainScreen(
                                     .verticalScroll(rememberScrollState()),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                historyItems.forEach { item ->
-                                    FoodHistoryCard(
-                                        foodName = item.foodName,
-                                        servingInfo = "${item.servingSize} ${item.measuringUnit}",
-                                        date = item.date,
-                                        mealType = item.mealType,
-                                        calories = "${item.calories} kcal",
+                                searchResults.forEach { foodItem ->
+                                    SearchResultCard(
+                                        foodItem = foodItem,
                                         onClick = {
-                                            // Quick add the food to today's intake
-                                            scope.launch {
-                                                try {
-                                                    // Get today's date
-                                                    val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                                                    val todayDate = apiDateFormatter.format(Date())
-                                                    
-                                                    // Create food log request with the same details
-                                                    // Estimate macronutrients based on calories (rough approximation)
-                                                    val totalCalories = item.calories.toDouble()
-                                                    val estimatedCarbs = (totalCalories * 0.5) / 4.0 // 50% carbs, 4 cal/g
-                                                    val estimatedProtein = (totalCalories * 0.2) / 4.0 // 20% protein, 4 cal/g  
-                                                    val estimatedFat = (totalCalories * 0.3) / 9.0 // 30% fat, 9 cal/g
-                                                    
-                                                    val request = CreateFoodLogRequest(
-                                                        userId = userId,
-                                                        foodName = item.foodName,
-                                                        servingSize = item.servingSize,
-                                                        measuringUnit = item.measuringUnit,
-                                                        date = todayDate,
-                                                        mealType = item.mealType,
-                                                        calories = totalCalories,
-                                                        carbs = estimatedCarbs,
-                                                        fat = estimatedFat,
-                                                        protein = estimatedProtein,
-                                                        foodId = null
-                                                    )
-                                                    
-                                                    Log.d("AddMealActivity", "Creating food log for My Foods: ${item.foodName}, Calories: $totalCalories")
-                                                    val response = RetrofitClient.api.createFoodLog(request)
-                                                    Log.d("AddMealActivity", "Food log response: ${response.code()}, Success: ${response.body()?.success}")
-                                                    
-                                                    if (response.isSuccessful && response.body()?.success == true) {
-                                                        Toast.makeText(context, "✓ ${item.foodName} added to today!", Toast.LENGTH_SHORT).show()
-                                                    } else {
-                                                        Toast.makeText(context, "Failed to add food", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                } catch (e: Exception) {
-                                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                                }
-                                            }
-                                        },
-                                        onDelete = {
-                                            scope.launch {
-                                                try {
-                                                    val response = RetrofitClient.api.deleteFoodLog(item.id)
-                                                    if (response.isSuccessful && response.body()?.success == true) {
-                                                        // Remove from local list
-                                                        historyItems = historyItems.filter { it.id != item.id }
-                                                        Toast.makeText(context, "Food deleted successfully", Toast.LENGTH_SHORT).show()
-                                                    } else {
-                                                        Toast.makeText(context, "Failed to delete food", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                } catch (e: Exception) {
-                                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                                }
-                                            }
+                                            // Convert SearchFoodItem to Food and navigate to adjust screen
+                                            val selectedFood = Food(
+                                                id = "",
+                                                name = foodItem.name,
+                                                brand = "",
+                                                barcode = "",
+                                                calories = foodItem.calories ?: 0.0,
+                                                nutrients = foodItem.nutrients,
+                                                image = foodItem.image ?: "",
+                                                ingredients = ""
+                                            )
+                                            // Call the search food selected callback
+                                            onSearchFoodSelected(selectedFood)
                                         }
                                     )
+                                }
+                            }
+                        }
+                    } else if (isSearching) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    } else {
+                        Text(
+                            text = "No results found for \"$searchQuery\"",
+                            fontSize = 14.sp,
+                            color = colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
+                    }
+                } else {
+                    // My Foods section - only show when not searching
+                    Text(
+                        text = "My Foods",
+                        fontSize = 16.sp,
+                        color = colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    // Loading, Error, or History items
+                    when {
+                        isLoading -> {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                        errorMessage.isNotEmpty() -> {
+                            Text(
+                                text = errorMessage,
+                                fontSize = 14.sp,
+                                color = colorScheme.error,
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        }
+                        historyItems.isEmpty() -> {
+                            Text(
+                                text = "No foods logged yet. Start by adding your first meal!",
+                                fontSize = 14.sp,
+                                color = colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        }
+                        else -> {
+                            // History items - make scrollable with max height
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 500.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .verticalScroll(rememberScrollState()),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    historyItems.forEach { item ->
+                                        FoodHistoryCard(
+                                            foodName = item.foodName,
+                                            servingInfo = "${item.servingSize} ${item.measuringUnit}",
+                                            date = item.date,
+                                            mealType = item.mealType,
+                                            calories = "${item.calories} kcal",
+                                            onClick = {
+                                                // Quick add the food to today's intake
+                                                scope.launch {
+                                                    try {
+                                                        // Get today's date
+                                                        val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                                                        val todayDate = apiDateFormatter.format(Date())
+                                                        
+                                                        // Create food log request with the same details
+                                                        // Estimate macronutrients based on calories (rough approximation)
+                                                        val totalCalories = item.calories.toDouble()
+                                                        val estimatedCarbs = (totalCalories * 0.5) / 4.0 // 50% carbs, 4 cal/g
+                                                        val estimatedProtein = (totalCalories * 0.2) / 4.0 // 20% protein, 4 cal/g  
+                                                        val estimatedFat = (totalCalories * 0.3) / 9.0 // 30% fat, 9 cal/g
+                                                        
+                                                        val request = CreateFoodLogRequest(
+                                                            userId = userId,
+                                                            foodName = item.foodName,
+                                                            servingSize = item.servingSize,
+                                                            measuringUnit = item.measuringUnit,
+                                                            date = todayDate,
+                                                            mealType = item.mealType,
+                                                            calories = totalCalories,
+                                                            carbs = estimatedCarbs,
+                                                            fat = estimatedFat,
+                                                            protein = estimatedProtein,
+                                                            foodId = null
+                                                        )
+                                                        
+                                                        Log.d("AddMealActivity", "Creating food log for My Foods: ${item.foodName}, Calories: $totalCalories")
+                                                        val response = RetrofitClient.api.createFoodLog(request)
+                                                        Log.d("AddMealActivity", "Food log response: ${response.code()}, Success: ${response.body()?.success}")
+                                                        
+                                                        if (response.isSuccessful && response.body()?.success == true) {
+                                                            Toast.makeText(context, "✓ ${item.foodName} added to today!", Toast.LENGTH_SHORT).show()
+                                                        } else {
+                                                            Toast.makeText(context, "Failed to add food", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            },
+                                            onDelete = {
+                                                scope.launch {
+                                                    try {
+                                                        val response = RetrofitClient.api.deleteFoodLog(item.id)
+                                                        if (response.isSuccessful && response.body()?.success == true) {
+                                                            // Remove from local list
+                                                            historyItems = historyItems.filter { it.id != item.id }
+                                                            Toast.makeText(context, "Food deleted successfully", Toast.LENGTH_SHORT).show()
+                                                        } else {
+                                                            Toast.makeText(context, "Failed to delete food", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -650,30 +665,42 @@ fun AddFoodMainScreen(
                 
                 // Action buttons
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Scan Barcode button
+                    Button(
+                        onClick = { onBarcodeScan() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(72.dp)
+                            .clip(RoundedCornerShape(16.dp)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Transparent
+                        ),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(64.dp)
-                                .border(
-                                    width = 3.dp,
-                                    color = colorScheme.secondary.copy(alpha = 0.3f),
-                                )
+                                .fillMaxSize()
                                 .background(
-                                    color = colorScheme.secondary.copy(alpha = 0.05f),
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(
+                                            colorScheme.primary,
+                                            colorScheme.secondary
+                                        )
+                                    ),
                                     shape = RoundedCornerShape(16.dp)
-                                )
-                                .clickable { onBarcodeScan() },
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = "Scan Barcode",
-                                fontSize = 18.sp,
-                                color = colorScheme.secondary,
-                                fontWeight = FontWeight.Medium
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = colorScheme.background
                             )
                         }
                     }
@@ -721,10 +748,11 @@ fun AddFoodMainScreen(
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
+}
 
 data class FoodHistoryItem(
     val name: String,
