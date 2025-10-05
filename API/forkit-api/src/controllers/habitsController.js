@@ -4,24 +4,60 @@ const habitsService = new firebaseService("habits");
 exports.getDailyHabits = async (req, res) => {
   try {
     const { userId } = req.params;
-    if (!userId) return res.status(400).json({ error: "User ID is required" });
+    if (!userId) return res.status(400).json({ 
+      success: false, 
+      message: "User ID is required",
+      data: []
+    });
+    
     const habits = await habitsService.getByUserId(userId);
-    // need to filter type = daily
-    res.json(habits);
+    // Filter for daily habits (assuming frequency field or type field exists)
+    const dailyHabits = habits.filter(habit => 
+      habit.frequency === 'DAILY' || habit.type === 'daily' || !habit.frequency
+    );
+    
+    res.json({
+      success: true,
+      message: "Daily habits retrieved successfully",
+      data: dailyHabits
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error getting daily habits:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message,
+      data: []
+    });
   }
 };
 
 exports.getWeeklyHabits = async (req, res) => {
   try {
     const { userId } = req.params;
-    if (!userId) return res.status(400).json({ error: "User ID is required" });
+    if (!userId) return res.status(400).json({ 
+      success: false, 
+      message: "User ID is required",
+      data: []
+    });
+    
     const habits = await habitsService.getByUserId(userId);
-    // need to filter type = weekly
-    res.json(habits);
+    // Filter for weekly habits
+    const weeklyHabits = habits.filter(habit => 
+      habit.frequency === 'WEEKLY' || habit.type === 'weekly'
+    );
+    
+    res.json({
+      success: true,
+      message: "Weekly habits retrieved successfully",
+      data: weeklyHabits
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error getting weekly habits:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message,
+      data: []
+    });
   }
 };
 
@@ -29,12 +65,30 @@ exports.getWeeklyHabits = async (req, res) => {
 exports.getMonthlyHabits = async (req, res) => {
   try {
     const { userId } = req.params;
-    if (!userId) return res.status(400).json({ error: "User ID is required" });
+    if (!userId) return res.status(400).json({ 
+      success: false, 
+      message: "User ID is required",
+      data: []
+    });
+    
     const habits = await habitsService.getByUserId(userId);
-    // need to filter type = monthly
-    res.json(habits);
+    // Filter for monthly habits
+    const monthlyHabits = habits.filter(habit => 
+      habit.frequency === 'MONTHLY' || habit.type === 'monthly'
+    );
+    
+    res.json({
+      success: true,
+      message: "Monthly habits retrieved successfully",
+      data: monthlyHabits
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error getting monthly habits:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message,
+      data: []
+    });
   }
 };
 
@@ -43,16 +97,33 @@ exports.createHabit = async (req, res) => {
   try {
     console.log("createHabit req.body", req.body);
     const { userId, habit } = req.body;
-    if (!userId) return res.status(400).json({ error: "User ID is required" });
-    if (!habit) return res.status(400).json({ error: "Habit is required" });
+    if (!userId) return res.status(400).json({ 
+      success: false, 
+      message: "User ID is required" 
+    });
+    if (!habit) return res.status(400).json({ 
+      success: false, 
+      message: "Habit is required" 
+    });
+    
     const habitData = {
         userId,
-        habit
-    }
+        ...habit
+    };
+    
     const createdHabit = await habitsService.create(habitData);
-    res.send(createdHabit);
+    
+    res.status(201).json({
+      success: true,
+      message: "Habit created successfully",
+      data: createdHabit
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error creating habit:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 };
 
@@ -60,9 +131,19 @@ exports.updateHabit = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+    
     const updatedHabit = await habitsService.update(id, updateData);
-    res.send(updatedHabit);
+    
+    res.json({
+      success: true,
+      message: "Habit updated successfully",
+      data: updatedHabit
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Error updating habit:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 };
