@@ -100,7 +100,7 @@ class StreakService {
     const currentDate = new Date();
     const lastLogDateObj = new Date(lastLogDate);
     const diffTime = currentDate - lastLogDateObj;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 1;
   }
 }

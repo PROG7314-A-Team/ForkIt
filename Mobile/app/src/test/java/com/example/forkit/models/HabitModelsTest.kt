@@ -120,7 +120,4 @@ class HabitModelsTest {
         assertNull(habit.completedAt)
     }
 }
-```
-
-```
 

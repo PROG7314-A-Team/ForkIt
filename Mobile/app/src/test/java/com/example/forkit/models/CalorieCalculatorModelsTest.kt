@@ -176,5 +176,4 @@ class CalorieCalculatorModelsTest {
         assertEquals(20.0, request.fat)
     }
 }
-```
 

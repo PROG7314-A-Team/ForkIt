@@ -25,7 +25,6 @@ exports.getWeeklyHabits = async (req, res) => {
   }
 };
 
-
 exports.getMonthlyHabits = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -38,7 +37,6 @@ exports.getMonthlyHabits = async (req, res) => {
   }
 };
 
-
 exports.createHabit = async (req, res) => {
   try {
     console.log("createHabit req.body", req.body);
@@ -46,11 +44,11 @@ exports.createHabit = async (req, res) => {
     if (!userId) return res.status(400).json({ error: "User ID is required" });
     if (!habit) return res.status(400).json({ error: "Habit is required" });
     const habitData = {
-        userId,
-        habit
-    }
+      userId,
+      habit,
+    };
     const createdHabit = await habitsService.create(habitData);
-    res.send(createdHabit);
+    res.json(createdHabit);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -61,7 +59,21 @@ exports.updateHabit = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
     const updatedHabit = await habitsService.update(id, updateData);
-    res.send(updatedHabit);
+    res.json(updatedHabit);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deleteHabit = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedHabit = await habitsService.delete(id);
+    res.json({
+      success: true,
+      data: deletedHabit,
+      message: "Habit deleted successfully",
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

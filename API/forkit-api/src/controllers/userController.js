@@ -7,18 +7,18 @@ const userService = new FirebaseService("users");
 // GET all users (Firestore)
 exports.getUser = async (req, res) => {
   try {
-    let user = await userService.getAll();
+    let users = await userService.getAll();
 
-    if (!user) {
+    if (!users) {
       return res.status(404).json({
         success: false,
-        message: "User not found",
+        message: "Users not found",
       });
     }
 
     res.json({
       success: true,
-      data: user,
+      data: users,
       message: "Users retrieved successfully",
     });
   } catch (error) {
@@ -123,6 +123,15 @@ exports.updateUser = async (req, res) => {
       });
     }
 
+    // Check if user exists first
+    const existingUser = await userService.getById(id);
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
     let user = await userService.update(id, userData);
     if (user) {
       res.json({
@@ -153,6 +162,15 @@ exports.deleteUser = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "User ID is required",
+      });
+    }
+
+    // Check if user exists first
+    const existingUser = await userService.getById(id);
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
       });
     }
 

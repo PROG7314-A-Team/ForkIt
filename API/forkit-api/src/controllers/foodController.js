@@ -2,6 +2,81 @@ const axios = require("axios");
 const FirebaseService = require("../services/firebaseService");
 const foodService = new FirebaseService("food");
 
+// // Get all foods
+// exports.getAllFoods = async (req, res) => {
+//   try {
+//     const foods = await foodService.getAll();
+//     res.json({
+//       success: true,
+//       data: foods,
+//       message: "Foods retrieved successfully",
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       error: error.message,
+//       message: "Failed to retrieve foods",
+//     });
+//   }
+// };
+
+// // Get food by ID
+// exports.getFoodById = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const food = await foodService.getById(id);
+
+//     if (!food) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Food not found",
+//       });
+//     }
+
+//     res.json({
+//       success: true,
+//       data: food,
+//       message: "Food retrieved successfully",
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       error: error.message,
+//       message: "Failed to retrieve food",
+//     });
+//   }
+// };
+
+// // Search foods
+// exports.searchFoods = async (req, res) => {
+//   try {
+//     const { q } = req.query;
+
+//     if (!q) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Search term is required",
+//       });
+//     }
+
+//     const foods = await foodService.query([
+//       { field: "name", operator: ">=", value: q },
+//     ]);
+
+//     res.json({
+//       success: true,
+//       data: foods,
+//       message: "Foods found",
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       error: error.message,
+//       message: "Failed to search foods",
+//     });
+//   }
+// };
+
 // Get food by barcode
 exports.getFoodByBarcode = async (req, res) => {
   try {
@@ -113,10 +188,16 @@ exports.createFood = async (req, res) => {
     const foodData = req.body;
 
     // Basic validation
-    if (!foodData.name || !foodData.nutrients) {
+    if (
+      !foodData.name ||
+      !foodData.calories ||
+      !foodData.carbs ||
+      !foodData.protein ||
+      !foodData.fat
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Food name and nutriments are required",
+        message: "Name, calories, carbs, protein, and fat are required",
       });
     }
 
@@ -151,34 +232,27 @@ exports.updateFood = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    const foodIndex = await foodService.query([
-      { field: "foodId", operator: "==", value: id },
-    ]);
+    const existingFood = await foodService.getById(id);
 
-    if (foodIndex.length === 0) {
+    if (!existingFood) {
       return res.status(404).json({
         success: false,
-        message: "Food item not found",
+        message: "Food not found",
       });
     }
 
-    // Update the food item
-    foodIndex[0] = {
-      ...foodIndex[0],
-      ...updateData,
-      updatedAt: new Date().toISOString(),
-    };
+    const updatedFood = await foodService.update(id, updateData);
 
     res.json({
       success: true,
-      data: foodIndex[0],
-      message: "Food item updated successfully",
+      data: updatedFood,
+      message: "Food updated successfully",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       error: error.message,
-      message: "Failed to update food item",
+      message: "Failed to update food",
     });
   }
 };
@@ -188,29 +262,27 @@ exports.deleteFood = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const foodIndex = await foodService.query([
-      { field: "foodId", operator: "==", value: id },
-    ]);
+    const existingFood = await foodService.getById(id);
 
-    if (foodIndex.length === 0) {
+    if (!existingFood) {
       return res.status(404).json({
         success: false,
-        message: "Food item not found",
+        message: "Food not found",
       });
     }
 
-    const deletedFood = await foodService.delete(foodIndex[0].id);
+    const deletedFood = await foodService.delete(id);
 
     res.json({
       success: true,
-      data: { id: deletedFood.id } || deletedFood,
-      message: "Food item deleted successfully",
+      data: deletedFood,
+      message: "Food deleted successfully",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       error: error.message,
-      message: "Failed to delete food item",
+      message: "Failed to delete food",
     });
   }
 };

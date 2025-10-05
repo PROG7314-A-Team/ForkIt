@@ -16,7 +16,7 @@ const serviceAccount = {
 };
 
 // Initialize Firebase Admin only once
-if (!admin.apps.length) {
+if (!admin.apps || admin.apps.length === 0) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     projectId: process.env.FIREBASE_PROJECT_ID,
