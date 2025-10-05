@@ -146,10 +146,12 @@ fun SignInScreen(prefilledEmail: String = "") {
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    TextButton(onClick = { passwordVisible = !passwordVisible }) {
                         Text(
-                            text = if (passwordVisible) "👁️" else "🙈",
-                            fontSize = 20.sp
+                            text = if (passwordVisible) "Hide" else "Show",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 },

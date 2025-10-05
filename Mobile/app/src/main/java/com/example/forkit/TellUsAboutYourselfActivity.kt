@@ -73,6 +73,7 @@ fun TellUsAboutYourselfScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -194,7 +195,7 @@ fun TellUsAboutYourselfScreen(
                             },
                             placeholder = {
                                 Text(
-                                    text = "25",
+                                    text = "Enter your age",
                                     color = Color(0xFF666666),
                                     fontSize = 16.sp
                                 )
@@ -264,7 +265,7 @@ fun TellUsAboutYourselfScreen(
                             },
                             placeholder = {
                                 Text(
-                                    text = "175.5",
+                                    text = "Enter your height",
                                     color = Color(0xFF666666),
                                     fontSize = 16.sp
                                 )
@@ -334,7 +335,7 @@ fun TellUsAboutYourselfScreen(
                             },
                             placeholder = {
                                 Text(
-                                    text = "75",
+                                    text = "Enter your weight",
                                     color = Color(0xFF666666),
                                     fontSize = 16.sp
                                 )

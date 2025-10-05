@@ -155,6 +155,7 @@ fun ProfileScreen(userId: String = "") {
                         when (option.title) {
                             "Account" -> {
                                 val intent = Intent(context, AccountActivity::class.java)
+                                intent.putExtra("USER_ID", userId)
                                 context.startActivity(intent)
                             }
                             "Goals" -> {

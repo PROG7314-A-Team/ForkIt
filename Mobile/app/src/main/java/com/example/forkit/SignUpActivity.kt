@@ -144,10 +144,12 @@ fun SignUpScreen() {
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    TextButton(onClick = { passwordVisible = !passwordVisible }) {
                         Text(
-                            text = if (passwordVisible) "👁️" else "🙈",
-                            fontSize = 20.sp
+                            text = if (passwordVisible) "Hide" else "Show",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 },
@@ -175,10 +177,12 @@ fun SignUpScreen() {
                 visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 trailingIcon = {
-                    IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                    TextButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                         Text(
-                            text = if (confirmPasswordVisible) "👁️" else "🙈",
-                            fontSize = 20.sp
+                            text = if (confirmPasswordVisible) "Hide" else "Show",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 },

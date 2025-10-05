@@ -217,7 +217,7 @@ fun SetGoalsScreen(
                             },
                             placeholder = {
                                 Text(
-                                    text = "2000",
+                                    text = "Enter daily calories",
                                     color = Color(0xFF666666),
                                     fontSize = 16.sp
                                 )
@@ -287,7 +287,7 @@ fun SetGoalsScreen(
                             },
                             placeholder = {
                                 Text(
-                                    text = "3",
+                                    text = "Enter weekly workouts",
                                     color = Color(0xFF666666),
                                     fontSize = 16.sp
                                 )
@@ -357,7 +357,7 @@ fun SetGoalsScreen(
                             },
                             placeholder = {
                                 Text(
-                                    text = "2000",
+                                    text = "Enter daily water intake",
                                     color = Color(0xFF666666),
                                     fontSize = 16.sp
                                 )
@@ -427,7 +427,7 @@ fun SetGoalsScreen(
                             },
                             placeholder = {
                                 Text(
-                                    text = "8000",
+                                    text = "Enter daily steps",
                                     color = Color(0xFF666666),
                                     fontSize = 16.sp
                                 )
