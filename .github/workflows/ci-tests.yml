@@ -2,9 +2,9 @@ name: CI - Automated Testing
 
 on:
   push:
-    branches: [main, develop, Max/AutomatedTests]
+    branches: [main, dev, Max/AutomatedTests]
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev]
 
 jobs:
   # API Unit Tests
