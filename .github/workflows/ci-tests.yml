@@ -2,7 +2,7 @@ name: CI - Automated Testing
 
 on:
   push:
-    branches: [main, develop, Max/BarcodeScannerAndHabbits]
+    branches: [main, develop, Max/AutomatedTests]
   pull_request:
     branches: [main, develop]
 
