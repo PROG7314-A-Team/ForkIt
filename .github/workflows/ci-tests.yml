@@ -2,11 +2,77 @@ name: CI - Automated Testing
 
 on:
   push:
-    branches: [main, dev, Max/AutomatedTests]
+    branches: [main, develop, Max/BarcodeScannerAndHabbits]
   pull_request:
-    branches: [main, dev]
+    branches: [main, develop]
 
 jobs:
+  # API Unit Tests
+  api-tests:
+    name: API Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: API/forkit-api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./API/forkit-api
+
+      # Add environment variables from secrets
+      - name: Set up Firebase environment
+        run: |
+          echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> $GITHUB_ENV
+          echo "FIREBASE_PRIVATE_KEY_ID=${{ secrets.FIREBASE_PRIVATE_KEY_ID }}" >> $GITHUB_ENV
+          echo "FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}" >> $GITHUB_ENV
+          echo "FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" >> $GITHUB_ENV
+          echo "FIREBASE_CLIENT_ID=${{ secrets.FIREBASE_CLIENT_ID }}" >> $GITHUB_ENV
+
+      - name: Run API Unit Tests
+        run: npm test
+        working-directory: ./API/forkit-api
+
+      - name: Upload API Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-test-results
+          path: API/forkit-api/coverage/
+
+      - name: Upload API Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          file: ./API/forkit-api/coverage/lcov.info
+          flags: api-tests
+          name: api-coverage
+
+      - name: Comment API Test Results on PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const testResults = `## ✅ API Unit Tests Passed
+
+            All unit tests for the Node.js API have completed successfully!
+
+            📊 View detailed coverage report in the artifacts.`;
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: testResults
+            });
+
   # Android Unit Tests
   android-tests:
     name: Android Unit Tests
@@ -50,69 +116,11 @@ jobs:
         if: github.event_name == 'pull_request'
         with:
           script: |
-            const fs = require('fs');
             const testResults = `## ✅ Android Unit Tests Passed
 
             All unit tests for the Android application have completed successfully!
 
             📊 View detailed test results in the artifacts.`;
-
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: testResults
-            });
-
-  # API Unit Tests
-  api-tests:
-    name: API Unit Tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-          cache: "npm"
-          cache-dependency-path: API/forkit-api/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-        working-directory: ./API/forkit-api
-
-      - name: Run API Unit Tests
-        run: npm test
-        working-directory: ./API/forkit-api
-
-      - name: Upload API Test Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: api-test-results
-          path: API/forkit-api/coverage/
-
-      - name: Upload API Coverage to Codecov
-        uses: codecov/codecov-action@v4
-        if: always()
-        with:
-          file: ./API/forkit-api/coverage/lcov.info
-          flags: api-tests
-          name: api-coverage
-
-      - name: Comment API Test Results on PR
-        uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
-        with:
-          script: |
-            const testResults = `## ✅ API Unit Tests Passed
-
-            All unit tests for the Node.js API have completed successfully!
-
-            📊 View detailed coverage report in the artifacts.`;
 
             github.rest.issues.createComment({
               owner: context.repo.owner,
