@@ -831,6 +831,9 @@ fun CreateFoodSection(onTest: (Food) -> Unit) {
                         barcode = barcode,
                         calories = calories.toDoubleOrNull() ?: 0.0,
                         nutrients = nutrients,
+                        servingSize = null,
+                        nutrientsPerServing = null,
+                        caloriesPerServing = null,
                         image = image,
                         ingredients = ingredients
                     )
@@ -994,6 +997,9 @@ fun UpdateFoodSection(onTest: (String, Food) -> Unit) {
                         barcode = barcode,
                         calories = calories.toDoubleOrNull() ?: 0.0,
                         nutrients = nutrients,
+                        servingSize = null,
+                        nutrientsPerServing = null,
+                        caloriesPerServing = null,
                         image = image,
                         ingredients = ingredients
                     )

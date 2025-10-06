@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
+import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -97,32 +99,13 @@ class AddMealActivity : ComponentActivity() {
                 val foodData = response.body()?.data
                 
                 if (foodData != null) {
-                    // Create a new Food object from the API response
-                    val scannedFood = Food(
-                        id = foodData.id,
-                        name = foodData.name,
-                        brand = foodData.brand,
-                        barcode = foodData.barcode,
-                        calories = foodData.calories,
-                        nutrients = Nutrients(
-                            carbs = foodData.nutrients.carbs,
-                            protein = foodData.nutrients.protein,
-                            fat = foodData.nutrients.fat,
-                            fiber = foodData.nutrients.fiber,
-                            sugar = foodData.nutrients.sugar
-                        ),
-                        image = foodData.image ?: "",
-                        ingredients = foodData.ingredients ?: ""
-                    )
+                    // Food object is already complete from API - just use it directly
+                    scannedFoodState = foodData
                     
-                    Log.d(TAG, "Scanned food: ${scannedFood}")
-
+                    Log.d(TAG, "Scanned food: ${foodData.name}, serving: ${foodData.servingSize?.quantity} ${foodData.servingSize?.unit}")
                     
                     // Show success message
-                    Toast.makeText(this, "Found: ${scannedFood.name}", Toast.LENGTH_SHORT).show()
-                    
-                    // Update the state - this will trigger the UI to update
-                    scannedFoodState = scannedFood
+                    Toast.makeText(this, "Found: ${foodData.name}", Toast.LENGTH_SHORT).show()
                     
                 } else {
                     Toast.makeText(this, "No food data found for this barcode", Toast.LENGTH_LONG).show()
@@ -156,12 +139,12 @@ fun AddMealScreen(
     var searchQuery by remember { mutableStateOf("") }
     var currentScreen by remember { mutableStateOf("main") }
     var selectedFood by remember { mutableStateOf<RecentActivityEntry?>(null) }
-    var selectedSearchFood by remember { mutableStateOf<Food?>(null) }
+    var selectedSearchFood by remember { mutableStateOf<SearchFoodItem?>(null) }
     
     // Food data to be collected across screens
     var foodName by remember { mutableStateOf("") }
     var servingSize by remember { mutableStateOf("") }
-    var measuringUnit by remember { mutableStateOf("Cup") }
+    var measuringUnit by remember { mutableStateOf("g") }
     var selectedDate by remember { mutableStateOf(Date()) }
     var mealType by remember { mutableStateOf("") }
     var calories by remember { mutableStateOf("") }
@@ -169,16 +152,74 @@ fun AddMealScreen(
     var fat by remember { mutableStateOf("") }
     var protein by remember { mutableStateOf("") }
     
+    // Store base nutritional values (per 100g or per serving) for scaling
+    var baseCaloriesPer100g by remember { mutableStateOf(0.0) }
+    var baseCarbsPer100g by remember { mutableStateOf(0.0) }
+    var baseFatPer100g by remember { mutableStateOf(0.0) }
+    var baseProteinPer100g by remember { mutableStateOf(0.0) }
+    var baseServingQuantity by remember { mutableStateOf(0.0) }
+    
+    // Store unit category to filter available units
+    var unitCategory by remember { mutableStateOf("all") } // "weight", "volume", or "all"
+    
     // Handle scanned food when it changes
     LaunchedEffect(scannedFood) {
         scannedFood?.let { food ->
-            Log.d("AddMealActivity", "switching current screen to adjust")
+            Log.d("AddMealActivity", "Scanned food: ${food.name}, serving: ${food.servingSize?.quantity} ${food.servingSize?.unit}")
+            
             // Pre-populate form fields with scanned food data
             foodName = food.name
-            calories = food.calories.toString()
-            carbs = food.nutrients.carbs.toString()
-            fat = food.nutrients.fat.toString()
-            protein = food.nutrients.protein.toString()
+            
+            // Use serving size from API if available
+            val servingSizeData = food.servingSize
+            if (servingSizeData != null) {
+                val quantity = servingSizeData.quantity ?: 
+                               (servingSizeData.apiQuantity?.toString()?.toDoubleOrNull()) ?: 100.0
+                val unit = servingSizeData.unit ?: servingSizeData.apiUnit ?: "g"
+                
+                servingSize = quantity.toString()
+                measuringUnit = unit
+                baseServingQuantity = quantity
+                
+                // Determine unit category based on API response
+                unitCategory = when (unit.lowercase()) {
+                    "g", "kg" -> "weight"
+                    "ml", "l" -> "volume"
+                    else -> "all"
+                }
+                
+                // Use per-serving nutrients if available, otherwise scale from per 100g
+                if (food.nutrientsPerServing != null && food.caloriesPerServing != null) {
+                    calories = food.caloriesPerServing.toInt().toString()
+                    carbs = String.format("%.1f", food.nutrientsPerServing.carbs)
+                    fat = String.format("%.1f", food.nutrientsPerServing.fat)
+                    protein = String.format("%.1f", food.nutrientsPerServing.protein)
+                } else {
+                    // Scale from per 100g values
+                    val scale = quantity / 100.0
+                    calories = (food.calories * scale).toInt().toString()
+                    carbs = String.format("%.1f", food.nutrients.carbs * scale)
+                    fat = String.format("%.1f", food.nutrients.fat * scale)
+                    protein = String.format("%.1f", food.nutrients.protein * scale)
+                }
+            } else {
+                // No serving size info - use per 100g as default
+                servingSize = "100"
+                measuringUnit = "g"
+                baseServingQuantity = 100.0
+                unitCategory = "weight" // Default to weight
+                calories = food.calories.toInt().toString()
+                carbs = String.format("%.1f", food.nutrients.carbs)
+                fat = String.format("%.1f", food.nutrients.fat)
+                protein = String.format("%.1f", food.nutrients.protein)
+            }
+            
+            // Store base values for scaling
+            baseCaloriesPer100g = food.calories
+            baseCarbsPer100g = food.nutrients.carbs
+            baseFatPer100g = food.nutrients.fat
+            baseProteinPer100g = food.nutrients.protein
+            
             // Navigate to adjust screen
             currentScreen = "adjust"
             // Clear the scanned food state
@@ -189,13 +230,61 @@ fun AddMealScreen(
     // Handle selected search food when it changes
     LaunchedEffect(selectedSearchFood) {
         selectedSearchFood?.let { food ->
-            Log.d("AddMealActivity", "switching current screen to adjust for search food")
+            Log.d("AddMealActivity", "Search food selected: ${food.name}, serving: ${food.servingSize?.quantity} ${food.servingSize?.unit}")
+            
             // Pre-populate form fields with selected search food data
             foodName = food.name
-            calories = food.calories.toString()
-            carbs = food.nutrients.carbs.toString()
-            fat = food.nutrients.fat.toString()
-            protein = food.nutrients.protein.toString()
+            
+            // Use serving size from API if available
+            val servingSizeData = food.servingSize
+            if (servingSizeData != null) {
+                val quantity = servingSizeData.quantity ?: 
+                               (servingSizeData.apiQuantity?.toString()?.toDoubleOrNull()) ?: 100.0
+                val unit = servingSizeData.unit ?: servingSizeData.apiUnit ?: "g"
+                
+                servingSize = quantity.toString()
+                measuringUnit = unit
+                baseServingQuantity = quantity
+                
+                // Determine unit category based on API response
+                unitCategory = when (unit.lowercase()) {
+                    "g", "kg" -> "weight"
+                    "ml", "l" -> "volume"
+                    else -> "all"
+                }
+                
+                // Use per-serving nutrients if available
+                if (food.nutrientsPerServing != null && food.caloriesPerServing != null) {
+                    calories = food.caloriesPerServing.toInt().toString()
+                    carbs = String.format("%.1f", food.nutrientsPerServing.carbs)
+                    fat = String.format("%.1f", food.nutrientsPerServing.fat)
+                    protein = String.format("%.1f", food.nutrientsPerServing.protein)
+                } else {
+                    // Scale from per 100g values
+                    val scale = quantity / 100.0
+                    calories = ((food.calories ?: 0.0) * scale).toInt().toString()
+                    carbs = String.format("%.1f", food.nutrients.carbs * scale)
+                    fat = String.format("%.1f", food.nutrients.fat * scale)
+                    protein = String.format("%.1f", food.nutrients.protein * scale)
+                }
+            } else {
+                // No serving size info - use per 100g as default
+                servingSize = "100"
+                measuringUnit = "g"
+                baseServingQuantity = 100.0
+                unitCategory = "weight" // Default to weight
+                calories = (food.calories ?: 0.0).toInt().toString()
+                carbs = String.format("%.1f", food.nutrients.carbs)
+                fat = String.format("%.1f", food.nutrients.fat)
+                protein = String.format("%.1f", food.nutrients.protein)
+            }
+            
+            // Store base values for scaling
+            baseCaloriesPer100g = food.calories ?: 0.0
+            baseCarbsPer100g = food.nutrients.carbs
+            baseFatPer100g = food.nutrients.fat
+            baseProteinPer100g = food.nutrients.protein
+            
             // Navigate to adjust screen
             currentScreen = "adjust"
             // Clear the selected search food state
@@ -222,24 +311,83 @@ fun AddMealScreen(
                 // Handle scanned food - this will be called from the Activity
                 Log.d("AddMealActivity", "Received scanned food in main screen: ${food.name}")
             },
-            onSearchFoodSelected = { food ->
-                selectedSearchFood = food
+            onSearchFoodSelected = { foodItem ->
+                selectedSearchFood = foodItem
             }
         )
         "adjust" -> AdjustServingScreen(
             foodName = foodName,
             servingSize = servingSize,
             measuringUnit = measuringUnit,
+            unitCategory = unitCategory,
             selectedDate = selectedDate,
             mealType = mealType,
             onFoodNameChange = { foodName = it },
-            onServingSizeChange = { servingSize = it },
-            onMeasuringUnitChange = { measuringUnit = it },
+            onServingSizeChange = { newSize ->
+                servingSize = newSize
+                // Dynamically scale nutrients based on new quantity
+                val newQuantity = newSize.toDoubleOrNull() ?: 0.0
+                if (newQuantity > 0 && baseCaloriesPer100g > 0) {
+                    // Scale from per 100g values
+                    val scale = when (measuringUnit.lowercase()) {
+                        "kg" -> newQuantity * 1000 / 100.0  // Convert kg to g, then scale
+                        "l" -> newQuantity * 1000 / 100.0   // Convert l to ml, then scale
+                        else -> newQuantity / 100.0          // Already in base unit (g or ml)
+                    }
+                    calories = (baseCaloriesPer100g * scale).toInt().toString()
+                    carbs = String.format("%.1f", baseCarbsPer100g * scale)
+                    fat = String.format("%.1f", baseFatPer100g * scale)
+                    protein = String.format("%.1f", baseProteinPer100g * scale)
+                }
+            },
+            onMeasuringUnitChange = { newUnit ->
+                val oldUnit = measuringUnit
+                val currentValue = servingSize.toDoubleOrNull() ?: 0.0
+                
+                // Convert between related units
+                val convertedValue = when {
+                    // g ↔ kg conversions
+                    oldUnit == "g" && newUnit == "kg" -> currentValue / 1000.0
+                    oldUnit == "kg" && newUnit == "g" -> currentValue * 1000.0
+                    
+                    // ml ↔ l conversions
+                    oldUnit == "ml" && newUnit == "l" -> currentValue / 1000.0
+                    oldUnit == "l" && newUnit == "ml" -> currentValue * 1000.0
+                    
+                    // No conversion needed
+                    else -> currentValue
+                }
+                
+                // Update unit first
+                measuringUnit = newUnit
+                
+                // Update serving size with converted value if conversion happened
+                if (convertedValue != currentValue && convertedValue > 0) {
+                    servingSize = String.format("%.2f", convertedValue).trimEnd('0').trimEnd('.')
+                    
+                    // Recalculate nutrients with the converted value
+                    if (baseCaloriesPer100g > 0) {
+                        val scale = when (newUnit.lowercase()) {
+                            "kg" -> convertedValue * 1000 / 100.0
+                            "l" -> convertedValue * 1000 / 100.0
+                            else -> convertedValue / 100.0
+                        }
+                        calories = (baseCaloriesPer100g * scale).toInt().toString()
+                        carbs = String.format("%.1f", baseCarbsPer100g * scale)
+                        fat = String.format("%.1f", baseFatPer100g * scale)
+                        protein = String.format("%.1f", baseProteinPer100g * scale)
+                    }
+                }
+            },
             onDateChange = { selectedDate = it },
             onMealTypeChange = { mealType = it },
             onBackPressed = { currentScreen = "main" },
             onContinue = { currentScreen = "details" },
-            scannedFood = scannedFood
+            scannedFood = scannedFood,
+            currentCalories = calories,
+            currentCarbs = carbs,
+            currentFat = fat,
+            currentProtein = protein
         )
         "details" -> AddDetailsScreen(
             calories = calories,
@@ -274,7 +422,7 @@ fun AddFoodMainScreen(
     onNavigateToAdjustServing: (RecentActivityEntry?) -> Unit,
     onBarcodeScan: () -> Unit,
     onScannedFood: (Food) -> Unit,
-    onSearchFoodSelected: (Food) -> Unit
+    onSearchFoodSelected: (SearchFoodItem) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -508,19 +656,8 @@ fun AddFoodMainScreen(
                                     SearchResultCard(
                                         foodItem = foodItem,
                                         onClick = {
-                                            // Convert SearchFoodItem to Food and navigate to adjust screen
-                                            val selectedFood = Food(
-                                                id = "",
-                                                name = foodItem.name,
-                                                brand = "",
-                                                barcode = "",
-                                                calories = foodItem.calories ?: 0.0,
-                                                nutrients = foodItem.nutrients,
-                                                image = foodItem.image ?: "",
-                                                ingredients = ""
-                                            )
-                                            // Call the search food selected callback
-                                            onSearchFoodSelected(selectedFood)
+                                            // Pass SearchFoodItem directly to handler
+                                            onSearchFoodSelected(foodItem)
                                         }
                                     )
                                 }
@@ -798,14 +935,57 @@ fun SearchResultCard(
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onBackground
                 )
-                if (foodItem.calories != null) {
+                
+                // Display brand if available
+                if (!foodItem.brand.isNullOrBlank()) {
                     Text(
-                        text = "${foodItem.calories.toInt()} kcal",
-                        fontSize = 14.sp,
-                        color = colorScheme.primary,
-                        fontWeight = FontWeight.Medium
+                        text = foodItem.brand,
+                        fontSize = 12.sp,
+                        color = colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 4.dp)
                     )
                 }
+                
+                // Display serving size if available
+                foodItem.servingSize?.let { serving ->
+                    val servingText = if (serving.quantity != null && serving.unit != null) {
+                        "${serving.quantity.toInt()} ${serving.unit}"
+                    } else if (serving.original != null) {
+                        serving.original
+                    } else {
+                        "per 100g"
+                    }
+                    
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (foodItem.caloriesPerServing != null) {
+                            Text(
+                                text = "${foodItem.caloriesPerServing.toInt()} kcal",
+                                fontSize = 14.sp,
+                                color = colorScheme.primary,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "• $servingText",
+                                fontSize = 12.sp,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                        } else if (foodItem.calories != null) {
+                            Text(
+                                text = "${foodItem.calories.toInt()} kcal/100g",
+                                fontSize = 14.sp,
+                                color = colorScheme.primary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                // Display macros per serving or per 100g
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -984,6 +1164,7 @@ fun AdjustServingScreen(
     foodName: String,
     servingSize: String,
     measuringUnit: String,
+    unitCategory: String = "all",
     selectedDate: Date,
     mealType: String,
     onFoodNameChange: (String) -> Unit,
@@ -993,7 +1174,11 @@ fun AdjustServingScreen(
     onMealTypeChange: (String) -> Unit,
     onBackPressed: () -> Unit,
     onContinue: () -> Unit,
-    scannedFood: Food? // This will contain the scanned food data
+    scannedFood: Food?, // This will contain the scanned food data
+    currentCalories: String = "",
+    currentCarbs: String = "",
+    currentFat: String = "",
+    currentProtein: String = ""
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
     var showMeasuringUnitDialog by remember { mutableStateOf(false) }
@@ -1002,25 +1187,21 @@ fun AdjustServingScreen(
     val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
     val selectedDateString = remember(selectedDate) { dateFormatter.format(selectedDate) }
     
-    // Available measuring units
-    val measuringUnits = listOf(
-        "Cup", 
-        "ML", 
-        "Grams", 
-        "Ounces", 
-        "Tablespoons", 
-        "Teaspoons", 
-        "Serving",
-        "Portion",
-        "Slice",
-        "Piece",
-        "Bowl",
-        "Plate",
-        "Glass",
-        "Liter",
-        "Kilogram",
-        "Pound"
+    // Define all available measuring units by category
+    val allMeasuringUnits = mapOf(
+        "weight" to listOf("g", "kg"),
+        "volume" to listOf("ml", "l"),
+        "other" to listOf("serving", "portion", "piece", "slice", "whole", "scoop", "handful", "cup")
     )
+    
+    // Filter units based on category
+    val measuringUnits = when (unitCategory) {
+        "weight" -> allMeasuringUnits["weight"]!! + listOf("─────") + allMeasuringUnits["other"]!!
+        "volume" -> allMeasuringUnits["volume"]!! + listOf("─────") + allMeasuringUnits["other"]!!
+        else -> allMeasuringUnits["weight"]!! + listOf("─────") + 
+                allMeasuringUnits["volume"]!! + listOf("─────") + 
+                allMeasuringUnits["other"]!!
+    }
     
     Box(
         modifier = Modifier
@@ -1198,7 +1379,98 @@ fun AdjustServingScreen(
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Show nutritional preview if data is available
+                if (currentCalories.isNotBlank()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = colorScheme.primary.copy(alpha = 0.1f)
+                        ),
+                        border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.3f))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Nutritional Info",
+                                fontSize = 14.sp,
+                                color = colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "Calories",
+                                        fontSize = 12.sp,
+                                        color = colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = "$currentCalories kcal",
+                                        fontSize = 16.sp,
+                                        color = colorScheme.primary,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                
+                                Column {
+                                    Text(
+                                        text = "Carbs",
+                                        fontSize = 12.sp,
+                                        color = colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = "${currentCarbs}g",
+                                        fontSize = 14.sp,
+                                        color = colorScheme.onBackground,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                                
+                                Column {
+                                    Text(
+                                        text = "Protein",
+                                        fontSize = 12.sp,
+                                        color = colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = "${currentProtein}g",
+                                        fontSize = 14.sp,
+                                        color = colorScheme.onBackground,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                                
+                                Column {
+                                    Text(
+                                        text = "Fat",
+                                        fontSize = 12.sp,
+                                        color = colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = "${currentFat}g",
+                                        fontSize = 14.sp,
+                                        color = colorScheme.onBackground,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
                 
                 // Select Type section
                 Column(
@@ -1344,40 +1616,67 @@ fun AdjustServingScreen(
                             .verticalScroll(rememberScrollState())
                     ) {
                         measuringUnits.forEach { unit ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(
-                                        if (unit == measuringUnit) 
-                                            colorScheme.primary.copy(alpha = 0.1f)
-                                        else 
-                                            Color.Transparent
-                                    )
-                                    .clickable {
-                                        onMeasuringUnitChange(unit)
-                                        showMeasuringUnitDialog = false
-                                    }
-                                    .padding(vertical = 14.dp, horizontal = 16.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = unit,
-                                        fontSize = 16.sp,
-                                        color = if (unit == measuringUnit) colorScheme.primary else colorScheme.onBackground,
-                                        fontWeight = if (unit == measuringUnit) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                    if (unit == measuringUnit) {
-                                        Text(
-                                            text = "✓",
-                                            fontSize = 18.sp,
-                                            color = colorScheme.primary,
-                                            fontWeight = FontWeight.Bold
+                            // Show separator as non-clickable divider
+                            if (unit == "─────") {
+                                Divider(
+                                    modifier = Modifier.padding(vertical = 8.dp),
+                                    color = colorScheme.outline.copy(alpha = 0.3f)
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            if (unit == measuringUnit) 
+                                                colorScheme.primary.copy(alpha = 0.1f)
+                                            else 
+                                                Color.Transparent
                                         )
+                                        .clickable {
+                                            onMeasuringUnitChange(unit)
+                                            showMeasuringUnitDialog = false
+                                        }
+                                        .padding(vertical = 14.dp, horizontal = 16.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        // Show conversion hint for related units
+                                        Column {
+                                            Text(
+                                                text = unit,
+                                                fontSize = 16.sp,
+                                                color = if (unit == measuringUnit) colorScheme.primary else colorScheme.onBackground,
+                                                fontWeight = if (unit == measuringUnit) FontWeight.Bold else FontWeight.Normal
+                                            )
+                                            // Show conversion hint
+                                            val hint = when (unit) {
+                                                "kg" -> "1 kg = 1000 g"
+                                                "g" -> "1000 g = 1 kg"
+                                                "l" -> "1 l = 1000 ml"
+                                                "ml" -> "1000 ml = 1 l"
+                                                else -> null
+                                            }
+                                            if (hint != null) {
+                                                Text(
+                                                    text = hint,
+                                                    fontSize = 11.sp,
+                                                    color = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                                )
+                                            }
+                                        }
+                                        if (unit == measuringUnit) {
+                                            Text(
+                                                text = "✓",
+                                                fontSize = 18.sp,
+                                                color = colorScheme.primary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
                                 }
                             }
