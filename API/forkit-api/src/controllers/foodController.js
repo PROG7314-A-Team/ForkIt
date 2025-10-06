@@ -113,7 +113,11 @@ exports.getFoodByBarcode = async (req, res) => {
       name: foodData.product?.product_name || "Unknown Product",
       brand: foodData.product?.brands || "Unknown Brand",
       barcode: code,
-      ...nutritionalData,
+      nutrients: nutritionalData.nutrients,
+      calories: nutritionalData.calories,
+      servingSize: nutritionalData.servingSize,
+      nutrientsPerServing: nutritionalData.nutrientsPerServing,
+      caloriesPerServing: nutritionalData.caloriesPerServing,
       image: foodData.product?.image_url || null,
       ingredients: foodData.product?.ingredients_text || null,
     };
