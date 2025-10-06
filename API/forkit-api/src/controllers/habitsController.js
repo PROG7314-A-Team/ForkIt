@@ -121,7 +121,7 @@ exports.createHabit = async (req, res) => {
       habit
     );
 
-    //console.log("Created habit:", createdHabit);
+    console.log("Created habit:", createdHabit);
 
     res.status(201).json({
       success: true,

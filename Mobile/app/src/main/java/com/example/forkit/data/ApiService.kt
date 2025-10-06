@@ -65,7 +65,7 @@ interface ApiService {
     // ==================== FOOD LOGGING ====================
 
     // Get Food Logs
-    @GET("api/food-logs")
+    @GET("api/food-logs/user/{userId}")
     suspend fun getFoodLogs(
         @Query("userId") userId: String? = null,
         @Query("date") date: String? = null
@@ -171,7 +171,7 @@ interface ApiService {
     // ==================== WATER LOGGING ====================
 
     // Get Water Logs
-    @GET("api/water-logs")
+    @GET("api/water-logs/user/{userId}")
     suspend fun getWaterLogs(
         @Query("userId") userId: String? = null,
         @Query("date") date: String? = null
@@ -251,7 +251,7 @@ interface ApiService {
     // ==================== EXERCISE LOGGING ====================
 
     // Get Exercise Logs
-    @GET("api/exercise-logs")
+    @GET("api/exercise-logs/user/{userId}")
     suspend fun getExerciseLogs(
         @Query("userId") userId: String? = null,
         @Query("date") date: String? = null,

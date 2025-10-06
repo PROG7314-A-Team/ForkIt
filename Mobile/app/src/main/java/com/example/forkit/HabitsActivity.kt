@@ -1,7 +1,9 @@
 package com.example.forkit
 
+import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -118,6 +120,8 @@ fun HabitsScreen(
                     2 -> RetrofitClient.api.getMonthlyHabits(userId)
                     else -> RetrofitClient.api.getDailyHabits(userId)
                 }
+
+                Log.d(TAG, "Habits reponse ${response}")
                 
                 android.util.Log.d("HabitsActivity", "Response code: ${response.code()}")
                 android.util.Log.d("HabitsActivity", "Response body: ${response.body()}")

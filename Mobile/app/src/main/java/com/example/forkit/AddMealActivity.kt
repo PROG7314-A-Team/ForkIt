@@ -1,5 +1,6 @@
 package com.example.forkit
 
+import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -300,6 +301,7 @@ fun AddFoodMainScreen(
             isSearching = true
             try {
                 val response = RetrofitClient.api.getFoodFromName(query)
+                Log.d(TAG, "Food response ${response.body()?.data}")
                 if (response.isSuccessful && response.body()?.success == true) {
                     val data = response.body()?.data
                     if (data != null) {
@@ -318,6 +320,7 @@ fun AddFoodMainScreen(
             } catch (e: Exception) {
                 searchResults = emptyList()
                 showSearchResults = false
+                Log.d(TAG, "Fething food error ${e.message}")
                 Toast.makeText(context, "Search error: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
                 isSearching = false

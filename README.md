@@ -10,7 +10,7 @@ ForkIt is a modern health tracking application built with Android Jetpack Compos
 
 ## Key Features
 
-### Food Logging & Nutrition Tracking
+### User Defined Feature 1: Food Logging & Nutrition Tracking
 
 - **Barcode Scanner Integration**: ML Kit-powered barcode scanning with OpenFoodFacts API integration
 - **Comprehensive Food Database**: Search from extensive database with detailed nutritional information
@@ -18,34 +18,34 @@ ForkIt is a modern health tracking application built with Android Jetpack Compos
 - **Meal Management**: Create and save custom meals with adjustable serving sizes
 - **Smart Calorie Calculator**: Real-time macronutrient-to-calorie conversion
 
-### Exercise & Activity Tracking
+### User Defined Feature 2: Exercise & Activity Tracking
 
 - **Exercise Logging**: Record workouts with duration, calories burned, and exercise type
 - **Step Tracking**: Native Android step tracking using Health Connect and sensor fallback
 - **Activity Recognition**: Automatic step counting with permission management
 - **Goal-Based Tracking**: Set and monitor progress toward daily and weekly targets
 
-### Water & Hydration Monitoring
+### User Defined Feature 3: Water & Hydration Monitoring
 
 - **Water Intake Tracking**: Monitor daily water consumption with progress indicators
 - **Hydration Goals**: Set personalized daily water intake targets
 - **Visual Progress**: Real-time progress bars and completion tracking
 
-### Analytics & Insights
+### User Defined Feature 4: Analytics & Insights
 
 - **Visual Data Analysis**: Comprehensive charts using Vico library
 - **Meal Distribution**: Pie chart breakdowns across breakfast, lunch, dinner, and snacks
 - **Macro Tracking**: Monitor protein, carbohydrates, and fat intake
 - **Trend Analysis**: Historical data visualization and progress tracking
 
-### Habit & Goal Management
+### User Defined Feature 5: Habit & Goal Management
 
 - **Custom Habit Creation**: Set personalized health habits
 - **Flexible Notifications**: Custom reminders with specific days and times
 - **Progress Monitoring**: Track daily, weekly, and monthly completion rates
 - **Streak Tracking**: Gamified consistency tracking
 
-### Security & User Experience
+### Additional Features: Security & User Experience
 
 - **Biometric Authentication**: Fingerprint and facial recognition support
 - **Firebase Authentication**: Secure Google SSO integration
@@ -207,6 +207,16 @@ This project serves as a **Portfolio of Evidence for PROG7314 - Advanced Program
 - **Mobile Development**: Native Android features including biometrics and health tracking
 - **Testing & Quality Assurance**: Comprehensive test coverage and documentation
 - **Software Architecture**: MVVM pattern with clean separation of concerns
+
+## Development Tools & AI Assistance
+
+This application was developed using **Cursor AI** as an integrated development environment and coding assistant. Cursor's AI-powered features were utilized throughout the development process for:
+
+- **Boiler Plate Code Generation**: Assisting with boilerplate code
+- **Debugging Support**: Identifying and resolving code issues and errors
+- **Architecture Guidance**: Providing recommendations for best practices and design patterns
+- **Documentation**: Helping generate comprehensive code comments and documentation
+- **Testing**: Assisting with test case development and coverage optimization
 
 ## Documentation
 

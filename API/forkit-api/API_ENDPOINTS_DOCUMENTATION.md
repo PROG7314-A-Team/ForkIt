@@ -3,11 +3,13 @@
 This document outlines all the API endpoints for the ForkIt calorie counting application.
 
 ## Base URL
+
 ```
 http://localhost:3000/api
 ```
 
 ## Authentication
+
 All endpoints require a `userId` to identify the user making the request.
 
 ---
@@ -15,10 +17,13 @@ All endpoints require a `userId` to identify the user making the request.
 ## 🎯 User Goals Endpoints (`/api/users/:id/goals`)
 
 ### Get User Goals
+
 ```
 GET /api/users/:id/goals
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -35,10 +40,13 @@ GET /api/users/:id/goals
 ```
 
 ### Update User Goals
+
 ```
 PUT /api/users/:id/goals
 ```
+
 **Request Body:**
+
 ```json
 {
   "dailyCalories": 2500,
@@ -49,12 +57,14 @@ PUT /api/users/:id/goals
 ```
 
 **Validation Rules:**
+
 - `dailyCalories`: 1200 - 10000 kcal
 - `dailyWater`: 500 - 10000 ml
 - `dailySteps`: 0 - 50000 steps
 - `weeklyExercises`: 0 - 21 sessions
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -74,17 +84,146 @@ PUT /api/users/:id/goals
 
 ---
 
+## 🍎 Food Database Endpoints (`/api/food`)
+
+### Get Food by Barcode
+
+```
+GET /api/food/barcode/:code
+```
+
+**Description:** Retrieve food information by scanning barcode using OpenFoodFacts API
+**Parameters:**
+
+- `code` (path): Barcode number to search for
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "123456789",
+    "name": "Product Name",
+    "brand": "Brand Name",
+    "barcode": "123456789",
+    "nutrients": {
+      "carbs": 25.5,
+      "protein": 15.2,
+      "fat": 8.3,
+      "fiber": 3.1,
+      "sugar": 12.0
+    },
+    "calories": 250,
+    "image": "https://example.com/image.jpg",
+    "ingredients": "Ingredients list"
+  },
+  "message": "Food item found by barcode"
+}
+```
+
+**Error Response (No Macro Nutrients):**
+
+```json
+{
+  "success": false,
+  "message": "Food item found but lacks macro nutrient information (carbs, protein, fat)"
+}
+```
+
+### Get Food by Name
+
+```
+GET /api/food/:name
+```
+
+**Description:** Search for food items by name from OpenFoodFacts and local database
+**Parameters:**
+
+- `name` (path): Food name to search for
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "0": {
+      "name": "Apple",
+      "image": "https://example.com/apple.jpg",
+      "nutrients": {
+        "carbs": 14.0,
+        "protein": 0.3,
+        "fat": 0.2,
+        "fiber": 2.4,
+        "sugar": 10.4
+      },
+      "calories": 52
+    }
+  },
+  "message": "Food item found by name from OpenFoodFacts"
+}
+```
+
+### Create Custom Food Item
+
+```
+POST /api/food
+```
+
+**Request Body:**
+
+```json
+{
+  "name": "Custom Food Item",
+  "nutrients": {
+    "carbs": 30.0,
+    "protein": 20.0,
+    "fat": 10.0,
+    "fiber": 5.0,
+    "sugar": 15.0
+  },
+  "calories": 300,
+  "image": "https://example.com/image.jpg",
+  "ingredients": "Custom ingredients"
+}
+```
+
+### Update Food Item
+
+```
+PUT /api/food/:id
+```
+
+### Delete Food Item
+
+```
+DELETE /api/food/:id
+```
+
+**Important Notes:**
+
+- **Macro Nutrient Filtering**: All food endpoints now filter results to only return items with valid macro nutrient values (carbs, protein, or fat > 0)
+- **OpenFoodFacts Integration**: Barcode and name searches use OpenFoodFacts API with fallback to local database
+- **Data Quality**: Only food items with complete nutritional information are returned
+
+---
+
 ## 📝 Food Logging Endpoints (`/api/food-logs`)
 
 ### Get All Food Logs
+
 ```
 GET /api/food-logs
 ```
+
 **Query Parameters:**
+
 - `userId` (optional): Filter by user ID
 - `date` (optional): Filter by specific date
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -111,10 +250,13 @@ GET /api/food-logs
 ```
 
 ### Create Food Log Entry
+
 ```
 POST /api/food-logs
 ```
+
 **Request Body:**
+
 ```json
 {
   "userId": "user123",
@@ -132,6 +274,7 @@ POST /api/food-logs
 ```
 
 **Required Fields:**
+
 - `userId`, `foodName`, `servingSize`, `measuringUnit`, `date`, `mealType`
 
 **Measuring Units:** Cup, ML, Grams, Ounces, Tablespoons, Teaspoons, etc.
@@ -139,30 +282,37 @@ POST /api/food-logs
 **Meal Types:** Breakfast, Lunch, Dinner, Snacks
 
 ### Get Food Logs by Date Range
+
 ```
 GET /api/food-logs/date-range?userId=user123&startDate=2024-01-01&endDate=2024-01-31
 ```
 
 ### Get Food Log by ID
+
 ```
 GET /api/food-logs/:id
 ```
 
 ### Update Food Log
+
 ```
 PUT /api/food-logs/:id
 ```
 
 ### Delete Food Log
+
 ```
 DELETE /api/food-logs/:id
 ```
 
 ### Get Daily Calorie Summary
+
 ```
 GET /api/food-logs/daily-summary?userId=user123&date=2024-01-15
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -203,10 +353,13 @@ GET /api/food-logs/daily-summary?userId=user123&date=2024-01-15
 ```
 
 ### Get Monthly Calorie Summary
+
 ```
 GET /api/food-logs/monthly-summary?userId=user123&year=2024&month=1
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -236,10 +389,13 @@ GET /api/food-logs/monthly-summary?userId=user123&year=2024&month=1
 ```
 
 ### Get Recent Food Activity
+
 ```
 GET /api/food-logs/recent-activity?userId=user123&limit=10
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -265,13 +421,17 @@ GET /api/food-logs/recent-activity?userId=user123&limit=10
 ```
 
 ### Get Calorie Trends
+
 ```
 GET /api/food-logs/trends?userId=user123&startDate=2024-01-01&endDate=2024-01-31&groupBy=day
 ```
+
 **Query Parameters:**
+
 - `groupBy`: day, week, or month
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -297,10 +457,13 @@ GET /api/food-logs/trends?userId=user123&startDate=2024-01-01&endDate=2024-01-31
 ```
 
 ### Get Dashboard Data
+
 ```
 GET /api/food-logs/dashboard?userId=user123&date=2024-01-15&year=2024&month=1
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -356,15 +519,19 @@ GET /api/food-logs/dashboard?userId=user123&date=2024-01-15&year=2024&month=1
 ## 🍳 Meal Logging Endpoints (`/api/meal-logs`)
 
 ### Get All Meal Logs
+
 ```
 GET /api/meal-logs
 ```
 
 ### Create Meal Log Entry
+
 ```
 POST /api/meal-logs
 ```
+
 **Request Body:**
+
 ```json
 {
   "userId": "user123",
@@ -399,9 +566,11 @@ POST /api/meal-logs
 ```
 
 **Required Fields:**
+
 - `userId`, `name`, `ingredients`, `instructions`, `date`
 
 ### Other Meal Log Endpoints
+
 - `GET /api/meal-logs/date-range` - Get meals by date range
 - `GET /api/meal-logs/:id` - Get meal by ID
 - `PUT /api/meal-logs/:id` - Update meal
@@ -412,15 +581,19 @@ POST /api/meal-logs
 ## 💧 Water Logging Endpoints (`/api/water-logs`)
 
 ### Get All Water Logs
+
 ```
 GET /api/water-logs
 ```
 
 ### Create Water Log Entry
+
 ```
 POST /api/water-logs
 ```
+
 **Request Body:**
+
 ```json
 {
   "userId": "user123",
@@ -430,13 +603,17 @@ POST /api/water-logs
 ```
 
 **Required Fields:**
+
 - `userId`, `amount` (in milliliters), `date`
 
 ### Get Daily Water Total
+
 ```
 GET /api/water-logs/daily-total?userId=user123&date=2024-01-15
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -451,6 +628,7 @@ GET /api/water-logs/daily-total?userId=user123&date=2024-01-15
 ```
 
 ### Other Water Log Endpoints
+
 - `GET /api/water-logs/date-range` - Get water logs by date range
 - `GET /api/water-logs/:id` - Get water log by ID
 - `PUT /api/water-logs/:id` - Update water log
@@ -461,15 +639,19 @@ GET /api/water-logs/daily-total?userId=user123&date=2024-01-15
 ## 🏃 Exercise Logging Endpoints (`/api/exercise-logs`)
 
 ### Get All Exercise Logs
+
 ```
 GET /api/exercise-logs
 ```
 
 ### Create Exercise Log Entry
+
 ```
 POST /api/exercise-logs
 ```
+
 **Request Body:**
+
 ```json
 {
   "userId": "user123",
@@ -483,15 +665,19 @@ POST /api/exercise-logs
 ```
 
 **Required Fields:**
+
 - `userId`, `name`, `date`, `caloriesBurnt`, `type`
 
 **Exercise Types:** Cardio, Strength
 
 ### Get Daily Exercise Total
+
 ```
 GET /api/exercise-logs/daily-total?userId=user123&date=2024-01-15
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -510,6 +696,7 @@ GET /api/exercise-logs/daily-total?userId=user123&date=2024-01-15
 ```
 
 ### Other Exercise Log Endpoints
+
 - `GET /api/exercise-logs/date-range` - Get exercises by date range
 - `GET /api/exercise-logs/:id` - Get exercise by ID
 - `PUT /api/exercise-logs/:id` - Update exercise
@@ -520,10 +707,13 @@ GET /api/exercise-logs/daily-total?userId=user123&date=2024-01-15
 ## 🧮 Calorie Calculator Endpoints (`/api/calorie-calculator`)
 
 ### Get Macronutrient Calorie Values
+
 ```
 GET /api/calorie-calculator/macronutrient-values
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -544,10 +734,13 @@ GET /api/calorie-calculator/macronutrient-values
 ```
 
 ### Calculate Total Calories from Macronutrients
+
 ```
 POST /api/calorie-calculator/calculate
 ```
+
 **Request Body:**
+
 ```json
 {
   "carbs": 50,
@@ -555,7 +748,9 @@ POST /api/calorie-calculator/calculate
   "fat": 20
 }
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -586,17 +781,22 @@ POST /api/calorie-calculator/calculate
 ```
 
 ### Calculate Individual Macronutrient Calories
+
 ```
 POST /api/calorie-calculator/individual
 ```
+
 **Request Body:**
+
 ```json
 {
   "macronutrient": "carbs",
   "grams": 25
 }
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -611,10 +811,13 @@ POST /api/calorie-calculator/individual
 ```
 
 ### Calculate Food Calories (Smart Calculation)
+
 ```
 POST /api/calorie-calculator/food-calories
 ```
+
 **Request Body:**
+
 ```json
 {
   "calories": 0,
@@ -623,7 +826,9 @@ POST /api/calorie-calculator/food-calories
   "fat": 20
 }
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -654,6 +859,7 @@ POST /api/calorie-calculator/food-calories
 ```
 
 **Features:**
+
 - **Smart Calculation:** Automatically calculates calories from macronutrients when no direct calorie value is provided
 - **Validation:** Compares provided calories with calculated macronutrient calories for consistency
 - **Individual Calculations:** Calculate calories for each macronutrient separately
@@ -672,6 +878,7 @@ The API creates the following Firestore collections:
 4. **exerciseLogs** - Exercise activity logs
 
 Each document automatically includes:
+
 - `createdAt` - ISO timestamp when created
 - `updatedAt` - ISO timestamp when last updated
 
@@ -680,15 +887,17 @@ Each document automatically includes:
 ## 🚀 Getting Started
 
 1. **Start the API server:**
+
    ```bash
    npm run dev
    ```
 
 2. **Test the endpoints:**
+
    ```bash
    # Health check
    curl http://localhost:3000/api/health
-   
+
    # Get all endpoints
    curl http://localhost:3000/
    ```

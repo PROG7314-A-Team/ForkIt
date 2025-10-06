@@ -2,6 +2,92 @@ const axios = require("axios");
 const FirebaseService = require("../services/firebaseService");
 const foodService = new FirebaseService("food");
 
+// Helper function to check if food has valid macro nutrient values
+const hasValidMacroNutrients = (nutrients) => {
+  if (!nutrients) return false;
+
+  const { carbs, protein, fat } = nutrients;
+
+  // Check if at least one macro nutrient has a value greater than 0
+  return (carbs && carbs > 0) || (protein && protein > 0) || (fat && fat > 0);
+};
+
+// Helper function to parse serving size using regex
+const parseServingSize = (servingSizeString) => {
+  if (!servingSizeString) {
+    return { quantity: null, unit: null, original: null };
+  }
+
+  // Remove extra whitespace and convert to string
+  const cleanSize = String(servingSizeString).trim();
+
+  // Regex to match number (including decimals) followed by optional unit
+  // Examples: "200g", "1 cup", "30.5ml", "1.5 serving", "250"
+  const regex =
+    /^(\d+(?:\.\d+)?)\s*([a-zA-Z\u00C0-\u017F\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF]*)?$/;
+  const match = cleanSize.match(regex);
+
+  if (match) {
+    const quantity = parseFloat(match[1]);
+    const unit = match[2] ? match[2].trim() : null;
+
+    return {
+      quantity: quantity,
+      unit: unit,
+      original: cleanSize,
+    };
+  }
+
+  // If regex doesn't match, try to extract just the number
+  const numberMatch = cleanSize.match(/(\d+(?:\.\d+)?)/);
+  if (numberMatch) {
+    return {
+      quantity: parseFloat(numberMatch[1]),
+      unit: null,
+      original: cleanSize,
+    };
+  }
+
+  return { quantity: null, unit: null, original: cleanSize };
+};
+
+// Helper function to extract comprehensive nutritional data
+const extractNutritionalData = (product) => {
+  const nutriments = product.nutriments || {};
+
+  // Parse serving size using regex
+  const parsedServingSize = parseServingSize(product.serving_size);
+
+  return {
+    // Basic nutritional info per 100g
+    nutrients: {
+      carbs: nutriments.carbohydrates_100g || nutriments.carbohydrates || 0,
+      protein: nutriments.proteins_100g || nutriments.proteins || 0,
+      fat: nutriments.fat_100g || nutriments.fat || 0,
+    },
+    calories: nutriments["energy-kcal_100g"] || nutriments["energy-kcal"] || 0,
+
+    // Enhanced serving size information with regex parsing
+    servingSize: {
+      size: product.serving_size || null,
+      quantity: parsedServingSize.quantity,
+      unit: parsedServingSize.unit,
+      original: parsedServingSize.original,
+      // Keep original API values as fallback
+      apiQuantity: product.serving_quantity || null,
+      apiUnit: product.serving_quantity_unit || null,
+    },
+
+    // Nutritional info per serving (when available)
+    nutrientsPerServing: {
+      carbs: nutriments.carbohydrates_serving || null,
+      protein: nutriments.proteins_serving || null,
+      fat: nutriments.fat_serving || null,
+    },
+    caloriesPerServing: nutriments["energy-kcal_serving"] || null,
+  };
+};
+
 // Get food by barcode
 exports.getFoodByBarcode = async (req, res) => {
   try {
@@ -20,22 +106,26 @@ exports.getFoodByBarcode = async (req, res) => {
       });
     }
 
+    const nutritionalData = extractNutritionalData(foodData.product);
+
     const transformedFood = {
       id: foodData.code || code,
       name: foodData.product?.product_name || "Unknown Product",
       brand: foodData.product?.brands || "Unknown Brand",
       barcode: code,
-      nutrients: {
-        carbs: foodData.product?.nutriments?.carbohydrates_100g || 0,
-        protein: foodData.product?.nutriments?.proteins_100g || 0,
-        fat: foodData.product?.nutriments?.fat_100g || 0,
-        fiber: foodData.product?.nutriments?.fiber_100g || 0,
-        sugar: foodData.product?.nutriments?.sugars_100g || 0,
-      },
-      calories: foodData.product?.nutriments?.["energy-kcal"] || 0,
+      ...nutritionalData,
       image: foodData.product?.image_url || null,
       ingredients: foodData.product?.ingredients_text || null,
     };
+
+    // Filter: Only return food items with valid macro nutrient values
+    if (!hasValidMacroNutrients(transformedFood.nutrients)) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Food item found but lacks macro nutrient information (carbs, protein, fat)",
+      });
+    }
 
     res.json({
       success: true,
@@ -57,32 +147,29 @@ exports.getFoodByName = async (req, res) => {
   try {
     const { name } = req.params;
     const response = await axios.get(
-      `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${name}&json=1&fields=product_name,image_small_url,nutriments&countries_tags=South_Africa`
+      `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${name}&json=1&countries_tags=South_Africa`
     );
     if (response.data.count > 0) {
-      //console.log("Response data", response.data);
       let foodData = {};
       let validProductIndex = 0;
 
       for (let i = 0; i < response.data.count; i++) {
         const product = response.data.products[i];
 
-        // Only process products that have the required fields
+        // Only process products that have the required fields and valid macro nutrients
         if (product && product.product_name && product.nutriments) {
-          foodData[validProductIndex] = {
-            name: product.product_name,
-            image: product.image_small_url || null,
-            nutrients: {
-              carbs: product.nutriments.carbohydrates || 0,
-              protein: product.nutriments.proteins || 0,
-              fat: product.nutriments.fat || 0,
-              fiber: product.nutriments.fiber || 0,
-              sugar: product.nutriments.sugars || 0,
-            },
-            calories: product.nutriments["energy-kcal"] || 0,
-          };
-          //console.log("Food Data", foodData[validProductIndex]);
-          validProductIndex++;
+          const nutritionalData = extractNutritionalData(product);
+
+          // Filter: Only include food items with valid macro nutrient values
+          if (hasValidMacroNutrients(nutritionalData.nutrients)) {
+            foodData[validProductIndex] = {
+              name: product.product_name,
+              brand: product.brands || "Unknown Brand",
+              image: product.image_small_url || null,
+              ...nutritionalData,
+            };
+            validProductIndex++;
+          }
         }
       }
 
@@ -92,10 +179,18 @@ exports.getFoodByName = async (req, res) => {
         const localFoodData = await foodService.query([
           { field: "name", operator: "==", value: name },
         ]);
-        if (localFoodData.length > 0) {
+
+        // Filter local database results to only include items with macro nutrients
+        const filteredLocalData = localFoodData.filter((food) =>
+          hasValidMacroNutrients(food.nutrients)
+        );
+
+        //console.log("Filtered local data", filteredLocalData);
+
+        if (filteredLocalData.length > 0) {
           return res.status(200).json({
             success: true,
-            data: localFoodData,
+            data: filteredLocalData,
             message: "Food item found by name from ForkIt Database",
           });
         }
@@ -105,19 +200,30 @@ exports.getFoodByName = async (req, res) => {
         });
       }
 
+      console.log("Food data", foodData);
+
       return res.status(200).json({
         success: true,
         data: foodData,
         message: "Food item found by name from OpenFoodFacts",
       });
     } else {
+      // Query local database
       const foodData = await foodService.query([
         { field: "name", operator: "==", value: name },
       ]);
-      if (foodData.length > 0) {
+
+      // Filter local database results to only include items with macro nutrients
+      const filteredFoodData = foodData.filter((food) =>
+        hasValidMacroNutrients(food.nutrients)
+      );
+
+      console.log("Filtered food data", filteredFoodData);
+
+      if (filteredFoodData.length > 0) {
         return res.status(200).json({
           success: true,
-          data: foodData,
+          data: filteredFoodData,
           message: "Food item found by name from ForkIt Database",
         });
       }

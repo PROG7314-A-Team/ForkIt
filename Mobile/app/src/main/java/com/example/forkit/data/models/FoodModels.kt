@@ -37,6 +37,7 @@ data class GetFoodFromNameResponse(
     val success: Boolean,
     val message: String,
     val data: Map<String, SearchFoodItem>
+    //val data: List<SearchFoodItem>
 )
 
 // Create food 
