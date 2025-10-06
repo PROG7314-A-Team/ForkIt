@@ -34,24 +34,31 @@ import com.example.forkit.data.RetrofitClient
 import com.example.forkit.data.models.LoginRequest
 import com.example.forkit.data.models.LoginResponse
 import com.example.forkit.ui.theme.ForkItTheme
+import com.example.forkit.utils.AuthPreferences
 import kotlinx.coroutines.launch
 
 class SignInActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Load theme preference
+        ThemeManager.loadThemeMode(this)
+        
+        val prefilledEmail = intent.getStringExtra("EMAIL") ?: ""
+        
         setContent {
             ForkItTheme {
-                SignInScreen()
+                SignInScreen(prefilledEmail = prefilledEmail)
             }
         }
     }
 }
 
 @Composable
-fun SignInScreen() {
+fun SignInScreen(prefilledEmail: String = "") {
     val context = LocalContext.current
-    var email by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf(prefilledEmail) }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
@@ -62,7 +69,7 @@ fun SignInScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -93,7 +100,7 @@ fun SignInScreen() {
             Text(
                 text = stringResource(id = R.string.create_account_here),
                 fontSize = 16.sp,
-                color = Color(0xFFB4B4B4),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center
             )
 
@@ -104,17 +111,19 @@ fun SignInScreen() {
                 value = email,
                 onValueChange = { email = it },
                 label = { Text(stringResource(id = R.string.email)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF1E9ECD),
-                    unfocusedBorderColor = Color(0xFFB4B4B4),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                     focusedLabelColor = Color(0xFF1E9ECD),
-                    unfocusedLabelColor = Color(0xFFB4B4B4)
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                 ),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 16.sp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -124,26 +133,30 @@ fun SignInScreen() {
                 value = password,
                 onValueChange = { password = it },
                 label = { Text(stringResource(id = R.string.password)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF1E9ECD),
-                    unfocusedBorderColor = Color(0xFFB4B4B4),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                     focusedLabelColor = Color(0xFF1E9ECD),
-                    unfocusedLabelColor = Color(0xFFB4B4B4)
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                 ),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    TextButton(onClick = { passwordVisible = !passwordVisible }) {
                         Text(
-                            text = if (passwordVisible) "👁️" else "🙈",
-                            fontSize = 20.sp
+                            text = if (passwordVisible) "Hide" else "Show",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
                         )
                     }
-                }
+                },
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 16.sp)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -173,11 +186,23 @@ fun SignInScreen() {
                                 )
                                 if (response.isSuccessful) {
                                     val body: LoginResponse? = response.body()
-                                    message = "Login successful!"
-                                    // TODO: Save token (body?.token) securely
-                                    // Navigate to MainActivity
+                                    message = body?.message ?: "Login successful!"
+                                    
+                                    // Save login credentials for auto sign-in
+                                    val authPreferences = AuthPreferences(context)
+                                    body?.userId?.let { userId ->
+                                        body.idToken?.let { idToken ->
+                                            authPreferences.saveLoginData(userId, idToken, email)
+                                        }
+                                    }
+                                    
+                                    // Navigate to DashboardActivity with userId
                                     val intent = Intent(context, DashboardActivity::class.java)
+                                    intent.putExtra("USER_ID", body?.userId)
+                                    intent.putExtra("ID_TOKEN", body?.idToken)
+                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                     context.startActivity(intent)
+                                    (context as? ComponentActivity)?.finish()
                                 } else {
                                     message = "Login failed: ${response.errorBody()?.string()}"
                                 }
@@ -222,7 +247,7 @@ fun SignInScreen() {
             ) {
                 Text(
                     text = stringResource(id = R.string.dont_have_account),
-                    color = Color(0xFFB4B4B4),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                     fontSize = 14.sp
                 )
                 Spacer(modifier = Modifier.width(4.dp))
@@ -246,7 +271,7 @@ fun SignInScreen() {
                     .fillMaxWidth()
                     .height(56.dp)
                     .background(
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.surface,
                         shape = RoundedCornerShape(12.dp)
                     )
                     .border(

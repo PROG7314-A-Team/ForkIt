@@ -1,45 +1,68 @@
 package com.example.forkit
 
+import android.content.Context
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 
+enum class ThemeMode {
+    SYSTEM,  // Follow device setting
+    LIGHT,   // Always light
+    DARK     // Always dark
+}
+
 object ThemeManager {
-    private var _isDarkMode by mutableStateOf(false)
-    val isDarkMode: Boolean get() = _isDarkMode
+    private var _themeMode by mutableStateOf(ThemeMode.SYSTEM)
+    val themeMode: ThemeMode get() = _themeMode
     
+    private const val PREFS_NAME = "theme_preferences"
+    private const val KEY_THEME_MODE = "theme_mode"
+    
+    // Returns the actual dark mode state based on theme mode and system preference
+    fun isDarkMode(isSystemInDarkTheme: Boolean): Boolean {
+        return when (_themeMode) {
+            ThemeMode.SYSTEM -> isSystemInDarkTheme
+            ThemeMode.LIGHT -> false
+            ThemeMode.DARK -> true
+        }
+    }
+    
+    fun setThemeMode(mode: ThemeMode) {
+        _themeMode = mode
+    }
+    
+    fun saveThemeMode(context: Context, mode: ThemeMode) {
+        _themeMode = mode
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_THEME_MODE, mode.name)
+            .apply()
+    }
+    
+    fun loadThemeMode(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val savedMode = prefs.getString(KEY_THEME_MODE, ThemeMode.SYSTEM.name)
+        _themeMode = try {
+            ThemeMode.valueOf(savedMode ?: ThemeMode.SYSTEM.name)
+        } catch (e: IllegalArgumentException) {
+            ThemeMode.SYSTEM
+        }
+    }
+    
+    // Legacy support for existing code
+    @Deprecated("Use isDarkMode(isSystemInDarkTheme) instead")
+    val isDarkMode: Boolean get() = _themeMode == ThemeMode.DARK
+    
+    @Deprecated("Use setThemeMode() instead")
     fun toggleDarkMode() {
-        _isDarkMode = !_isDarkMode
+        _themeMode = when (_themeMode) {
+            ThemeMode.LIGHT -> ThemeMode.DARK
+            ThemeMode.DARK -> ThemeMode.LIGHT
+            ThemeMode.SYSTEM -> ThemeMode.DARK
+        }
     }
     
+    @Deprecated("Use setThemeMode() instead")
     fun setDarkMode(isDark: Boolean) {
-        _isDarkMode = isDark
+        _themeMode = if (isDark) ThemeMode.DARK else ThemeMode.LIGHT
     }
-    
-    // Dark mode colors
-    val darkBackground = Color(0xFF121212)
-    val darkSurface = Color(0xFF1E1E1E)
-    val darkOnBackground = Color(0xFFE0E0E0)
-    val darkOnSurface = Color(0xFFE0E0E0)
-    val darkCard = Color(0xFF424242) // Grey cards in dark mode
-    val darkBorder = Color(0xFF404040)
-    
-    // Light mode colors (existing)
-    val lightBackground = Color.White
-    val lightSurface = Color.White
-    val lightOnBackground = Color.Black
-    val lightOnSurface = Color.Black
-    val lightCard = Color.White
-    val lightBorder = Color(0xFFE0E0E0)
-    
-    // ForkIt brand colors (same for both modes)
-    val forkItGreen = Color(0xFF22B27D)
-    val forkItBlue = Color(0xFF1E9ECD)
-    
-    // Dynamic colors based on current theme
-    val backgroundColor: Color get() = if (isDarkMode) darkBackground else lightBackground
-    val surfaceColor: Color get() = if (isDarkMode) darkSurface else lightSurface
-    val onBackgroundColor: Color get() = if (isDarkMode) darkOnBackground else lightOnBackground
-    val onSurfaceColor: Color get() = if (isDarkMode) darkOnSurface else lightOnSurface
-    val cardColor: Color get() = if (isDarkMode) darkCard else lightCard
-    val borderColor: Color get() = if (isDarkMode) darkBorder else lightBorder
 }

@@ -116,7 +116,7 @@ exports.updateUser = async (req, res) => {
     }
 
     const userData = req.body;
-    if (!userData) {
+    if (!userData || Object.keys(userData).length === 0) {
       return res.status(400).json({
         success: false,
         message: "User data is required",
@@ -156,6 +156,14 @@ exports.deleteUser = async (req, res) => {
       });
     }
 
+    const existingUser = await userService.getById(id);
+    if (!existingUser || !existingUser.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
     let user = await userService.delete(id);
     if (user) {
       res.json({
@@ -174,6 +182,80 @@ exports.deleteUser = async (req, res) => {
       success: false,
       error: error.message,
       message: "Failed to delete user",
+    });
+  }
+};
+
+// UPDATE user profile (age, height, weight)
+exports.updateUserProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { age, height, weight } = req.body;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    if (!age || !height || !weight) {
+      return res.status(400).json({
+        success: false,
+        message: "Age, height, and weight are required",
+      });
+    }
+
+    // Validate profile data
+    if (age < 1 || age > 120) {
+      return res.status(400).json({
+        success: false,
+        message: "Age must be between 1 and 120",
+      });
+    }
+
+    if (height < 50 || height > 250) {
+      return res.status(400).json({
+        success: false,
+        message: "Height must be between 50 and 250 cm",
+      });
+    }
+
+    if (weight < 20 || weight > 300) {
+      return res.status(400).json({
+        success: false,
+        message: "Weight must be between 20 and 300 kg",
+      });
+    }
+
+    // Update user profile data
+    const updateData = {
+      age: parseInt(age),
+      height: parseFloat(height),
+      weight: parseFloat(weight),
+      profileUpdatedAt: new Date().toISOString(),
+    };
+
+    const updatedUser = await userService.update(id, updateData);
+
+    if (updatedUser) {
+      res.json({
+        success: true,
+        data: updatedUser,
+        message: "User profile updated successfully",
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: "Failed to update user profile",
+      });
+    }
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Failed to update user profile",
     });
   }
 };

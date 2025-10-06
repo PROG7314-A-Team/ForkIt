@@ -48,3 +48,45 @@ data class DeleteUserResponse(
     val message: String,
     val data: User
 )
+
+// User Goals Models
+data class UserGoals(
+    val userId: String,
+    val dailyCalories: Int,
+    val dailyWater: Int,
+    val dailySteps: Int,
+    val weeklyExercises: Int,
+    val updatedAt: String
+)
+
+data class GetUserGoalsResponse(
+    val success: Boolean,
+    val message: String,
+    val data: UserGoals
+)
+
+data class UpdateUserGoalsRequest(
+    val dailyCalories: Int? = null,
+    val dailyWater: Int? = null,
+    val dailySteps: Int? = null,
+    val weeklyExercises: Int? = null
+)
+
+data class UpdateUserGoalsResponse(
+    val success: Boolean,
+    val message: String,
+    val data: UserGoals
+)
+
+// Update user profile (age, height, weight)
+data class UpdateUserProfileRequest(
+    val age: Int,
+    val height: Double,
+    val weight: Double
+)
+
+data class UpdateUserProfileResponse(
+    val success: Boolean,
+    val message: String,
+    val data: User
+)

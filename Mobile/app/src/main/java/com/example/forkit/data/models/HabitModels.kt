@@ -8,10 +8,13 @@ data class Habit(
     val title: String,
     val description: String? = null,
     val isCompleted: Boolean = false,
-    val completedAt: LocalDateTime? = null,
-    val createdAt: LocalDateTime = LocalDateTime.now(),
-    val category: HabitCategory = HabitCategory.GENERAL,
-    val frequency: HabitFrequency = HabitFrequency.DAILY
+    val completedAt: String? = null, // ISO string from API
+    val createdAt: String, // ISO string from API
+    val category: String = "GENERAL", // String from API
+    val frequency: String = "DAILY", // String from API
+    val selectedDays: List<Int>? = null, // For weekly habits (0-6, Sunday-Saturday)
+    val dayOfMonth: Int? = null, // For monthly habits (1-31)
+    val userId: String? = null
 )
 
 enum class HabitCategory {
@@ -33,6 +36,42 @@ data class HabitCompletion(
     val date: LocalDate
 )
 
+// API Request Models
+data class CreateHabitRequest(
+    val title: String,
+    val description: String? = null,
+    val category: String = "GENERAL",
+    val frequency: String = "DAILY",
+    val selectedDays: List<Int>? = null, // For weekly habits (0-6, Sunday-Saturday)
+    val dayOfMonth: Int? = null // For monthly habits (1-31)
+)
+
+data class CreateHabitApiRequest(
+    val userId: String,
+    val habit: CreateHabitRequest
+)
+
+data class UpdateHabitRequest(
+    val title: String? = null,
+    val description: String? = null,
+    val isCompleted: Boolean? = null,
+    val category: HabitCategory? = null,
+    val frequency: HabitFrequency? = null
+)
+
+// API Response Models
+data class HabitResponse(
+    val success: Boolean,
+    val message: String,
+    val data: Habit? = null
+)
+
+data class HabitsResponse(
+    val success: Boolean,
+    val message: String,
+    val data: List<Habit> = emptyList()
+)
+
 // Mock data for testing
 object MockHabits {
     fun getTodayHabits(): List<Habit> = listOf(
@@ -41,30 +80,34 @@ object MockHabits {
             title = "Eat 250g Steak",
             description = "High protein meal for muscle building",
             isCompleted = false,
-            category = HabitCategory.NUTRITION
+            createdAt = java.time.Instant.now().toString(),
+            category = "NUTRITION"
         ),
         Habit(
             id = "2", 
             title = "Eat 2 Fried Eggs",
             description = "Healthy breakfast protein",
             isCompleted = false,
-            category = HabitCategory.NUTRITION
+            createdAt = java.time.Instant.now().toString(),
+            category = "NUTRITION"
         ),
         Habit(
             id = "3",
             title = "Eat 1 Cup of Rice",
             description = "Carbohydrate source",
             isCompleted = true,
-            completedAt = LocalDateTime.now().minusHours(2),
-            category = HabitCategory.NUTRITION
+            completedAt = java.time.Instant.now().minusSeconds(7200).toString(),
+            createdAt = java.time.Instant.now().toString(),
+            category = "NUTRITION"
         ),
         Habit(
             id = "4",
             title = "Have 1 Vitamin Pill",
             description = "Daily vitamin supplement",
             isCompleted = true,
-            completedAt = LocalDateTime.now().minusHours(1),
-            category = HabitCategory.HEALTH
+            completedAt = java.time.Instant.now().minusSeconds(3600).toString(),
+            createdAt = java.time.Instant.now().toString(),
+            category = "HEALTH"
         )
     )
     
@@ -74,16 +117,18 @@ object MockHabits {
             title = "Exercise 3 times this week",
             description = "Maintain fitness routine",
             isCompleted = false,
-            category = HabitCategory.EXERCISE,
-            frequency = HabitFrequency.WEEKLY
+            createdAt = java.time.Instant.now().toString(),
+            category = "EXERCISE",
+            frequency = "WEEKLY"
         ),
         Habit(
             id = "6",
             title = "Drink 8 glasses of water daily",
             description = "Stay hydrated",
             isCompleted = true,
-            completedAt = LocalDateTime.now().minusDays(1),
-            category = HabitCategory.HEALTH
+            completedAt = java.time.Instant.now().minusSeconds(86400).toString(),
+            createdAt = java.time.Instant.now().toString(),
+            category = "HEALTH"
         )
     )
     
@@ -93,17 +138,19 @@ object MockHabits {
             title = "Complete monthly health checkup",
             description = "Regular health monitoring",
             isCompleted = false,
-            category = HabitCategory.HEALTH,
-            frequency = HabitFrequency.MONTHLY
+            createdAt = java.time.Instant.now().toString(),
+            category = "HEALTH",
+            frequency = "MONTHLY"
         ),
         Habit(
             id = "8",
             title = "Review nutrition goals",
             description = "Monthly nutrition assessment",
             isCompleted = true,
-            completedAt = LocalDateTime.now().minusDays(5),
-            category = HabitCategory.NUTRITION,
-            frequency = HabitFrequency.MONTHLY
+            completedAt = java.time.Instant.now().minusSeconds(432000).toString(),
+            createdAt = java.time.Instant.now().toString(),
+            category = "NUTRITION",
+            frequency = "MONTHLY"
         )
     )
 }

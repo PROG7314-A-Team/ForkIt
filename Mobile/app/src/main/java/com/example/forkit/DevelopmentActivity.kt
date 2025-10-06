@@ -82,6 +82,11 @@ fun DevelopmentScreen() {
             name = "Add Habit Screen",
             description = "Create new habits with repeat options and reminders",
             activityClass = AddHabitActivity::class.java
+        ),
+        ScreenItem(
+            name = "Goals Screen",
+            description = "Set and manage daily health and fitness goals",
+            activityClass = GoalsActivity::class.java
         )
 
         // Add more screens here as you develop them

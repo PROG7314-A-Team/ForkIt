@@ -60,23 +60,51 @@ exports.getFoodByName = async (req, res) => {
       `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${name}&json=1&fields=product_name,image_small_url,nutriments&countries_tags=South_Africa`
     );
     if (response.data.count > 0) {
+      //console.log("Response data", response.data);
       let foodData = {};
+      let validProductIndex = 0;
+
       for (let i = 0; i < response.data.count; i++) {
-        foodData[i] = {
-          name: response.data.products[i].product_name,
-          image: response.data.products[i].image_small_url,
-          nutrients: {
-            carbs: response.data.products[i].nutriments.carbohydrates,
-            protein: response.data.products[i].nutriments.proteins,
-            fat: response.data.products[i].nutriments.fat,
-            fiber: response.data.products[i].nutriments.fiber,
-            sugar: response.data.products[i].nutriments.sugars,
-          },
-          calories: response.data.products[i].nutriments["energy-kcal"],
-        };
-        console.log("Food Data", foodData[i]);
+        const product = response.data.products[i];
+
+        // Only process products that have the required fields
+        if (product && product.product_name && product.nutriments) {
+          foodData[validProductIndex] = {
+            name: product.product_name,
+            image: product.image_small_url || null,
+            nutrients: {
+              carbs: product.nutriments.carbohydrates || 0,
+              protein: product.nutriments.proteins || 0,
+              fat: product.nutriments.fat || 0,
+              fiber: product.nutriments.fiber || 0,
+              sugar: product.nutriments.sugars || 0,
+            },
+            calories: product.nutriments["energy-kcal"] || 0,
+          };
+          //console.log("Food Data", foodData[validProductIndex]);
+          validProductIndex++;
+        }
       }
-      //let foodData = response.data;
+
+      // Check if we found any valid products
+      if (Object.keys(foodData).length === 0) {
+        // No valid products from OpenFoodFacts, try local database
+        const localFoodData = await foodService.query([
+          { field: "name", operator: "==", value: name },
+        ]);
+        if (localFoodData.length > 0) {
+          return res.status(200).json({
+            success: true,
+            data: localFoodData,
+            message: "Food item found by name from ForkIt Database",
+          });
+        }
+        return res.status(404).json({
+          success: false,
+          message: "Food item not found by name",
+        });
+      }
+
       return res.status(200).json({
         success: true,
         data: foodData,
@@ -95,7 +123,7 @@ exports.getFoodByName = async (req, res) => {
       }
       return res.status(404).json({
         success: false,
-        message: "Food item not found by name ",
+        message: "Food item not found by name",
       });
     }
   } catch (error) {

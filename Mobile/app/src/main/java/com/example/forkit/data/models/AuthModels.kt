@@ -6,8 +6,9 @@ data class RegisterRequest(
 )
 
 data class RegisterResponse(
-    val success: Boolean,
-    val message: String
+    val message: String,
+    val uid: String,
+    val email: String
 )
 
 data class LoginRequest(
@@ -16,6 +17,9 @@ data class LoginRequest(
 )
 
 data class LoginResponse(
-    val token: String,
-    val userId: String
+    val message: String,
+    val userId: String,
+    val idToken: String,
+    val refreshToken: String,
+    val expiresIn: String
 )

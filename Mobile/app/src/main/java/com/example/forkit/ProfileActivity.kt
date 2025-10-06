@@ -11,19 +11,25 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Build
 //import androidx.compose.material.icons.filled.QuestionAnswer
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -32,14 +38,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
+import com.example.forkit.utils.AuthPreferences
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        val userId = intent.getStringExtra("USER_ID") ?: ""
+        
         setContent {
             ForkItTheme {
-                ProfileScreen()
+                ProfileScreen(userId = userId)
             }
         }
     }
@@ -52,12 +62,13 @@ data class ProfileOption(
 )
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(userId: String = "") {
     val context = LocalContext.current
     
     // Handle back button press
     BackHandler {
         val intent = Intent(context, DashboardActivity::class.java)
+        intent.putExtra("USER_ID", userId)
         context.startActivity(intent)
     }
     
@@ -66,6 +77,11 @@ fun ProfileScreen() {
             icon = Icons.Default.Person,
             title = "Account",
             description = "Manage your account settings"
+        ),
+        ProfileOption(
+            icon = Icons.Default.Star,
+            title = "Goals",
+            description = "Set your daily health and fitness goals"
         ),
         ProfileOption(
             icon = Icons.Default.Notifications,
@@ -81,6 +97,11 @@ fun ProfileScreen() {
             icon = Icons.Default.Info,
             title = "About",
             description = "App information and version"
+        ),
+        ProfileOption(
+            icon = Icons.Default.Build,
+            title = "Developer Tools",
+            description = "Access development and testing features"
         )
     )
 
@@ -99,11 +120,12 @@ fun ProfileScreen() {
             IconButton(
                 onClick = { 
                     val intent = Intent(context, DashboardActivity::class.java)
+                    intent.putExtra("USER_ID", userId)
                     context.startActivity(intent)
                 }
             ) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
                     tint = MaterialTheme.colorScheme.onBackground
                 )
@@ -133,10 +155,17 @@ fun ProfileScreen() {
                         when (option.title) {
                             "Account" -> {
                                 val intent = Intent(context, AccountActivity::class.java)
+                                intent.putExtra("USER_ID", userId)
+                                context.startActivity(intent)
+                            }
+                            "Goals" -> {
+                                val intent = Intent(context, GoalsActivity::class.java)
+                                intent.putExtra("USER_ID", userId)
                                 context.startActivity(intent)
                             }
                             "Notifications" -> {
                                 val intent = Intent(context, NotificationsActivity::class.java)
+                                intent.putExtra("USER_ID", userId)
                                 context.startActivity(intent)
                             }
                             "App Settings" -> {
@@ -147,12 +176,80 @@ fun ProfileScreen() {
                                 val intent = Intent(context, AboutActivity::class.java)
                                 context.startActivity(intent)
                             }
+                            "Developer Tools" -> {
+                                val intent = Intent(context, DevelopmentActivity::class.java)
+                                context.startActivity(intent)
+                            }
                         }
                     }
                 )
             }
             
             // Bottom spacing
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            
+            // Logout Button
+            item {
+                Button(
+                    onClick = {
+                        // Clear saved login credentials
+                        val authPreferences = AuthPreferences(context)
+                        authPreferences.logout()
+                        
+                        // Navigate to Login screen and clear back stack
+                        val intent = Intent(context, LoginActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        context.startActivity(intent)
+                        (context as? ComponentActivity)?.finish()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent
+                    ),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color(0xFFE53935), // Red
+                                        Color(0xFFD32F2F)  // Darker red
+                                    )
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                contentDescription = "Logout",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Logout",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // Final bottom spacing
             item {
                 Spacer(modifier = Modifier.height(32.dp))
             }
@@ -208,7 +305,7 @@ fun ProfileOptionCard(
             
             // Arrow
             Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = "Arrow",
                 tint = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.size(20.dp)

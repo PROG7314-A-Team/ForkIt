@@ -105,15 +105,15 @@ data class DailyCalorieSummary(
 
 data class MealDistributionEntry(
     val mealType: String,
-    val calories: Int,
+    val calories: Double,
     val percentage: Int
 )
 
 data class MealTotals(
-    val Breakfast: Int,
-    val Lunch: Int,
-    val Dinner: Int,
-    val Snacks: Int
+    val Breakfast: Double,
+    val Lunch: Double,
+    val Dinner: Double,
+    val Snacks: Double
 )
 
 data class MonthlyCalorieSummary(

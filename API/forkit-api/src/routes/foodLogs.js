@@ -2,9 +2,6 @@ const express = require("express");
 const router = express.Router();
 const foodLogController = require("../controllers/foodLogController");
 
-// GET all food logs (with optional filters)
-router.get("/", foodLogController.getFoodLogs);
-
 // GET food logs by date range
 router.get("/date-range", foodLogController.getFoodLogsByDateRange);
 
@@ -22,6 +19,9 @@ router.get("/trends", foodLogController.getCalorieTrends);
 
 // GET comprehensive dashboard data
 router.get("/dashboard", foodLogController.getDashboardData);
+
+// GET all food logs (with optional filters)
+router.get("/user/:userId", foodLogController.getFoodLogs);
 
 // GET food log by ID
 router.get("/:id", foodLogController.getFoodLogById);

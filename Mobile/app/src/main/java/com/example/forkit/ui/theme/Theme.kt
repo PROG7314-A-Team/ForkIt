@@ -44,7 +44,7 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun ForkItTheme(
-    darkTheme: Boolean = ThemeManager.isDarkMode,
+    darkTheme: Boolean = ThemeManager.isDarkMode(isSystemInDarkTheme()),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false, // Disable dynamic colors to use our custom theme
     content: @Composable () -> Unit
@@ -58,8 +58,8 @@ fun ForkItTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.background.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.isAppearanceLightStatusBars = !darkTheme
         }
     }
 
