@@ -88,15 +88,21 @@ app.use("*", (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 ForkIt API server running on port ${PORT}`);
-  console.log(`🔄 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🍽️ Food endpoints: http://localhost:${PORT}/api/food`);
-  console.log(`👤 User endpoints: http://localhost:${PORT}/api/users`);
-  console.log(`📝 Food logs: http://localhost:${PORT}/api/food-logs`);
-  console.log(`🍳 Meal logs: http://localhost:${PORT}/api/meal-logs`);
-  console.log(`💧 Water logs: http://localhost:${PORT}/api/water-logs`);
-  console.log(`🏃 Exercise logs: http://localhost:${PORT}/api/exercise-logs`);
-  console.log(`🧮 Calorie calculator: http://localhost:${PORT}/api/calorie-calculator`);
-  console.log(`🏋️  Habits: http://localhost:${PORT}/api/habits`);
-});
+module.exports = app;
+
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(`🚀 ForkIt API server running on port ${PORT}`);
+    console.log(`🔄 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`🍽️ Food endpoints: http://localhost:${PORT}/api/food`);
+    console.log(`👤 User endpoints: http://localhost:${PORT}/api/users`);
+    console.log(`📝 Food logs: http://localhost:${PORT}/api/food-logs`);
+    console.log(`🍳 Meal logs: http://localhost:${PORT}/api/meal-logs`);
+    console.log(`💧 Water logs: http://localhost:${PORT}/api/water-logs`);
+    console.log(`🏃 Exercise logs: http://localhost:${PORT}/api/exercise-logs`);
+    console.log(
+      `🧮 Calorie calculator: http://localhost:${PORT}/api/calorie-calculator`
+    );
+    console.log(`🏋️  Habits: http://localhost:${PORT}/api/habits`);
+  });
+}

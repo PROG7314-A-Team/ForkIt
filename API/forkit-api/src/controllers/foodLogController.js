@@ -5,6 +5,7 @@ const StreakService = require("../services/streakService");
 const foodLogService = new FirebaseService("foodLogs");
 const calorieCalculator = new CalorieCalculatorService();
 const streakService = new StreakService();
+
 // Get all food logs
 exports.getFoodLogs = async (req, res) => {
   try {

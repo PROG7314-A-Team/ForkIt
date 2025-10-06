@@ -2,9 +2,6 @@ const express = require("express");
 const router = express.Router();
 const exerciseLogController = require("../controllers/exerciseLogController");
 
-// GET all exercise logs (with optional filters)
-router.get("/", exerciseLogController.getExerciseLogs);
-
 // GET daily exercise total
 router.get("/daily-total", exerciseLogController.getDailyExerciseTotal);
 
@@ -25,6 +22,9 @@ router.get("/dashboard", exerciseLogController.getExerciseDashboardData);
 
 // GET exercise logs by date range
 router.get("/date-range", exerciseLogController.getExerciseLogsByDateRange);
+
+// GET all exercise logs (with optional filters)
+router.get("/user/:userId", exerciseLogController.getExerciseLogs);
 
 // GET exercise log by ID
 router.get("/:id", exerciseLogController.getExerciseLogById);

@@ -116,7 +116,7 @@ exports.updateUser = async (req, res) => {
     }
 
     const userData = req.body;
-    if (!userData) {
+    if (!userData || Object.keys(userData).length === 0) {
       return res.status(400).json({
         success: false,
         message: "User data is required",
@@ -153,6 +153,14 @@ exports.deleteUser = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "User ID is required",
+      });
+    }
+
+    const existingUser = await userService.getById(id);
+    if (!existingUser || !existingUser.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
       });
     }
 
