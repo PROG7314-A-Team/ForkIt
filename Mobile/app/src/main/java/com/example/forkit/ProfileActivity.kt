@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.utils.AuthPreferences
+import com.example.forkit.ui.dashboard.DashboardActivity
+
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -37,7 +37,7 @@
     <activity-alias
       android:name="ViewPermissionUsageActivity"
       android:exported="true"
-      android:targetActivity=".DashboardActivity"
+      android:targetActivity=".ui.dashboard.DashboardActivity"
       android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
       <intent-filter>
         <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
@@ -86,7 +86,7 @@
       android:theme="@style/Theme.ForkIt"
     />
     <activity
-      android:name=".DashboardActivity"
+      android:name=".ui.dashboard.DashboardActivity"
       android:exported="false"
       android:label="@string/app_name"
       android:theme="@style/Theme.ForkIt"

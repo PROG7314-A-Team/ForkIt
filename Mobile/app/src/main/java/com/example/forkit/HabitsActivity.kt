@@ -51,6 +51,8 @@ import com.example.forkit.data.models.UpdateHabitRequest
 import com.example.forkit.services.HabitNotificationScheduler
 import com.example.forkit.services.HabitNotificationHelper
 import kotlinx.coroutines.launch
+import com.example.forkit.ui.dashboard.DashboardActivity
+
 
 class HabitsActivity : ComponentActivity() {
     private var refreshTrigger by mutableStateOf(0)

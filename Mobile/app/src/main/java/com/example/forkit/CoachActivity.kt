@@ -34,6 +34,8 @@ import com.example.forkit.data.RetrofitClient
 import com.example.forkit.data.models.TrendEntry
 import com.example.forkit.ui.theme.ForkItTheme
 import kotlinx.coroutines.launch
+import com.example.forkit.ui.dashboard.DashboardActivity
+
 
 class CoachActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

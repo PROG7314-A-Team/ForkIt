@@ -36,6 +36,8 @@ import com.example.forkit.data.models.LoginResponse
 import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.utils.AuthPreferences
 import kotlinx.coroutines.launch
+import com.example.forkit.ui.dashboard.DashboardActivity
+
 
 class SignInActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
