@@ -131,6 +131,11 @@
         android:exported="false"
         android:label="Add Ingredient"
         android:theme="@style/Theme.ForkIt" />
+    <activity
+        android:name=".ui.meals.MealDetailActivity"
+        android:exported="false"
+        android:label="Add Ingredient"
+        android:theme="@style/Theme.ForkIt" />
 
     <activity
       android:name=".AccountActivity"

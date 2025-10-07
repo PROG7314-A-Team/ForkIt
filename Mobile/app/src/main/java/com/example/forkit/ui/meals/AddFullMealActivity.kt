@@ -27,21 +27,41 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import com.example.forkit.ui.theme.ForkItTheme
+import com.example.forkit.data.RetrofitClient
+
+
 import android.util.Log
 import android.app.Activity
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.google.gson.Gson
+import com.example.forkit.data.models.MealIngredient
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import com.example.forkit.data.models.CreateMealLogRequest
+import com.example.forkit.data.models.Ingredient
+
+
 
 import androidx.activity.compose.setContent
 import com.example.forkit.ui.theme.ForkItTheme
+import kotlinx.coroutines.launch
 
 private const val DEBUG_TAG = "MealsDebug"
 private const val TAG= "MealsDebug"
+// ✅ Shared list reference so launcher can access composable state
+private var ingredientsListState: MutableList<MealIngredient>? = null
+
 class AddFullMealActivity : ComponentActivity() {
 
     // ✅ ActivityResultLauncher must be declared inside the class, not outside
+// -------------------------------------------------------------
+// 🧩 Ingredient Launcher
+// 📍 Purpose: Receives the MealIngredient object returned from
+// AddIngredientActivity and appends it to the ingredients list.
+// -------------------------------------------------------------
     private val ingredientLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -51,7 +71,30 @@ class AddFullMealActivity : ComponentActivity() {
 
             if (ingredientJson != null) {
                 Log.d(DEBUG_TAG, "✅ Ingredient JSON received -> $ingredientJson")
-                // TODO: handle ingredient later
+
+                try {
+                    // Deserialize the JSON into a MealIngredient object
+                    val newIngredient =
+                        Gson().fromJson(ingredientJson, MealIngredient::class.java)
+
+                    Log.d(
+                        DEBUG_TAG,
+                        "🍴 Parsed MealIngredient: ${newIngredient.foodName} | ${newIngredient.calories} kcal"
+                    )
+
+                    // Add the ingredient to the list in AddFullMealScreen via a shared state
+                    ingredientsListState?.add(newIngredient)
+
+                    Toast.makeText(
+                        this,
+                        "Added ${newIngredient.foodName} (${newIngredient.calories} kcal)",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                } catch (e: Exception) {
+                    Log.e(DEBUG_TAG, "🔥 Failed to parse MealIngredient JSON: ${e.message}", e)
+                    Toast.makeText(this, "Error adding ingredient", Toast.LENGTH_SHORT).show()
+                }
             } else {
                 Log.w(DEBUG_TAG, "⚠️ No ingredient data returned from AddIngredientActivity")
             }
@@ -60,13 +103,18 @@ class AddFullMealActivity : ComponentActivity() {
         }
     }
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(DEBUG_TAG, "AddFullMealActivity: ✅ onCreate called — AddFullMealActivity launched.")
 
+        // ✅ Get userId from Intent (passed from Dashboard or previous screen)
+        val userId = intent.getStringExtra("USER_ID") ?: ""
+
         setContent {
             ForkItTheme {
                 AddFullMealScreen(
+                    userId = userId, // 👈 pass userId directly to composable
                     onBackPressed = { finish() }, // ✅ handle back navigation
                     onAddIngredientClick = {
                         Log.d(DEBUG_TAG, "🍴 Launching AddIngredientActivity...")
@@ -80,15 +128,20 @@ class AddFullMealActivity : ComponentActivity() {
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddFullMealScreen(
-    onBackPressed: () -> Unit,
-    onAddIngredientClick: () -> Unit // ✅ ADD THIS
-) {
+    fun AddFullMealScreen(
+        userId: String,                      // 👈 add this line
+        onBackPressed: () -> Unit,
+        onAddIngredientClick: () -> Unit
+    ) {
     val context = LocalContext.current
     // 🔹 Ingredient list (temporary mock list)
-    var ingredients = remember { mutableStateListOf<String>() }
+    // Shared mutable list accessible from ingredientLauncher
+    val ingredients = remember { mutableStateListOf<MealIngredient>() }
+    ingredientsListState = ingredients
+    val scope = rememberCoroutineScope()
+
 
 
     // 🔹 Local states for editable sections
@@ -292,15 +345,15 @@ fun AddFullMealScreen(
                                     .padding(12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            ){
                                 Text(
-                                    text = ingredient,
+                                    text = "${ingredient.foodName} - ${ingredient.calories.toInt()} kcal",
                                     fontSize = 16.sp,
                                     color = Color.Black
                                 )
                                 IconButton(onClick = {
                                     ingredients.remove(ingredient)
-                                    Log.d(DEBUG_TAG, "$TAG: Ingredient removed -> $ingredient")
+                                    Log.d(DEBUG_TAG, "$TAG: Ingredient removed -> ${ingredient.foodName}")
                                 }) {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
@@ -385,13 +438,68 @@ fun AddFullMealScreen(
                         Button(
                             onClick = {
                                 Log.d(DEBUG_TAG, "$TAG: Add Meal button clicked | logToToday=$logToToday | totalIngredients=${ingredients.size}")
+
+                                if (ingredients.isEmpty()) {
+                                    Toast.makeText(context, "Please add at least one ingredient.", Toast.LENGTH_SHORT).show()
+                                    return@Button
+                                }
+
+                                val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+                                val request = CreateMealLogRequest(
+                                    userId = userId,
+                                    name = mealName.ifBlank { "Untitled Meal" },
+                                    description = mealDescription.ifBlank { null },
+                                    ingredients = ingredients.map {
+                                        Ingredient(
+                                            name = it.foodName,
+                                            amount = it.servingSize,
+                                            unit = it.measuringUnit
+                                        )
+                                    },
+                                    instructions = listOf("No instructions provided"),
+                                    totalCalories = ingredients.sumOf { it.calories },
+                                    totalCarbs = ingredients.sumOf { it.carbs },
+                                    totalFat = ingredients.sumOf { it.fat },
+                                    totalProtein = ingredients.sumOf { it.protein },
+                                    servings = 1.0,
+                                    date = if (logToToday) today else "",
+                                    mealType = null
+                                )
+
+                                Log.d(DEBUG_TAG, "$TAG: ✅ Final CreateMealLogRequest JSON = ${Gson().toJson(request)}")
+
+                                if (logToToday) {
+                                    scope.launch {
+                                        try {
+                                            Log.d(DEBUG_TAG, "MealsDebug: 📡 Sending CreateMealLogRequest to API...")
+                                            val response = RetrofitClient.api.createMealLog(request)
+
+                                            if (response.isSuccessful && response.body()?.success == true) {
+                                                Log.d(DEBUG_TAG, "MealsDebug: ✅ Meal created successfully on server.")
+                                                Toast.makeText(context, "Meal logged successfully!", Toast.LENGTH_SHORT).show()
+                                                onBackPressed() // Go back to main screen
+                                            } else {
+                                                Log.e(DEBUG_TAG, "MealsDebug: ❌ Failed to log meal. Code=${response.code()} | Body=${response.errorBody()?.string()}")
+                                                Toast.makeText(context, "Failed to save meal!", Toast.LENGTH_SHORT).show()
+                                            }
+                                        } catch (e: Exception) {
+                                            Log.e(DEBUG_TAG, "MealsDebug: 🚨 Error logging meal: ${e.message}", e)
+                                            Toast.makeText(context, "Error saving meal!", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+
+                                } else {
+                                    Log.d(DEBUG_TAG, "$TAG: 💾 Skipping daily log — saved meal locally only.")
+                                }
+
                                 Toast.makeText(context, "Meal added successfully!", Toast.LENGTH_SHORT).show()
-                                // Reset mock fields
                                 mealName = ""
                                 mealDescription = ""
                                 ingredients.clear()
                                 logToToday = false
-                            },
+                            }
+                            ,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),

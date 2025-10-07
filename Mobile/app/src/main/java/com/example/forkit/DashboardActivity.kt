@@ -319,7 +319,10 @@ fun DashboardScreen(
                             null
                         }
                     }
-                    
+
+                    // ─────────────────────────────────────────────
+                    // Fetch both food logs and meal logs in parallel
+                    // ─────────────────────────────────────────────
                     val foodLogsDeferred = async {
                         try {
                             com.example.forkit.data.RetrofitClient.api.getFoodLogs(userId, todayDate)
@@ -328,6 +331,20 @@ fun DashboardScreen(
                             null
                         }
                     }
+
+                    val mealLogsDeferred = async {
+                        try {
+                            com.example.forkit.data.RetrofitClient.api.getMealLogsByDateRange(
+                                userId = userId,
+                                startDate = todayDate,
+                                endDate = todayDate
+                            )
+                        } catch (e: Exception) {
+                            android.util.Log.e("DashboardActivity", "Error fetching meal logs: ${e.message}", e)
+                            null
+                        }
+                    }
+
                     
                     val exerciseLogsDeferred = async {
                         try {
@@ -352,7 +369,7 @@ fun DashboardScreen(
                     val foodSummaryResponse = foodSummaryDeferred.await()
                     val exerciseResponse = exerciseDeferred.await()
                     val waterResponse = waterDeferred.await()
-                    val foodLogsResponse = foodLogsDeferred.await()
+                    //val foodLogsResponse = foodLogsDeferred.await()
                     val exerciseLogsResponse = exerciseLogsDeferred.await()
                     val waterLogsResponse = waterLogsDeferred.await()
                     
@@ -398,27 +415,75 @@ fun DashboardScreen(
                             waterEntries = waterData?.entries ?: 0
                         }
                     }
-                    
-                    // Process food logs response
+
+// ─────────────────────────────────────────────
+// Combine Food Logs + Meal Logs
+// ─────────────────────────────────────────────
+                    val foodLogsResponse = foodLogsDeferred.await()
+                    val mealLogsResponse = mealLogsDeferred.await()
+
+                    val combinedList = mutableListOf<com.example.forkit.data.models.RecentActivityEntry>()
+
+// 🥣 Process individual food logs
                     foodLogsResponse?.let { response ->
                         if (response.isSuccessful) {
-                            val todayLogs = response.body()?.data ?: emptyList()
-                            recentMeals = todayLogs.map { log ->
+                            val foodLogs = response.body()?.data ?: emptyList()
+                            combinedList += foodLogs.map { log ->
                                 com.example.forkit.data.models.RecentActivityEntry(
                                     id = log.id,
                                     foodName = log.foodName,
                                     servingSize = log.servingSize,
                                     measuringUnit = log.measuringUnit,
                                     calories = log.calories.toInt(),
-                                    mealType = log.mealType,
+                                    mealType = log.mealType ?: "Food",
                                     date = log.date,
                                     createdAt = log.createdAt,
                                     time = log.createdAt.substring(11, 16)
                                 )
-                            }.sortedByDescending { it.createdAt }
-                            android.util.Log.d("DashboardActivity", "Meals loaded: ${recentMeals.size} items")
+                            }
+                            android.util.Log.d("DashboardActivity", "✅ Added ${foodLogs.size} food logs")
                         }
                     }
+
+                    // 🍱 Process full meal logs
+                    mealLogsResponse?.let { response ->
+                        if (response.isSuccessful) {
+                            val mealLogs = response.body()?.data ?: emptyList()
+                            combinedList += mealLogs.map { meal ->
+                                com.example.forkit.data.models.RecentActivityEntry(
+                                    id = meal.id,
+                                    foodName = meal.name,
+                                    servingSize = meal.ingredients.size.toDouble(),
+                                    measuringUnit = "items",
+                                    calories = meal.totalCalories.toInt(),
+                                    mealType = meal.mealType ?: "Meal",
+                                    date = meal.date,
+                                    createdAt = meal.createdAt,
+                                    time = meal.createdAt.substring(11, 16)
+                                )
+                            }
+                            android.util.Log.d("DashboardActivity", "✅ Added ${mealLogs.size} meal logs")
+                        }
+                    }
+
+                    // 🔹 Merge + sort
+                    recentMeals = combinedList.sortedByDescending { it.createdAt }
+
+                    android.util.Log.d("DashboardActivity", "🍽️ Total combined entries: ${recentMeals.size}")
+                    // 🔹 Recalculate totals for combined data (food + meal logs)
+                    if (combinedList.isNotEmpty()) {
+                        // Sum up all calories from both food and meal logs
+                        consumed = combinedList.sumOf { it.calories.toDouble() }
+
+                        // 🧠 Approximate macro split (optional placeholder)
+                        // These will make your pie chart work again
+                        carbsCalories = consumed * 0.5   // ~50% from carbs
+                        proteinCalories = consumed * 0.3 // ~30% from protein
+                        fatCalories = consumed * 0.2     // ~20% from fat
+
+                        Log.d("DashboardActivity", "🔥 Combined totals recalculated -> Consumed=$consumed kcal")
+                    }
+
                     
                     // Process exercise logs response
                     exerciseLogsResponse?.let { response ->
@@ -550,7 +615,7 @@ fun DashboardScreen(
                     }
                 }
             }
-            
+
             // Screen Content based on selected tab
             when (selectedTab) {
                 0 -> {
@@ -560,21 +625,24 @@ fun DashboardScreen(
                             .weight(1f)
                             .verticalScroll(rememberScrollState())
                     ) {
-                // Top Header with Logo and Profile
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // ForkIt Logo
-                    Image(
-                        painter = painterResource(id = R.drawable.forkit_logo),
-                        contentDescription = "ForkIt Logo",
-                        modifier = Modifier.size(40.dp)
-                    )
-                    
+                        // Top Header with Logo and Profile
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // ForkIt Logo
+                            Image(
+                                painter = painterResource(id = R.drawable.forkit_logo),
+                                contentDescription = "ForkIt Logo",
+                                modifier = Modifier.size(40.dp)
+                            )
+
+
+
+
                     // Profile Tab
                     Card(
                         modifier = Modifier.clickable { 
@@ -1651,6 +1719,7 @@ fun MacronutrientBreakdown(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+
         // Carbs
         MacronutrientItem(
             name = "Carbs",
@@ -1967,16 +2036,21 @@ fun MealsScreen(userId: String) {
     Log.d(DEBUG_TAG, "$TAG: Initializing MealsScreen for userId=$userId")
 
     // ─────────────────────────────────────────────
-    // Load meals (temporary mock implementation)
+    // Load meals
     // ─────────────────────────────────────────────
     LaunchedEffect(userId) {
         Log.d("MealsScreen", "Fetching real meals from API for userId=$userId")
         try {
             val response = RetrofitClient.api.getMealLogs(userId = userId)
             if (response.isSuccessful && response.body()?.success == true) {
-                meals = response.body()?.data ?: emptyList()
-                Log.d("MealsScreen", "✅ Meals loaded: ${meals.size}")
-            } else {
+                val allMeals = response.body()?.data ?: emptyList()
+
+                // 🧹 Remove duplicates by unique name + calories + date combination
+                meals = allMeals.distinctBy { "${it.name}-${it.totalCalories}-${it.date}" }
+
+                Log.d("MealsScreen", "✅ Meals loaded: ${allMeals.size}, unique after filter: ${meals.size}")
+            }
+            else {
                 Log.w("MealsScreen", "⚠️ Failed to fetch meals: ${response.message()}")
                 meals = emptyList()
             }
@@ -2080,9 +2154,12 @@ fun MealsScreen(userId: String) {
 
                                 val intent = Intent(context, MealDetailActivity::class.java).apply {
                                     putExtra("MEAL_NAME", meal.name)
+                                    putExtra("MEAL_DESCRIPTION", meal.description ?: "No description available")
                                     putStringArrayListExtra("INGREDIENTS", ingredientNames)
                                     putExtra("CALORIES", meal.totalCalories)
+                                    putExtra("USER_ID", userId)
                                 }
+
 
                                 context.startActivity(intent)
                             }

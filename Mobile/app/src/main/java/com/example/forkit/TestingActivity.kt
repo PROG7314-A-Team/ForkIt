@@ -277,8 +277,8 @@ fun TestingScreen() {
         // Get Meal Logs
         GetMealLogsSection { userId, date ->
             makeApiCall {
-                val response = apiService.getMealLogs(userId, date)
-                responseText = "Get Meal Logs Response:\n${response.body()}"
+                //val response = apiService.getMealLogs(userId, date)
+                //responseText = "Get Meal Logs Response:\n${response.body()}"
             }
         }
         

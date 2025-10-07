@@ -77,15 +77,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import com.example.forkit.data.models.*
-import com.example.forkit.ui.theme.ForkItTheme
-import kotlinx.coroutines.launch
-import java.util.*
+import com.example.forkit.data.models.MealIngredient
+
 
 private const val TAG= "MealsDebug"
 class AddIngredientActivity : ComponentActivity() {
@@ -134,7 +128,7 @@ class AddIngredientActivity : ComponentActivity() {
 
                     // ✅ Callback when the ingredient has been finalized and is ready to return
                     onIngredientReady = { ingredient ->
-                        Log.d(TAG, "✅ [onCreate] -> Ingredient ready to return -> ${ingredient.name} (${ingredient.calories} kcal)")
+                        Log.d(TAG, "✅ [onCreate] -> Ingredient ready to return -> ${ingredient} (${ingredient.calories} kcal)")
 
                         // 🧾 Prepare result intent to send data back to parent activity
                         val resultIntent = Intent().apply {
@@ -271,7 +265,7 @@ fun AddIngredientScreen(
     onBarcodeScan: () -> Unit,
     scannedFood: Food?,
     onScannedFoodProcessed: () -> Unit,
-    onIngredientReady: (Food) -> Unit
+    onIngredientReady: (MealIngredient) -> Unit
 ) {
     // -------------------------------------------------------------
     // 🧠 State Variables — these persist across recompositions
@@ -432,8 +426,6 @@ fun AddIngredientScreen(
         // 🟨 ADJUST SCREEN — Adjust portion size and units
         // ---------------------------------------------------------
         "adjust" -> {
-            Log.d(TAG, "🟡 [AddIngredientScreen] -> Displaying ADJUST screen for ingredient: $foodName")
-
             AdjustServingScreen(
                 foodName = foodName,
                 servingSize = servingSize,
@@ -441,29 +433,30 @@ fun AddIngredientScreen(
                 unitCategory = unitCategory,
                 selectedDate = Date(),
                 mealType = "",
-                onFoodNameChange = { updated ->
-                    foodName = updated
-                    Log.d(TAG, "✏️ [ADJUST] -> Food name changed to: $updated")
-                },
-                onServingSizeChange = { updated ->
-                    servingSize = updated
-                    Log.d(TAG, "📏 [ADJUST] -> Serving size changed to: $updated")
-                },
-                onMeasuringUnitChange = { newUnit ->
-                    measuringUnit = newUnit
-                    Log.d(TAG, "⚖️ [ADJUST] -> Measuring unit changed to: $newUnit")
-                },
-                onDateChange = { Log.d(TAG, "📅 [ADJUST] -> Date change ignored in ingredient mode.") },
-                onMealTypeChange = { Log.d(TAG, "🍴 [ADJUST] -> Meal type change ignored in ingredient mode.") },
-                onBackPressed = {
-                    Log.d(TAG, "🔙 [ADJUST] -> Returning to MAIN screen.")
-                    currentScreen = "main"
-                },
+                onFoodNameChange = { foodName = it },
+                onServingSizeChange = { servingSize = it },
+                onMeasuringUnitChange = { measuringUnit = it },
+                onDateChange = { /* ignore for now */ },
+                onMealTypeChange = { /* ignore for now */ },
+                onBackPressed = onBackPressed,
                 onContinue = {
-                    Log.d(TAG, "➡️ [ADJUST] -> Proceeding to DETAILS screen.")
-                    currentScreen = "details"
+                    Log.d(TAG, "✅ [AdjustServingScreen] -> Finalizing ingredient creation...")
+
+                    val ingredient = MealIngredient(
+                        id = UUID.randomUUID().toString(),
+                        foodName = foodName,
+                        servingSize = servingSize.toDoubleOrNull() ?: 100.0,
+                        measuringUnit = measuringUnit,
+                        calories = calories.toDoubleOrNull() ?: 0.0,
+                        carbs = carbs.toDoubleOrNull() ?: 0.0,
+                        fat = fat.toDoubleOrNull() ?: 0.0,
+                        protein = protein.toDoubleOrNull() ?: 0.0
+                    )
+
+                    Log.d(TAG, "📦 [AdjustServingScreen] -> Ingredient built: ${ingredient.foodName}")
+                    onIngredientReady(ingredient)
                 },
-                scannedFood = null,
+                scannedFood = scannedFood,
                 currentCalories = calories,
                 currentCarbs = carbs,
                 currentFat = fat,
@@ -471,66 +464,7 @@ fun AddIngredientScreen(
             )
         }
 
-        // ---------------------------------------------------------
-        // 🟥 DETAILS SCREEN — Confirm nutritional values and finalize
-        // ---------------------------------------------------------
-        "details" -> {
-            Log.d(TAG, "🔴 [AddIngredientScreen] -> Displaying DETAILS screen for: $foodName")
 
-            AddDetailsScreen(
-                calories = calories,
-                carbs = carbs,
-                fat = fat,
-                protein = protein,
-                onCaloriesChange = { calories = it; Log.d(TAG, "🔥 [DETAILS] -> Calories edited: $it") },
-                onCarbsChange = { carbs = it; Log.d(TAG, "🍞 [DETAILS] -> Carbs edited: $it") },
-                onFatChange = { fat = it; Log.d(TAG, "🧈 [DETAILS] -> Fat edited: $it") },
-                onProteinChange = { protein = it; Log.d(TAG, "🍗 [DETAILS] -> Protein edited: $it") },
-                onBackPressed = {
-                    Log.d(TAG, "🔙 [DETAILS] -> Returning to ADJUST screen.")
-                    currentScreen = "adjust"
-                },
-                onAddFood = { Log.d(TAG, "🧩 [DETAILS] -> onAddFood() triggered.") },
-                userId = "ingredient_mode",
-                foodName = foodName,
-                servingSize = servingSize,
-                measuringUnit = measuringUnit,
-                selectedDate = Date(),
-                mealType = "",
-                onSuccess = {
-                    Log.d(TAG, "✅ [DETAILS] -> Finalizing ingredient creation...")
-
-                    val ingredient = Food(
-                        id = UUID.randomUUID().toString(),
-                        name = foodName,
-                        brand = "",
-                        barcode = "",
-                        calories = calories.toDoubleOrNull() ?: 0.0,
-                        nutrients = Nutrients(
-                            carbs = carbs.toDoubleOrNull() ?: 0.0,
-                            protein = protein.toDoubleOrNull() ?: 0.0,
-                            fat = fat.toDoubleOrNull() ?: 0.0
-                        ),
-                        servingSize = ServingSize(
-                            size = null,
-                            quantity = servingSize.toDoubleOrNull() ?: 100.0,
-                            unit = measuringUnit,
-                            original = null,
-                            apiQuantity = null,
-                            apiUnit = null
-                        ),
-                        nutrientsPerServing = null,
-                        caloriesPerServing = null,
-                        image = "",
-                        ingredients = ""
-                    )
-
-                    Log.d(TAG, "📦 [DETAILS] -> Ingredient object built: ${ingredient.name} (${ingredient.calories} kcal)")
-                    onIngredientReady(ingredient)
-                    Log.d(TAG, "📤 [DETAILS] -> Ingredient returned to previous activity.")
-                }
-            )
-        }
     }
 
     Log.d(TAG, "🧩 [AddIngredientScreen] -> Current active screen: $currentScreen")
@@ -566,7 +500,6 @@ fun AddFoodMainScreen(
     // -------------------------------------------------------------
     // 🔎 FUNCTION: performSearch
     // -------------------------------------------------------------
-    // Search function
     fun performSearch(query: String) {
         if (query.isBlank()) {
             showSearchResults = false
@@ -582,18 +515,10 @@ fun AddFoodMainScreen(
                 if (response.isSuccessful && response.body()?.success == true) {
                     val data = response.body()?.data
                     if (data != null) {
-                        // Handle both cases (Map or List)
-                        val parsedList: List<SearchFoodItem> = when (data) {
-                            is Map<*, *> -> data.values.filterIsInstance<SearchFoodItem>()
-                            is List<*> -> data.filterIsInstance<SearchFoodItem>()
-                            else -> emptyList()
-                        }
-
-                        searchResults = parsedList
-                        showSearchResults = parsedList.isNotEmpty()
-                        Log.d(TAG, "📦 [performSearch] -> Parsed ${parsedList.size} search results from mixed JSON format.")
-                    }
-                    else {
+                        // Convert map to list of SearchFoodItem
+                        searchResults = data.toList()
+                        showSearchResults = true
+                    } else {
                         searchResults = emptyList()
                         showSearchResults = false
                     }
@@ -1445,57 +1370,44 @@ fun AdjustServingScreen(
                     }
                 }
 
-                // ---------------------------------------------------------
-                // 🍽️ Type Selector (Breakfast / Lunch / Dinner / Snacks)
-                // ---------------------------------------------------------
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("Select Type", fontSize = 16.sp, color = colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium, modifier = Modifier.padding(bottom = 16.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        TypeButton("Breakfast", mealType == "Breakfast") {
-                            Log.d(TAG, "☀️ [AdjustServingScreen] -> Type set to Breakfast")
-                            onMealTypeChange("Breakfast")
-                        }
-                        TypeButton("Lunch", mealType == "Lunch") {
-                            Log.d(TAG, "🍛 [AdjustServingScreen] -> Type set to Lunch")
-                            onMealTypeChange("Lunch")
-                        }
-                    }
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        TypeButton("Dinner", mealType == "Dinner") {
-                            Log.d(TAG, "🌙 [AdjustServingScreen] -> Type set to Dinner")
-                            onMealTypeChange("Dinner")
-                        }
-                        TypeButton("Snacks", mealType == "Snacks") {
-                            Log.d(TAG, "🍪 [AdjustServingScreen] -> Type set to Snacks")
-                            onMealTypeChange("Snacks")
-                        }
-                    }
-                }
 
                 // ---------------------------------------------------------
-                // ✅ Continue Button
+                // ✅ Submit Ingredient Button
                 // ---------------------------------------------------------
                 Spacer(modifier = Modifier.height(48.dp))
+
                 Button(
                     onClick = {
-                        Log.d(TAG, "➡️ [AdjustServingScreen] -> Continue button clicked.")
-                        onContinue()
+                        Log.d(TAG, "✅ [AdjustServingScreen] -> Add Ingredient clicked.")
+                        onContinue() // ⬅️ will finalize the MealIngredient in parent AddIngredientActivity
                     },
-                    modifier = Modifier.fillMaxWidth().height(72.dp).clip(RoundedCornerShape(16.dp)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(72.dp)
+                        .clip(RoundedCornerShape(16.dp)),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     Box(
-                        modifier = Modifier.fillMaxSize().background(
-                            brush = Brush.horizontalGradient(listOf(colorScheme.primary, colorScheme.secondary)),
-                            shape = RoundedCornerShape(16.dp)
-                        ),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    listOf(colorScheme.primary, colorScheme.secondary)
+                                ),
+                                shape = RoundedCornerShape(16.dp)
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Continue", fontSize = 20.sp, fontWeight = FontWeight.Medium, color = colorScheme.background)
+                        Text(
+                            text = "Add Ingredient",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colorScheme.background
+                        )
                     }
                 }
+
             }
         }
 
@@ -1604,309 +1516,4 @@ fun AdjustServingScreen(
 }
 
 
-@Composable
-fun AddDetailsScreen(
-    calories: String,
-    carbs: String,
-    fat: String,
-    protein: String,
-    onCaloriesChange: (String) -> Unit,
-    onCarbsChange: (String) -> Unit,
-    onFatChange: (String) -> Unit,
-    onProteinChange: (String) -> Unit,
-    userId: String,
-    foodName: String,
-    servingSize: String,
-    measuringUnit: String,
-    selectedDate: Date,
-    mealType: String,
-    onSuccess: () -> Unit,
-    onBackPressed: () -> Unit,
-    onAddFood: () -> Unit
-) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf("") }
-
-    // -------------------------------------------------------------
-    // 🔁 AUTO CALORIE CALCULATION
-    // -------------------------------------------------------------
-    LaunchedEffect(carbs, fat, protein) {
-        val carbsValue = carbs.toDoubleOrNull() ?: 0.0
-        val fatValue = fat.toDoubleOrNull() ?: 0.0
-        val proteinValue = protein.toDoubleOrNull() ?: 0.0
-
-        val calculatedCalories = (carbsValue * 4) + (fatValue * 9) + (proteinValue * 4)
-
-        if (calculatedCalories > 0) {
-            onCaloriesChange(calculatedCalories.toInt().toString())
-            Log.d(TAG, "🔥 [AddDetailsScreen] -> Auto-calculated calories: $calculatedCalories")
-        } else if (carbs.isEmpty() && fat.isEmpty() && protein.isEmpty()) {
-            onCaloriesChange("")
-            Log.d(TAG, "⚪ [AddDetailsScreen] -> Cleared all macros, reset calories.")
-        }
-    }
-
-    // -------------------------------------------------------------
-    // 💾 FUNCTION: saveFoodLog()
-    // -------------------------------------------------------------
-    fun saveFoodLog() {
-        Log.d(TAG, "📦 [AddDetailsScreen] -> saveFoodLog() started")
-
-        // --- Input validation checks ---
-        if (foodName.isBlank()) {
-            Toast.makeText(context, "Please enter food name", Toast.LENGTH_SHORT).show()
-            Log.w(TAG, "⚠️ Missing food name.")
-            return
-        }
-        if (servingSize.isBlank() || servingSize.toDoubleOrNull() == null) {
-            Toast.makeText(context, "Please enter valid serving size", Toast.LENGTH_SHORT).show()
-            Log.w(TAG, "⚠️ Invalid serving size: $servingSize")
-            return
-        }
-        if (mealType.isBlank()) {
-            Toast.makeText(context, "Please select meal type", Toast.LENGTH_SHORT).show()
-            Log.w(TAG, "⚠️ Missing meal type.")
-            return
-        }
-        if (calories.isBlank() || calories.toDoubleOrNull() == null) {
-            Toast.makeText(context, "Please enter valid calories", Toast.LENGTH_SHORT).show()
-            Log.w(TAG, "⚠️ Invalid calories: $calories")
-            return
-        }
-
-        // --- Begin saving operation ---
-        scope.launch {
-            isLoading = true
-            errorMessage = ""
-            Log.d(TAG, "⏳ [AddDetailsScreen] -> Attempting to create food log...")
-
-            try {
-                val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                val dateString = apiDateFormatter.format(selectedDate)
-
-                val request = CreateFoodLogRequest(
-                    userId = userId,
-                    foodName = foodName,
-                    servingSize = servingSize.toDouble(),
-                    measuringUnit = measuringUnit,
-                    date = dateString,
-                    mealType = mealType,
-                    calories = calories.toDoubleOrNull() ?: 0.0,
-                    carbs = carbs.toDoubleOrNull() ?: 0.0,
-                    fat = fat.toDoubleOrNull() ?: 0.0,
-                    protein = protein.toDoubleOrNull() ?: 0.0,
-                    foodId = null
-                )
-
-                Log.d(TAG, "📤 [AddDetailsScreen] -> Sending payload: $request")
-
-                val response = RetrofitClient.api.createFoodLog(request)
-                Log.d(TAG, "📡 [AddDetailsScreen] -> Response: ${response.code()} | Success=${response.body()?.success}")
-
-                if (response.isSuccessful && response.body()?.success == true) {
-                    Log.d(TAG, "✅ [AddDetailsScreen] -> Food log saved successfully for $foodName")
-                    onSuccess()
-                } else {
-                    errorMessage = response.body()?.message ?: "Failed to save food log"
-                    Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
-                    Log.e(TAG, "❌ [AddDetailsScreen] -> Failed to save: $errorMessage")
-                }
-            } catch (e: Exception) {
-                errorMessage = "Error: ${e.message}"
-                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
-                Log.e(TAG, "🔥 [AddDetailsScreen] -> Exception: ${e.message}")
-            } finally {
-                isLoading = false
-                Log.d(TAG, "🏁 [AddDetailsScreen] -> saveFoodLog() complete.")
-            }
-        }
-    }
-
-    // -------------------------------------------------------------
-    // 🧱 UI LAYOUT
-    // -------------------------------------------------------------
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colorScheme.background)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-        ) {
-            // ---------------------------------------------------------
-            // HEADER
-            // ---------------------------------------------------------
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = {
-                    Log.d(TAG, "🔙 [AddDetailsScreen] -> Back pressed.")
-                    onBackPressed()
-                }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = colorScheme.onBackground
-                    )
-                }
-                Text(
-                    text = "Add Details",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = colorScheme.primary,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
-
-            // ---------------------------------------------------------
-            // MAIN CONTENT
-            // ---------------------------------------------------------
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                // --- Input Fields ---
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(26.dp)
-                ) {
-                    // --- Calories ---
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(68.dp)
-                            .border(
-                                width = 3.dp,
-                                color = colorScheme.primary.copy(alpha = 0.3f),
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            .background(
-                                color = colorScheme.primary.copy(alpha = 0.05f),
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 24.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            TextField(
-                                value = calories,
-                                onValueChange = {
-                                    onCaloriesChange(it)
-                                    Log.d(TAG, "🔥 [AddDetailsScreen] -> Calories changed: $it")
-                                },
-                                placeholder = { Text("Calories*", color = colorScheme.onSurfaceVariant) },
-                                modifier = Modifier.weight(1f),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    cursorColor = colorScheme.primary
-                                ),
-                                textStyle = androidx.compose.ui.text.TextStyle(
-                                    fontSize = 18.sp,
-                                    color = colorScheme.onBackground
-                                ),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                            )
-                            Text(
-                                text = "kcal",
-                                fontSize = 18.sp,
-                                color = colorScheme.primary,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-
-                    Text(
-                        text = "ForkIt can calculate this for you!",
-                        fontSize = 14.sp,
-                        color = colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-
-                    // --- Carbs ---
-                    Log.d(TAG, "🍞 [AddDetailsScreen] -> Rendering Carbs input.")
-                    // (Unchanged carbs input section)
-                    // 🔽 existing carbs TextField and Box remain untouched
-
-                    // --- Fat ---
-                    Log.d(TAG, "🥑 [AddDetailsScreen] -> Rendering Fat input.")
-                    // (Unchanged fat input section)
-                    // 🔽 existing fat TextField and Box remain untouched
-
-                    // --- Protein ---
-                    Log.d(TAG, "🍗 [AddDetailsScreen] -> Rendering Protein input.")
-                    // (Unchanged protein input section)
-                    // 🔽 existing protein TextField and Box remain untouched
-                }
-
-                // ---------------------------------------------------------
-                // BUTTON
-                // ---------------------------------------------------------
-                Spacer(modifier = Modifier.height(48.dp))
-                Button(
-                    onClick = {
-                        Log.d(TAG, "🧩 [AddDetailsScreen] -> Add Ingredient button clicked.")
-                        saveFoodLog()
-                    },
-                    enabled = !isLoading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(72.dp)
-                        .clip(RoundedCornerShape(16.dp)),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent
-                    ),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                brush = Brush.horizontalGradient(
-                                    colors = listOf(
-                                        colorScheme.primary,
-                                        colorScheme.secondary
-                                    )
-                                ),
-                                shape = RoundedCornerShape(16.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                color = colorScheme.background,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        } else {
-                            Text(
-                                text = "Add Ingredient",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = colorScheme.background
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    Log.d(TAG, "🏁 [AddDetailsScreen] -> Render complete. Food=$foodName | $servingSize$measuringUnit | ${calories}kcal")
-}
 

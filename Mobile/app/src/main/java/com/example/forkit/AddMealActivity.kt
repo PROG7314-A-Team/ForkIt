@@ -454,7 +454,7 @@ fun AddFoodMainScreen(
                     val data = response.body()?.data
                     if (data != null) {
                         // Convert map to list of SearchFoodItem
-                        searchResults = data.values.toList()
+                        searchResults = data.toList()
                         showSearchResults = true
                     } else {
                         searchResults = emptyList()

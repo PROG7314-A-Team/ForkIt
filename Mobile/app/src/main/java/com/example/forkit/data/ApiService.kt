@@ -138,11 +138,11 @@ interface ApiService {
     // ==================== MEAL LOGGING ====================
 
     // Get Meal Logs
-    @GET("api/meal-logs")
+    @GET("api/meal-logs/user/{userId}")
     suspend fun getMealLogs(
-        @Query("userId") userId: String? = null,
-        @Query("date") date: String? = null
+        @Path("userId") userId: String
     ): Response<MealLogsResponse>
+
 
     // Get Meal Logs by Date Range
     @GET("api/meal-logs/date-range")
