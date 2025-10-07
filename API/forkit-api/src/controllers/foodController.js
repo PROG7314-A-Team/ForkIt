@@ -1,6 +1,8 @@
 const axios = require("axios");
 const FirebaseService = require("../services/firebaseService");
+const FoodSearchService = require("../services/foodSearchService");
 const foodService = new FirebaseService("food");
+const foodSearchService = new FoodSearchService();
 
 // Helper function to check if food has valid macro nutrient values
 const hasValidMacroNutrients = (nutrients) => {
@@ -146,97 +148,61 @@ exports.getFoodByBarcode = async (req, res) => {
   }
 };
 
-// Get food by name
+// Get food by name with enhanced search and scoring
 exports.getFoodByName = async (req, res) => {
   try {
     const { name } = req.params;
-    const response = await axios.get(
-      `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${name}&json=1&countries_tags=South_Africa`
+    const { maxResults = 25 } = req.query;
+
+    // Use the enhanced search service
+    const scoredResults = await foodSearchService.searchFoodByName(
+      name,
+      parseInt(maxResults)
     );
-    if (response.data.count > 0) {
-      let foodData = {};
-      let validProductIndex = 0;
 
-      for (let i = 0; i < response.data.count; i++) {
-        const product = response.data.products[i];
-
-        // Only process products that have the required fields and valid macro nutrients
-        if (product && product.product_name && product.nutriments) {
-          const nutritionalData = extractNutritionalData(product);
-
-          // Filter: Only include food items with valid macro nutrient values
-          if (hasValidMacroNutrients(nutritionalData.nutrients)) {
-            foodData[validProductIndex] = {
-              name: product.product_name,
-              brand: product.brands || "Unknown Brand",
-              image: product.image_small_url || null,
-              ...nutritionalData,
-            };
-            validProductIndex++;
-          }
-        }
-      }
-
-      // Check if we found any valid products
-      if (Object.keys(foodData).length === 0) {
-        // No valid products from OpenFoodFacts, try local database
-        const localFoodData = await foodService.query([
-          { field: "name", operator: "==", value: name },
-        ]);
-
-        // Filter local database results to only include items with macro nutrients
-        const filteredLocalData = localFoodData.filter((food) =>
-          hasValidMacroNutrients(food.nutrients)
-        );
-
-        //console.log("Filtered local data", filteredLocalData);
-
-        if (filteredLocalData.length > 0) {
-          return res.status(200).json({
-            success: true,
-            data: filteredLocalData,
-            message: "Food item found by name from ForkIt Database",
-          });
-        }
-        return res.status(404).json({
-          success: false,
-          message: "Food item not found by name",
-        });
-      }
-
-      console.log("Food data", foodData);
-
-      return res.status(200).json({
-        success: true,
-        data: foodData,
-        message: "Food item found by name from OpenFoodFacts",
-      });
-    } else {
-      // Query local database
-      const foodData = await foodService.query([
-        { field: "name", operator: "==", value: name },
-      ]);
-
-      // Filter local database results to only include items with macro nutrients
-      const filteredFoodData = foodData.filter((food) =>
-        hasValidMacroNutrients(food.nutrients)
-      );
-
-      console.log("Filtered food data", filteredFoodData);
-
-      if (filteredFoodData.length > 0) {
-        return res.status(200).json({
-          success: true,
-          data: filteredFoodData,
-          message: "Food item found by name from ForkIt Database",
-        });
-      }
+    if (scoredResults.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Food item not found by name",
       });
     }
+
+    // Format results for API response
+    const formattedResults =
+      foodSearchService.formatResultsForAPI(scoredResults);
+
+    // Filter results to only include items with valid macro nutrients
+    const validResults = formattedResults.filter((food) => {
+      if (food.nutrients) {
+        return hasValidMacroNutrients(food.nutrients);
+      }
+      return true; // Include results without nutrition data for now
+    });
+
+    if (validResults.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No food items found with complete nutritional information",
+      });
+    }
+
+    console.log(
+      `Found ${validResults.length} scored food results for "${name}"`
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: validResults,
+      message: `Found ${validResults.length} food items with enhanced search scoring`,
+      searchInfo: {
+        searchTerm: name,
+        totalResults: validResults.length,
+        maxResults: parseInt(maxResults),
+        scoringEnabled: true,
+      },
+    });
   } catch (error) {
+    console.error("Enhanced food search error:", error);
     res.status(500).json({
       success: false,
       error: error.message,
