@@ -2148,7 +2148,7 @@ fun MealsScreen(userId: String) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Your Meals",
+                    text = "Your Meals.",
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     style = TextStyle(
