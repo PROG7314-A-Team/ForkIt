@@ -18,4 +18,6 @@
     <string name="login_pickup">Login to pick up where you left</string>
     <string name="dont_have_account">Don\'t have an account?</string>
     <string name="continue_with_google">Continue with Google</string>
+
+    <string name="default_web_client_id">308029174448-vcuvlj3rp3b60d68kjtie24p6rkp62r2.apps.googleusercontent.com</string>
 </resources>

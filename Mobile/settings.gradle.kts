@@ -11,11 +11,24 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // Use PREFER_SETTINGS so Gradle relies on these repositories instead of throwing an error
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+
     repositories {
         google()
         mavenCentral()
+
+        // Optional fallback repositories
+        /*
+        maven {
+            url = uri("https://jitpack.io")
+        }
+         */
+        maven {
+            url = uri("https://maven.google.com")
+        }
     }
 }
 

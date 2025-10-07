@@ -254,7 +254,7 @@ fun SignInScreen() {
                         color = Color(0xFF1E9ECD),
                         shape = RoundedCornerShape(12.dp)
                     )
-                    .clickable { /* TODO: Add Google login */ },
+                    .clickable {/* (context as SignUpActivity).signInWithGoogle() */},
                 contentAlignment = Alignment.Center
             ) {
                 Row(
@@ -268,7 +268,7 @@ fun SignInScreen() {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = stringResource(id = R.string.sign_up_with_google),
+                        text = stringResource(id = R.string.continue_with_google),
                         color = Color(0xFF1E9ECD),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium

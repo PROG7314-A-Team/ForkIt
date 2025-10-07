@@ -18,6 +18,12 @@ router.post("/register", authController.createUser);
 // POST user -> Login endpoint
 router.post("/login", authController.loginUser);
 
+// POST user -> Google SSO Register endpoint
+router.post("/registerGoogleUser", authController.registerGoogleUser);
+
+// POST user -> Google SSO Login endpoint
+router.post("/loginGoogleUser", authController.loginGoogleUser);
+
 // PUT user
 router.put("/:id", userController.updateUser);
 

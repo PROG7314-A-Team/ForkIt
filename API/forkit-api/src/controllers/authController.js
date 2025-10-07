@@ -4,7 +4,6 @@ const { Timestamp } = require("firebase-admin/firestore");
 const userController = require("../controllers/userController");
 
 // create a new user - used by api/users/register endpoint
-// create a new user - used by api/users/register endpoint
 const createUser = async (req, res) => {
   const { email, password, ...otherData } = req.body;
 
@@ -91,7 +90,107 @@ const loginUser = async (req, res) => {
   }
 };
 
+// Create document from Google Sign Up (SSO):
+ const registerGoogleUser = async (req, res) => {
+  const { email, ...otherData } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    // 1. Check if the user already exists in Firebase Auth
+    let userRecord;
+    try {
+      userRecord = await auth.getUserByEmail(email);
+      console.log(`User ${email} already exists in Firebase`);
+    } catch (error) {
+      if (error.code === "auth/user-not-found") {
+        // 2. Create Firebase user (without password)
+        userRecord = await auth.createUser({
+          email,
+          emailVerified: true,
+        });
+        console.log(`Created new Firebase user for ${email}`);
+      } else {
+        throw error;
+      }
+    }
+
+    const uid = userRecord.uid;
+
+    // 3. Create Firestore record if not already created
+    const userDocRef = db.collection("users").doc(uid);
+    const userDoc = await userDocRef.get();
+
+    if (!userDoc.exists) {
+      await userDocRef.set({
+        userId: uid,
+        email,
+        authProvider: "google",
+        streakData: {
+          currentStreak: 0,
+          longestStreak: 0,
+          lastLogDate: null,
+          streakStartDate: null,
+        },
+        ...otherData,
+        createdAt: new Date(
+          new Date().getTime() + 2 * 60 * 60 * 1000
+        ).toISOString(),
+      });
+    }
+
+    return res.status(201).json({
+      message: "Google user registered successfully",
+      uid,
+      email,
+    });
+  } catch (error) {
+    console.error("Error registering Google user:", error);
+    return res.status(500).json({
+      message: "Error registering Google user",
+      error: error.message,
+    });
+  }
+};
+
+
+// Login User with Google Account:
+const loginGoogleUser = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    const userRecord = await auth.getUserByEmail(email);
+    const userDoc = await db.collection("users").doc(userRecord.uid).get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ message: "User not found in Firestore" });
+    }
+
+    return res.status(200).json({
+      message: "Google login successful",
+      user: userDoc.data(),
+    });
+  } catch (error) {
+    console.error("Google login error:", error);
+    return res.status(500).json({
+      message: "Error logging in Google user",
+      error: error.message,
+    });
+  }
+};
+
+
+
+
 module.exports = {
   createUser,
   loginUser,
+  registerGoogleUser,
+  loginGoogleUser,
 };

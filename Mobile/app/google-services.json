@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "308029174448",
+    "project_id": "forkit-46376",
+    "storage_bucket": "forkit-46376.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:308029174448:android:c1f208eebafa0beea18175",
+        "android_client_info": {
+          "package_name": "com.example.forkit"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "308029174448-663oj7sdubfg8tf3l2lq15rap89nr8lh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.forkit",
+            "certificate_hash": "60d1e18d0b6c9365092de94d4ff5128c0c102c94"
+          }
+        },
+        {
+          "client_id": "308029174448-vcuvlj3rp3b60d68kjtie24p6rkp62r2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDrbG-fDB7epizIY4AXUimKnjhZHfK4kA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "308029174448-vcuvlj3rp3b60d68kjtie24p6rkp62r2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,7 +1,10 @@
 package com.example.forkit
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -30,9 +33,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavController
 import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.data.models.RegisterRequest
 import com.example.forkit.data.RetrofitClient
+import com.example.forkit.data.models.GoogleRegisterRequest
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.Firebase
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
 
 class SignUpActivity : ComponentActivity() {
@@ -47,8 +61,9 @@ class SignUpActivity : ComponentActivity() {
     }
 }
 
+
 @Composable
-fun SignUpScreen() {
+fun SignUpScreen(/*navController: NavController*/) {
     val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -287,7 +302,12 @@ fun SignUpScreen() {
                         color = Color(0xFF1E9ECD),
                         shape = RoundedCornerShape(12.dp)
                     )
-                    .clickable { /* TODO: Add Google sign up */ },
+                    .clickable {
+                    /* TODO: Add Google sign up */
+                        scope.launch{
+                            signInWithGoogle(context/*, navController*/)
+                        }
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Row(
@@ -310,6 +330,7 @@ fun SignUpScreen() {
             }
         }
     }
+
 }
 
 @Preview(showBackground = true)
@@ -317,5 +338,108 @@ fun SignUpScreen() {
 fun SignUpScreenPreview() {
     ForkItTheme {
         SignUpScreen()
+    }
+}
+
+
+private suspend fun signInWithGoogle(context: Context) {
+    val credentialManager = CredentialManager.create(context)
+
+    val googleIdOption = GetGoogleIdOption.Builder()
+        .setServerClientId(context.getString(com.example.forkit.R.string.default_web_client_id))
+        .setFilterByAuthorizedAccounts(false)
+        .build()
+
+    val request = GetCredentialRequest.Builder()
+        .addCredentialOption(googleIdOption)
+        .build()
+
+    try {
+        val result = credentialManager.getCredential(
+            context = context,
+            request = request
+        )
+
+        val googleIdTokenCredential =
+            GoogleIdTokenCredential.createFrom(result.credential.data)
+        val idToken = googleIdTokenCredential.idToken
+
+        if (idToken == null) {
+            Toast.makeText(context, "Google sign-in failed: No ID token", Toast.LENGTH_SHORT).show()
+            Log.e("Auth", "Google sign-in failed: No ID token")
+            return
+        }
+
+        val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
+        Firebase.auth.signInWithCredential(firebaseCredential)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val user = Firebase.auth.currentUser
+                    val email = user?.email
+
+                    if (email != null) {
+                        Log.d("Auth", "Firebase sign-in successful: $email")
+
+                        // Safely use lifecycleScope for coroutine
+                        (context as? ComponentActivity)?.lifecycleScope?.launch {
+                            try {
+                                // Call backend to register Google user
+                                val response = RetrofitClient.api.registerGoogleUser(
+                                    GoogleRegisterRequest(email)
+                                )
+
+                                if (response.isSuccessful) {
+                                    val body = response.body()
+                                    val success = body?.success ?: false
+                                    val message = body?.message ?: "Registration successful"
+                                    val userId = body?.userId
+
+                                    Log.d(
+                                        "Auth",
+                                        "Google user registered successfully: success=$success, message=$message, userId=$userId"
+                                    )
+
+                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+
+                                    // Move to SignInActivity after registration
+                                    val intent = Intent(context, SignInActivity::class.java)
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    context.startActivity(intent)
+                                } else {
+                                    val errorMsg =
+                                        response.errorBody()?.string() ?: "Unknown registration error"
+                                    Log.e("Auth", "Google registration failed: $errorMsg")
+                                    Toast.makeText(
+                                        context,
+                                        "Registration failed: $errorMsg",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            } catch (e: Exception) {
+                                Log.e("Auth", "Error registering Google user", e)
+                                Toast.makeText(
+                                    context,
+                                    "Error registering Google user: ${e.localizedMessage}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                    } else {
+                        Toast.makeText(context, "No email found in Firebase user", Toast.LENGTH_SHORT)
+                            .show()
+                        Log.e("Auth", "No email found in Firebase user")
+                    }
+                } else {
+                    Toast.makeText(context, "Firebase auth failed", Toast.LENGTH_SHORT).show()
+                    Log.e("Auth", "Firebase auth failed", task.exception)
+                }
+            }
+
+    } catch (e: GetCredentialException) {
+        Toast.makeText(context, "Google Sign-In failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        Log.e("Auth", "Google Sign-In failed: ${e.message}", e)
+    } catch (e: Exception) {
+        Toast.makeText(context, "Unexpected error: ${e.message}", Toast.LENGTH_SHORT).show()
+        Log.e("Auth", "Unexpected error during sign-in", e)
     }
 }

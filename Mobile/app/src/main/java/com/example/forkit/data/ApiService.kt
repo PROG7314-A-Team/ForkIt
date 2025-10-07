@@ -6,12 +6,20 @@ import retrofit2.http.*
 
 interface ApiService {
     // Register User
-    @POST("api/auth/createUser")
+    @POST("api/users/register") // Denzel - Fixed endpoint
     suspend fun registerUser(@Body request: RegisterRequest): Response<RegisterResponse>
 
     // Login User
-    @POST("api/auth/loginUser")
+    @POST("api/users/login") // Denzel - Fixed endpoint
     suspend fun loginUser(@Body request: LoginRequest): Response<LoginResponse>
+
+    // Register user with Google SSO
+    @POST("api/users/registerGoogleUser") // Denzel - Fixed endpoint
+    suspend fun registerGoogleUser(@Body request: GoogleRegisterRequest): Response<GoogleRegisterResponse>
+
+    // Login user with Google SSO
+    @POST("api/users/loginGoogleUser") // Denzel - Fixed endpoint
+    suspend fun loginGoogleUser(@Body request: GoogleLoginRequest): Response<GoogleLoginResponse>
 
     // Get user by id
     @GET("api/users/{id}")
