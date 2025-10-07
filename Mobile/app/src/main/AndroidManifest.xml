@@ -122,6 +122,11 @@
       android:theme="@style/Theme.ForkIt"
     />
     <activity
+        android:name=".ui.meals.AddFullMealActivity"
+        android:exported="false"
+        android:label="Add Full Meal"
+        android:theme="@style/Theme.ForkIt" />
+    <activity
       android:name=".AccountActivity"
       android:exported="false"
       android:label="Account"
