@@ -6,11 +6,11 @@ import retrofit2.http.*
 
 interface ApiService {
     // Register User
-    @POST("api/users/register") // Denzel - Fixed endpoint
+    @POST("api/users/register")
     suspend fun registerUser(@Body request: RegisterRequest): Response<RegisterResponse>
 
     // Login User
-    @POST("api/users/login") // Denzel - Fixed endpoint
+    @POST("api/users/login")
     suspend fun loginUser(@Body request: LoginRequest): Response<LoginResponse>
 
     // Register user with Google SSO
@@ -29,9 +29,21 @@ interface ApiService {
     @GET("api/users/{id}/streak")
     suspend fun getUserStreak(@Path("id") userId: String): Response<GetUserStreakResponse>
 
+    // Get user goals
+    @GET("api/users/{id}/goals")
+    suspend fun getUserGoals(@Path("id") userId: String): Response<GetUserGoalsResponse>
+
+    // Update user goals
+    @PUT("api/users/{id}/goals")
+    suspend fun updateUserGoals(@Path("id") userId: String, @Body request: UpdateUserGoalsRequest): Response<UpdateUserGoalsResponse>
+
     // Update user
     @PUT("api/users/{id}")
     suspend fun updateUser(@Path("id") userId: String, @Body request: UpdateUserRequest): Response<UpdateUserResponse>
+
+    // Update user profile (age, height, weight)
+    @PUT("api/users/{id}/profile")
+    suspend fun updateUserProfile(@Path("id") userId: String, @Body request: UpdateUserProfileRequest): Response<UpdateUserProfileResponse>
 
     // Delete user
     @DELETE("api/users/{id}")
@@ -61,7 +73,7 @@ interface ApiService {
     // ==================== FOOD LOGGING ====================
 
     // Get Food Logs
-    @GET("api/food-logs")
+    @GET("api/food-logs/user/{userId}")
     suspend fun getFoodLogs(
         @Query("userId") userId: String? = null,
         @Query("date") date: String? = null
@@ -167,7 +179,7 @@ interface ApiService {
     // ==================== WATER LOGGING ====================
 
     // Get Water Logs
-    @GET("api/water-logs")
+    @GET("api/water-logs/user/{userId}")
     suspend fun getWaterLogs(
         @Query("userId") userId: String? = null,
         @Query("date") date: String? = null
@@ -247,7 +259,7 @@ interface ApiService {
     // ==================== EXERCISE LOGGING ====================
 
     // Get Exercise Logs
-    @GET("api/exercise-logs")
+    @GET("api/exercise-logs/user/{userId}")
     suspend fun getExerciseLogs(
         @Query("userId") userId: String? = null,
         @Query("date") date: String? = null,
@@ -343,4 +355,30 @@ interface ApiService {
     @POST("api/calorie-calculator/individual")
     suspend fun calculateIndividualCalories(@Body request: CalculateIndividualCaloriesRequest): Response<CalculateIndividualCaloriesResponse>
 
+
+    // ==================== HABITS ====================
+
+    // Get Daily Habits
+    @GET("api/habits/daily/{userId}")
+    suspend fun getDailyHabits(@Path("userId") userId: String): Response<HabitsResponse>
+
+    // Get Weekly Habits
+    @GET("api/habits/weekly/{userId}")
+    suspend fun getWeeklyHabits(@Path("userId") userId: String): Response<HabitsResponse>
+
+    // Get Monthly Habits
+    @GET("api/habits/monthly/{userId}")
+    suspend fun getMonthlyHabits(@Path("userId") userId: String): Response<HabitsResponse>
+
+    // Create Habit
+    @POST("api/habits")
+    suspend fun createHabit(@Body request: CreateHabitApiRequest): Response<HabitResponse>
+
+    // Update Habit
+    @PUT("api/habits/{id}")
+    suspend fun updateHabit(@Path("id") id: String, @Body request: UpdateHabitRequest): Response<HabitResponse>
+
+    // Delete Habit
+    @DELETE("api/habits/{id}")
+    suspend fun deleteHabit(@Path("id") id: String): Response<HabitResponse>
 }

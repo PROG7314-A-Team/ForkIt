@@ -2,11 +2,11 @@ const express = require("express");
 const router = express.Router();
 const mealLogController = require("../controllers/mealLogController");
 
-// GET all meal logs (with optional filters)
-router.get("/", mealLogController.getMealLogs);
-
 // GET meal logs by date range
 router.get("/date-range", mealLogController.getMealLogsByDateRange);
+
+// GET all meal logs (with optional filters)
+router.get("/user/:userId", mealLogController.getMealLogs);
 
 // GET meal log by ID
 router.get("/:id", mealLogController.getMealLogById);

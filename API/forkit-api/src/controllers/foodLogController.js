@@ -5,9 +5,11 @@ const StreakService = require("../services/streakService");
 const foodLogService = new FirebaseService("foodLogs");
 const calorieCalculator = new CalorieCalculatorService();
 const streakService = new StreakService();
+
 // Get all food logs
 exports.getFoodLogs = async (req, res) => {
   try {
+    console.log("Get food logs query", req.query);
     const { userId, date } = req.query;
     let filters = [];
 
@@ -19,6 +21,7 @@ exports.getFoodLogs = async (req, res) => {
       filters.push({ field: "date", operator: "==", value: date });
     }
 
+    console.log("Filters for search", filters);
     const foodLogs = await foodLogService.query(filters, "createdAt", "desc");
 
     res.json({

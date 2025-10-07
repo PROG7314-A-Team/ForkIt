@@ -73,6 +73,23 @@ class FirebaseService {
     }
   }
 
+  // Get documents by userId
+  async getByUserId(userId) {
+    try {
+      const querySnapshot = await db
+        .collection(this.collectionName)
+        .where("userId", "==", userId)
+        .get();
+      
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    } catch (error) {
+      throw new Error(`Error getting documents by userId: ${error.message}`);
+    }
+  }
+
   // Query documents
   async query(filters = [], orderByField = null, orderDirection = "asc", limitCount = null) {
     try {

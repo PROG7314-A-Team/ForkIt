@@ -4,8 +4,17 @@ data class Nutrients(
     val carbs: Double,
     val protein: Double,
     val fat: Double,
-    val fiber: Double,
-    val sugar: Double,
+    val fiber: Double = 0.0,
+    val sugar: Double = 0.0,
+)
+
+data class ServingSize(
+    val size: String?,
+    val quantity: Double?,
+    val unit: String?,
+    val original: String?,
+    val apiQuantity: Any?, // Can be String or Double
+    val apiUnit: String?
 )
 
 data class Food(
@@ -15,6 +24,9 @@ data class Food(
     val barcode: String,
     val calories: Double,
     val nutrients: Nutrients,
+    val servingSize: ServingSize?,
+    val nutrientsPerServing: Nutrients?,
+    val caloriesPerServing: Double?,
     val image: String,
     val ingredients: String
 )
@@ -26,10 +38,22 @@ data class GetFoodFromBarcodeResponse(
     val data: Food
 )
 
+data class SearchFoodItem(
+    val name: String,
+    val brand: String? = null,
+    val image: String?,
+    val nutrients: Nutrients,
+    val calories: Double?,
+    val servingSize: ServingSize?,
+    val nutrientsPerServing: Nutrients?,
+    val caloriesPerServing: Double?
+)
+
 data class GetFoodFromNameResponse(
     val success: Boolean,
     val message: String,
-    val data: Any
+    val data: Map<String, SearchFoodItem>
+    //val data: List<SearchFoodItem>
 )
 
 // Create food 

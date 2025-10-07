@@ -4,13 +4,14 @@ const exerciseLogService = new FirebaseService("exerciseLogs");
 // Get all exercise logs
 exports.getExerciseLogs = async (req, res) => {
   try {
+    console.log("Get exercise logs query", req.query);
     const { userId, date, type } = req.query;
     let filters = [];
-    
+
     if (userId) {
       filters.push({ field: "userId", operator: "==", value: userId });
     }
-    
+
     if (date) {
       filters.push({ field: "date", operator: "==", value: date });
     }
@@ -19,8 +20,14 @@ exports.getExerciseLogs = async (req, res) => {
       filters.push({ field: "type", operator: "==", value: type });
     }
 
-    const exerciseLogs = await exerciseLogService.query(filters, "createdAt", "desc");
-    
+    console.log("Filters for exercise logs search", filters);
+
+    const exerciseLogs = await exerciseLogService.query(
+      filters,
+      "createdAt",
+      "desc"
+    );
+
     res.json({
       success: true,
       data: exerciseLogs,
@@ -72,7 +79,7 @@ exports.createExerciseLog = async (req, res) => {
       caloriesBurnt,
       type, // Cardio or Strength
       duration, // Optional: duration in minutes
-      notes // Optional: additional notes
+      notes, // Optional: additional notes
     } = req.body;
 
     // Validation
@@ -107,7 +114,7 @@ exports.createExerciseLog = async (req, res) => {
       caloriesBurnt: caloriesBurntNum,
       type,
       duration: duration ? parseFloat(duration) : null,
-      notes: notes || ""
+      notes: notes || "",
     };
 
     const exerciseLog = await exerciseLogService.create(exerciseLogData);
@@ -230,7 +237,7 @@ exports.getExerciseLogsByDateRange = async (req, res) => {
     const filters = [
       { field: "userId", operator: "==", value: userId },
       { field: "date", operator: ">=", value: startDate },
-      { field: "date", operator: "<=", value: endDate }
+      { field: "date", operator: "<=", value: endDate },
     ];
 
     const exerciseLogs = await exerciseLogService.query(filters, "date", "asc");
@@ -263,17 +270,27 @@ exports.getDailyExerciseTotal = async (req, res) => {
 
     const filters = [
       { field: "userId", operator: "==", value: userId },
-      { field: "date", operator: "==", value: date }
+      { field: "date", operator: "==", value: date },
     ];
 
     const exerciseLogs = await exerciseLogService.query(filters);
 
-    const totalCaloriesBurnt = exerciseLogs.reduce((sum, log) => sum + log.caloriesBurnt, 0);
-    const totalDuration = exerciseLogs.reduce((sum, log) => sum + (log.duration || 0), 0);
-    
+    const totalCaloriesBurnt = exerciseLogs.reduce(
+      (sum, log) => sum + log.caloriesBurnt,
+      0
+    );
+    const totalDuration = exerciseLogs.reduce(
+      (sum, log) => sum + (log.duration || 0),
+      0
+    );
+
     // Count by type
-    const cardioCount = exerciseLogs.filter(log => log.type === "Cardio").length;
-    const strengthCount = exerciseLogs.filter(log => log.type === "Strength").length;
+    const cardioCount = exerciseLogs.filter(
+      (log) => log.type === "Cardio"
+    ).length;
+    const strengthCount = exerciseLogs.filter(
+      (log) => log.type === "Strength"
+    ).length;
 
     res.json({
       success: true,
@@ -285,7 +302,7 @@ exports.getDailyExerciseTotal = async (req, res) => {
         totalExercises: exerciseLogs.length,
         cardioExercises: cardioCount,
         strengthExercises: strengthCount,
-        entries: exerciseLogs
+        entries: exerciseLogs,
       },
       message: "Daily exercise total retrieved successfully",
     });
@@ -312,22 +329,28 @@ exports.getDailyExerciseSummary = async (req, res) => {
 
     const filters = [
       { field: "userId", operator: "==", value: userId },
-      { field: "date", operator: "==", value: date }
+      { field: "date", operator: "==", value: date },
     ];
 
     const exerciseLogs = await exerciseLogService.query(filters);
 
-    const totalCaloriesBurnt = exerciseLogs.reduce((sum, log) => sum + log.caloriesBurnt, 0);
-    const totalDuration = exerciseLogs.reduce((sum, log) => sum + (log.duration || 0), 0);
-    
+    const totalCaloriesBurnt = exerciseLogs.reduce(
+      (sum, log) => sum + log.caloriesBurnt,
+      0
+    );
+    const totalDuration = exerciseLogs.reduce(
+      (sum, log) => sum + (log.duration || 0),
+      0
+    );
+
     // Calculate by exercise type
     const typeBreakdown = {
       Cardio: { calories: 0, duration: 0, count: 0 },
-      Strength: { calories: 0, duration: 0, count: 0 }
+      Strength: { calories: 0, duration: 0, count: 0 },
     };
 
-    exerciseLogs.forEach(log => {
-      const type = log.type || 'Cardio';
+    exerciseLogs.forEach((log) => {
+      const type = log.type || "Cardio";
       if (typeBreakdown[type]) {
         typeBreakdown[type].calories += log.caloriesBurnt;
         typeBreakdown[type].duration += log.duration || 0;
@@ -337,7 +360,7 @@ exports.getDailyExerciseSummary = async (req, res) => {
 
     // Calculate hourly distribution
     const hourlyDistribution = {};
-    exerciseLogs.forEach(log => {
+    exerciseLogs.forEach((log) => {
       const hour = new Date(log.createdAt).getHours();
       if (!hourlyDistribution[hour]) {
         hourlyDistribution[hour] = { calories: 0, duration: 0, count: 0 };
@@ -353,7 +376,7 @@ exports.getDailyExerciseSummary = async (req, res) => {
         hour: parseInt(hour),
         calories: Math.round(data.calories),
         duration: Math.round(data.duration),
-        count: data.count
+        count: data.count,
       }))
       .sort((a, b) => a.hour - b.hour);
 
@@ -370,11 +393,20 @@ exports.getDailyExerciseSummary = async (req, res) => {
           calories: Math.round(data.calories),
           duration: Math.round(data.duration),
           count: data.count,
-          percentage: totalCaloriesBurnt > 0 ? Math.round((data.calories / totalCaloriesBurnt) * 100) : 0
+          percentage:
+            totalCaloriesBurnt > 0
+              ? Math.round((data.calories / totalCaloriesBurnt) * 100)
+              : 0,
         })),
         hourlyDistribution: hourlyData,
-        averageCaloriesPerExercise: exerciseLogs.length > 0 ? Math.round(totalCaloriesBurnt / exerciseLogs.length) : 0,
-        averageDurationPerExercise: exerciseLogs.length > 0 ? Math.round(totalDuration / exerciseLogs.length) : 0
+        averageCaloriesPerExercise:
+          exerciseLogs.length > 0
+            ? Math.round(totalCaloriesBurnt / exerciseLogs.length)
+            : 0,
+        averageDurationPerExercise:
+          exerciseLogs.length > 0
+            ? Math.round(totalDuration / exerciseLogs.length)
+            : 0,
       },
       message: "Daily exercise summary retrieved successfully",
     });
@@ -400,13 +432,13 @@ exports.getMonthlyExerciseSummary = async (req, res) => {
     }
 
     // Create date range for the month
-    const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
-    const endDate = `${year}-${month.toString().padStart(2, '0')}-31`;
+    const startDate = `${year}-${month.toString().padStart(2, "0")}-01`;
+    const endDate = `${year}-${month.toString().padStart(2, "0")}-31`;
 
     const filters = [
       { field: "userId", operator: "==", value: userId },
       { field: "date", operator: ">=", value: startDate },
-      { field: "date", operator: "<=", value: endDate }
+      { field: "date", operator: "<=", value: endDate },
     ];
 
     const exerciseLogs = await exerciseLogService.query(filters, "date", "asc");
@@ -417,28 +449,28 @@ exports.getMonthlyExerciseSummary = async (req, res) => {
     let monthlyTotalDuration = 0;
     let totalExercises = 0;
 
-    exerciseLogs.forEach(log => {
+    exerciseLogs.forEach((log) => {
       const date = log.date;
       const calories = parseFloat(log.caloriesBurnt) || 0;
       const duration = parseFloat(log.duration) || 0;
-      
+
       if (!dailyTotals[date]) {
         dailyTotals[date] = {
           calories: 0,
           duration: 0,
           exercises: 0,
           cardioCount: 0,
-          strengthCount: 0
+          strengthCount: 0,
         };
       }
 
       dailyTotals[date].calories += calories;
       dailyTotals[date].duration += duration;
       dailyTotals[date].exercises += 1;
-      
-      if (log.type === 'Cardio') {
+
+      if (log.type === "Cardio") {
         dailyTotals[date].cardioCount += 1;
-      } else if (log.type === 'Strength') {
+      } else if (log.type === "Strength") {
         dailyTotals[date].strengthCount += 1;
       }
 
@@ -449,17 +481,19 @@ exports.getMonthlyExerciseSummary = async (req, res) => {
 
     // Calculate averages
     const daysWithData = Object.keys(dailyTotals).length;
-    const averageDailyCalories = daysWithData > 0 ? monthlyTotalCalories / daysWithData : 0;
-    const averageDailyDuration = daysWithData > 0 ? monthlyTotalDuration / daysWithData : 0;
+    const averageDailyCalories =
+      daysWithData > 0 ? monthlyTotalCalories / daysWithData : 0;
+    const averageDailyDuration =
+      daysWithData > 0 ? monthlyTotalDuration / daysWithData : 0;
 
     // Calculate type breakdown for the month
     const monthlyTypeBreakdown = {
       Cardio: { calories: 0, duration: 0, count: 0 },
-      Strength: { calories: 0, duration: 0, count: 0 }
+      Strength: { calories: 0, duration: 0, count: 0 },
     };
 
-    exerciseLogs.forEach(log => {
-      const type = log.type || 'Cardio';
+    exerciseLogs.forEach((log) => {
+      const type = log.type || "Cardio";
       if (monthlyTypeBreakdown[type]) {
         monthlyTypeBreakdown[type].calories += log.caloriesBurnt;
         monthlyTypeBreakdown[type].duration += log.duration || 0;
@@ -479,21 +513,26 @@ exports.getMonthlyExerciseSummary = async (req, res) => {
         averageDailyCalories: Math.round(averageDailyCalories),
         averageDailyDuration: Math.round(averageDailyDuration),
         daysWithData,
-        monthlyTypeBreakdown: Object.entries(monthlyTypeBreakdown).map(([type, data]) => ({
-          type,
-          calories: Math.round(data.calories),
-          duration: Math.round(data.duration),
-          count: data.count,
-          percentage: monthlyTotalCalories > 0 ? Math.round((data.calories / monthlyTotalCalories) * 100) : 0
-        })),
+        monthlyTypeBreakdown: Object.entries(monthlyTypeBreakdown).map(
+          ([type, data]) => ({
+            type,
+            calories: Math.round(data.calories),
+            duration: Math.round(data.duration),
+            count: data.count,
+            percentage:
+              monthlyTotalCalories > 0
+                ? Math.round((data.calories / monthlyTotalCalories) * 100)
+                : 0,
+          })
+        ),
         dailyTotals: Object.entries(dailyTotals).map(([date, data]) => ({
           date,
           calories: Math.round(data.calories),
           duration: Math.round(data.duration),
           exercises: data.exercises,
           cardioCount: data.cardioCount,
-          strengthCount: data.strengthCount
-        }))
+          strengthCount: data.strengthCount,
+        })),
       },
       message: "Monthly exercise summary retrieved successfully",
     });
@@ -518,19 +557,17 @@ exports.getRecentExerciseActivity = async (req, res) => {
       });
     }
 
-    const filters = [
-      { field: "userId", operator: "==", value: userId }
-    ];
+    const filters = [{ field: "userId", operator: "==", value: userId }];
 
     const exerciseLogs = await exerciseLogService.query(
-      filters, 
-      "createdAt", 
-      "desc", 
+      filters,
+      "createdAt",
+      "desc",
       parseInt(limit)
     );
 
     // Format for recent activity display
-    const recentActivity = exerciseLogs.map(log => ({
+    const recentActivity = exerciseLogs.map((log) => ({
       id: log.id,
       name: log.name,
       type: log.type,
@@ -538,11 +575,11 @@ exports.getRecentExerciseActivity = async (req, res) => {
       duration: log.duration ? Math.round(parseFloat(log.duration)) : null,
       date: log.date,
       createdAt: log.createdAt,
-      time: new Date(log.createdAt).toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: true 
-      })
+      time: new Date(log.createdAt).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
     }));
 
     res.json({
@@ -550,7 +587,7 @@ exports.getRecentExerciseActivity = async (req, res) => {
       data: {
         userId,
         recentActivity,
-        count: recentActivity.length
+        count: recentActivity.length,
       },
       message: "Recent exercise activity retrieved successfully",
     });
@@ -566,7 +603,7 @@ exports.getRecentExerciseActivity = async (req, res) => {
 // Get exercise trends over time
 exports.getExerciseTrends = async (req, res) => {
   try {
-    const { userId, startDate, endDate, groupBy = 'day' } = req.query;
+    const { userId, startDate, endDate, groupBy = "day" } = req.query;
 
     if (!userId || !startDate || !endDate) {
       return res.status(400).json({
@@ -578,26 +615,28 @@ exports.getExerciseTrends = async (req, res) => {
     const filters = [
       { field: "userId", operator: "==", value: userId },
       { field: "date", operator: ">=", value: startDate },
-      { field: "date", operator: "<=", value: endDate }
+      { field: "date", operator: "<=", value: endDate },
     ];
 
     const exerciseLogs = await exerciseLogService.query(filters, "date", "asc");
 
     // Group by day, week, or month
     const trends = {};
-    
-    exerciseLogs.forEach(log => {
+
+    exerciseLogs.forEach((log) => {
       let groupKey;
       const logDate = new Date(log.date);
-      
+
       switch (groupBy) {
-        case 'week':
+        case "week":
           const weekStart = new Date(logDate);
           weekStart.setDate(logDate.getDate() - logDate.getDay());
-          groupKey = weekStart.toISOString().split('T')[0];
+          groupKey = weekStart.toISOString().split("T")[0];
           break;
-        case 'month':
-          groupKey = `${logDate.getFullYear()}-${(logDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        case "month":
+          groupKey = `${logDate.getFullYear()}-${(logDate.getMonth() + 1)
+            .toString()
+            .padStart(2, "0")}`;
           break;
         default: // day
           groupKey = log.date;
@@ -610,26 +649,26 @@ exports.getExerciseTrends = async (req, res) => {
           duration: 0,
           exercises: 0,
           cardioCount: 0,
-          strengthCount: 0
+          strengthCount: 0,
         };
       }
 
       trends[groupKey].calories += parseFloat(log.caloriesBurnt) || 0;
       trends[groupKey].duration += parseFloat(log.duration) || 0;
       trends[groupKey].exercises += 1;
-      
-      if (log.type === 'Cardio') {
+
+      if (log.type === "Cardio") {
         trends[groupKey].cardioCount += 1;
-      } else if (log.type === 'Strength') {
+      } else if (log.type === "Strength") {
         trends[groupKey].strengthCount += 1;
       }
     });
 
     // Convert to array and round values
-    const trendData = Object.values(trends).map(trend => ({
+    const trendData = Object.values(trends).map((trend) => ({
       ...trend,
       calories: Math.round(trend.calories),
-      duration: Math.round(trend.duration)
+      duration: Math.round(trend.duration),
     }));
 
     res.json({
@@ -640,7 +679,7 @@ exports.getExerciseTrends = async (req, res) => {
         endDate,
         groupBy,
         trends: trendData,
-        totalDays: trendData.length
+        totalDays: trendData.length,
       },
       message: "Exercise trends retrieved successfully",
     });
@@ -666,50 +705,77 @@ exports.getExerciseDashboardData = async (req, res) => {
     }
 
     // Use current date if not provided
-    const currentDate = date || new Date().toISOString().split('T')[0];
+    const currentDate = date || new Date().toISOString().split("T")[0];
     const currentYear = year || new Date().getFullYear();
     const currentMonth = month || new Date().getMonth() + 1;
 
     // Get daily summary
     const dailyFilters = [
       { field: "userId", operator: "==", value: userId },
-      { field: "date", operator: "==", value: currentDate }
+      { field: "date", operator: "==", value: currentDate },
     ];
     const dailyExerciseLogs = await exerciseLogService.query(dailyFilters);
 
     // Get monthly summary
-    const startDate = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`;
-    const endDate = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-31`;
+    const startDate = `${currentYear}-${currentMonth
+      .toString()
+      .padStart(2, "0")}-01`;
+    const endDate = `${currentYear}-${currentMonth
+      .toString()
+      .padStart(2, "0")}-31`;
     const monthlyFilters = [
       { field: "userId", operator: "==", value: userId },
       { field: "date", operator: ">=", value: startDate },
-      { field: "date", operator: "<=", value: endDate }
+      { field: "date", operator: "<=", value: endDate },
     ];
-    const monthlyExerciseLogs = await exerciseLogService.query(monthlyFilters, "date", "asc");
+    const monthlyExerciseLogs = await exerciseLogService.query(
+      monthlyFilters,
+      "date",
+      "asc"
+    );
 
     // Get recent activity (last 10 entries)
     const recentFilters = [{ field: "userId", operator: "==", value: userId }];
     const recentExerciseLogs = await exerciseLogService.query(
-      recentFilters, 
-      "createdAt", 
-      "desc", 
+      recentFilters,
+      "createdAt",
+      "desc",
       10
     );
 
     // Calculate daily totals
-    const dailyTotalCalories = dailyExerciseLogs.reduce((sum, log) => sum + (parseFloat(log.caloriesBurnt) || 0), 0);
-    const dailyTotalDuration = dailyExerciseLogs.reduce((sum, log) => sum + (parseFloat(log.duration) || 0), 0);
-    const dailyCardioCount = dailyExerciseLogs.filter(log => log.type === 'Cardio').length;
-    const dailyStrengthCount = dailyExerciseLogs.filter(log => log.type === 'Strength').length;
+    const dailyTotalCalories = dailyExerciseLogs.reduce(
+      (sum, log) => sum + (parseFloat(log.caloriesBurnt) || 0),
+      0
+    );
+    const dailyTotalDuration = dailyExerciseLogs.reduce(
+      (sum, log) => sum + (parseFloat(log.duration) || 0),
+      0
+    );
+    const dailyCardioCount = dailyExerciseLogs.filter(
+      (log) => log.type === "Cardio"
+    ).length;
+    const dailyStrengthCount = dailyExerciseLogs.filter(
+      (log) => log.type === "Strength"
+    ).length;
 
     // Calculate monthly totals
-    const monthlyTotalCalories = monthlyExerciseLogs.reduce((sum, log) => sum + (parseFloat(log.caloriesBurnt) || 0), 0);
-    const monthlyTotalDuration = monthlyExerciseLogs.reduce((sum, log) => sum + (parseFloat(log.duration) || 0), 0);
-    const daysWithData = [...new Set(monthlyExerciseLogs.map(log => log.date))].length;
-    const averageDailyCalories = daysWithData > 0 ? monthlyTotalCalories / daysWithData : 0;
+    const monthlyTotalCalories = monthlyExerciseLogs.reduce(
+      (sum, log) => sum + (parseFloat(log.caloriesBurnt) || 0),
+      0
+    );
+    const monthlyTotalDuration = monthlyExerciseLogs.reduce(
+      (sum, log) => sum + (parseFloat(log.duration) || 0),
+      0
+    );
+    const daysWithData = [
+      ...new Set(monthlyExerciseLogs.map((log) => log.date)),
+    ].length;
+    const averageDailyCalories =
+      daysWithData > 0 ? monthlyTotalCalories / daysWithData : 0;
 
     // Format recent activity
-    const recentActivity = recentExerciseLogs.map(log => ({
+    const recentActivity = recentExerciseLogs.map((log) => ({
       id: log.id,
       name: log.name,
       type: log.type,
@@ -717,11 +783,11 @@ exports.getExerciseDashboardData = async (req, res) => {
       duration: log.duration ? Math.round(parseFloat(log.duration)) : null,
       date: log.date,
       createdAt: log.createdAt,
-      time: new Date(log.createdAt).toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: true 
-      })
+      time: new Date(log.createdAt).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
     }));
 
     res.json({
@@ -731,7 +797,7 @@ exports.getExerciseDashboardData = async (req, res) => {
         date: currentDate,
         year: parseInt(currentYear),
         month: parseInt(currentMonth),
-        
+
         // Daily data
         daily: {
           totalCalories: Math.round(dailyTotalCalories),
@@ -739,7 +805,10 @@ exports.getExerciseDashboardData = async (req, res) => {
           totalExercises: dailyExerciseLogs.length,
           cardioExercises: dailyCardioCount,
           strengthExercises: dailyStrengthCount,
-          averageCaloriesPerExercise: dailyExerciseLogs.length > 0 ? Math.round(dailyTotalCalories / dailyExerciseLogs.length) : 0
+          averageCaloriesPerExercise:
+            dailyExerciseLogs.length > 0
+              ? Math.round(dailyTotalCalories / dailyExerciseLogs.length)
+              : 0,
         },
 
         // Monthly data
@@ -748,13 +817,13 @@ exports.getExerciseDashboardData = async (req, res) => {
           totalDuration: Math.round(monthlyTotalDuration),
           averageDailyCalories: Math.round(averageDailyCalories),
           daysWithData,
-          totalExercises: monthlyExerciseLogs.length
+          totalExercises: monthlyExerciseLogs.length,
         },
 
         // Recent activity
         recentActivity: {
           entries: recentActivity,
-          count: recentActivity.length
+          count: recentActivity.length,
         },
 
         // Summary for dashboard cards
@@ -764,9 +833,9 @@ exports.getExerciseDashboardData = async (req, res) => {
           totalExercises: dailyExerciseLogs.length,
           cardioVsStrength: {
             cardio: dailyCardioCount,
-            strength: dailyStrengthCount
-          }
-        }
+            strength: dailyStrengthCount,
+          },
+        },
       },
       message: "Exercise dashboard data retrieved successfully",
     });

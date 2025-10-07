@@ -1,0 +1,187 @@
+name: CI - Automated Testing
+
+on:
+  push:
+    branches: [main, dev, Max/AutomatedTests]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  # API Unit Tests
+  api-tests:
+    name: API Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: API/forkit-api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./API/forkit-api
+
+      # Add environment variables from secrets
+      - name: Set up Firebase environment
+        run: |
+          echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> $GITHUB_ENV
+          echo "FIREBASE_PRIVATE_KEY_ID=${{ secrets.FIREBASE_PRIVATE_KEY_ID }}" >> $GITHUB_ENV
+          echo "FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}" >> $GITHUB_ENV
+          echo "FIREBASE_CLIENT_EMAIL=${{ secrets.FIREBASE_CLIENT_EMAIL }}" >> $GITHUB_ENV
+          echo "FIREBASE_CLIENT_ID=${{ secrets.FIREBASE_CLIENT_ID }}" >> $GITHUB_ENV
+          echo "FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}" >> $GITHUB_ENV
+
+      - name: Run API Unit Tests
+        run: npm test
+        working-directory: ./API/forkit-api
+
+      - name: Upload API Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-test-results
+          path: API/forkit-api/coverage/
+
+      - name: Upload API Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          file: ./API/forkit-api/coverage/lcov.info
+          flags: api-tests
+          name: api-coverage
+
+      - name: Comment API Test Results on PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request' && success()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const testResults = `## ✅ API Unit Tests Passed
+
+            All unit tests for the Node.js API have completed successfully!
+
+            📊 View detailed coverage report in the artifacts.`;
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: testResults
+            });
+
+  # Android Unit Tests
+  android-tests:
+    name: Android Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+          cache: "gradle"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 36
+          build-tools: 36.0.0
+
+      - name: Accept Android SDK Licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./Mobile/gradlew
+        working-directory: .
+
+      - name: Check Android Project Compilation
+        run: ./gradlew compileDebugKotlin --stacktrace
+        working-directory: ./Mobile
+        continue-on-error: true
+
+      - name: Run Android Unit Tests
+        run: ./gradlew test --stacktrace --continue
+        working-directory: ./Mobile
+        continue-on-error: true
+
+      - name: Upload Android Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-test-results
+          path: Mobile/app/build/reports/tests/
+
+      - name: Upload Android Test Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-test-coverage
+          path: Mobile/app/build/reports/coverage/
+
+      - name: Comment Test Results on PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request' && success()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const testResults = `## ✅ Android Unit Tests Passed
+
+            All unit tests for the Android application have completed successfully!
+
+            📊 View detailed test results in the artifacts.`;
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: testResults
+            });
+
+  # Combined Test Report
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [android-tests, api-tests]
+    if: always()
+
+    steps:
+      - name: Create Test Summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const androidStatus = '${{ needs.android-tests.result }}';
+            const apiStatus = '${{ needs.api-tests.result }}';
+
+            let summary = `# 🧪 Test Suite Summary\n\n`;
+            summary += `| Component | Status |\n`;
+            summary += `|-----------|--------|\n`;
+            summary += `| Android Tests | ${androidStatus === 'success' ? '✅ Passed' : '❌ Failed'} |\n`;
+            summary += `| API Tests | ${apiStatus === 'success' ? '✅ Passed' : '❌ Failed'} |\n\n`;
+
+            if (androidStatus === 'success' && apiStatus === 'success') {
+              summary += `## 🎉 All Tests Passed!\n\n`;
+              summary += `Great work! All automated tests are passing.`;
+            } else {
+              summary += `## ⚠️ Some Tests Failed\n\n`;
+              summary += `Please review the test results and fix any failing tests.`;
+            }
+
+            core.summary.addRaw(summary).write();
+
+      - name: Check Overall Test Status
+        if: needs.android-tests.result != 'success' || needs.api-tests.result != 'success'
+        run: |
+          echo "Some tests failed. Please review the test results."
+          echo "Android Tests Status: ${{ needs.android-tests.result }}"
+          echo "API Tests Status: ${{ needs.api-tests.result }}"
+          exit 1

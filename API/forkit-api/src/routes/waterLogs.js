@@ -2,9 +2,6 @@ const express = require("express");
 const router = express.Router();
 const waterLogController = require("../controllers/waterLogController");
 
-// GET all water logs (with optional filters)
-router.get("/", waterLogController.getWaterLogs);
-
 // GET daily water total
 router.get("/daily-total", waterLogController.getDailyWaterTotal);
 
@@ -25,6 +22,9 @@ router.get("/dashboard", waterLogController.getWaterDashboardData);
 
 // GET water logs by date range
 router.get("/date-range", waterLogController.getWaterLogsByDateRange);
+
+// GET all water logs (with optional filters)
+router.get("/user/:userId", waterLogController.getWaterLogs);
 
 // GET water log by ID
 router.get("/:id", waterLogController.getWaterLogById);
