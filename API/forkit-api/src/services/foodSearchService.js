@@ -504,36 +504,218 @@ class FoodSearchService {
   }
 
   /**
-   * Format results for API response
+   * Format results for API response with comprehensive serving data
    */
   formatResultsForAPI(scoredResults) {
-    return scoredResults.map((result) => ({
-      id: result.code || result.id,
-      name: result.product_name || result.name,
-      brand: result.brands || result.brand || "Unknown Brand",
-      barcode: result.code || result.barcode,
-      image: result.image_small_url || result.image_url || null,
-      ingredients: result.ingredients_text || result.ingredients || null,
-      nutriscore: result.nutriscore_grade || null,
-      ecoscore: result.ecoscore_grade || null,
-      novaGroup: result.nova_group || null,
-      score: {
-        total: result.totalScore,
-        breakdown: result.scoreBreakdown,
+    return scoredResults.map((result) => {
+      const servingData = this.extractServingData(result);
+      const nutritionalData = this.extractNutritionalData(result);
+
+      return {
+        id: result.code || result.id,
+        name: result.product_name || result.name,
+        brand: result.brands || result.brand || "Unknown Brand",
+        barcode: result.code || result.barcode,
+        image: result.image_small_url || result.image_url || null,
+        ingredients: result.ingredients_text || result.ingredients || null,
+        nutriscore: result.nutriscore_grade || null,
+        ecoscore: result.ecoscore_grade || null,
+        novaGroup: result.nova_group || null,
+        score: {
+          total: result.totalScore,
+          breakdown: result.scoreBreakdown,
+        },
+        isLocal: result.isLocal || false,
+
+        // Nutritional data per 100g
+        nutrients: nutritionalData.per100g,
+        calories: nutritionalData.caloriesPer100g,
+
+        // Comprehensive serving data for frontend
+        servingSize: servingData,
+
+        // Nutritional data per serving (when available)
+        nutrientsPerServing: nutritionalData.perServing,
+        caloriesPerServing: nutritionalData.caloriesPerServing,
+
+        // Additional useful data for frontend
+        defaultServing: servingData.defaultServing,
+        availableUnits: servingData.availableUnits,
+      };
+    });
+  }
+
+  /**
+   * Extract comprehensive serving size data
+   */
+  extractServingData(result) {
+    const nutriments = result.nutriments || {};
+
+    // Parse serving size using the existing helper function from foodController
+    const parsedServingSize = this.parseServingSize(result.serving_size);
+
+    // Get serving quantity and unit from API
+    const apiServingQuantity = result.serving_quantity || null;
+    const apiServingUnit = result.serving_quantity_unit || null;
+
+    // Calculate default serving (use parsed data if available, otherwise API data)
+    const defaultQuantity =
+      parsedServingSize.quantity || apiServingQuantity || 100;
+    const defaultUnit = parsedServingSize.unit || apiServingUnit || "g";
+
+    // Available units for frontend dropdown
+    const availableUnits = this.getAvailableUnits(
+      defaultUnit,
+      parsedServingSize.unit,
+      apiServingUnit
+    );
+
+    return {
+      // Original serving size string
+      size: result.serving_size || null,
+
+      // Parsed serving size data
+      quantity: parsedServingSize.quantity,
+      unit: parsedServingSize.unit,
+      original: parsedServingSize.original,
+
+      // API serving data
+      apiQuantity: apiServingQuantity,
+      apiUnit: apiServingUnit,
+
+      // Default serving for frontend
+      defaultServing: {
+        quantity: defaultQuantity,
+        unit: defaultUnit,
+        display: `${defaultQuantity}${defaultUnit}`,
       },
-      isLocal: result.isLocal || false,
-      // Include nutritional data if available
-      nutrients: result.nutriments
-        ? {
-            carbs: result.nutriments.carbohydrates_100g || 0,
-            protein: result.nutriments.proteins_100g || 0,
-            fat: result.nutriments.fat_100g || 0,
-          }
-        : result.nutrients || null,
-      calories: result.nutriments
-        ? result.nutriments["energy-kcal_100g"] || 0
-        : result.calories || 0,
-    }));
+
+      // Available units for frontend
+      availableUnits: availableUnits,
+
+      // Additional serving information
+      servingSize: {
+        size: result.serving_size || null,
+        quantity: parsedServingSize.quantity,
+        unit: parsedServingSize.unit,
+        original: parsedServingSize.original,
+        apiQuantity: apiServingQuantity,
+        apiUnit: apiServingUnit,
+      },
+    };
+  }
+
+  /**
+   * Parse serving size using regex (similar to foodController helper)
+   */
+  parseServingSize(servingSizeString) {
+    if (!servingSizeString) {
+      return { quantity: null, unit: null, original: null };
+    }
+
+    // Remove extra whitespace and convert to string
+    const cleanSize = String(servingSizeString).trim();
+
+    // Regex to match number (including decimals) followed by optional unit
+    const regex =
+      /^(\d+(?:\.\d+)?)\s*([a-zA-Z\u00C0-\u017F\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF]*)?$/;
+    const match = cleanSize.match(regex);
+
+    if (match) {
+      const quantity = parseFloat(match[1]);
+      const unit = match[2] ? match[2].trim() : null;
+
+      return {
+        quantity: quantity,
+        unit: unit,
+        original: cleanSize,
+      };
+    }
+
+    // If regex doesn't match, try to extract just the number
+    const numberMatch = cleanSize.match(/(\d+(?:\.\d+)?)/);
+    if (numberMatch) {
+      return {
+        quantity: parseFloat(numberMatch[1]),
+        unit: null,
+        original: cleanSize,
+      };
+    }
+
+    return { quantity: null, unit: null, original: cleanSize };
+  }
+
+  /**
+   * Get available units for frontend dropdown
+   */
+  getAvailableUnits(defaultUnit, parsedUnit, apiUnit) {
+    const units = new Set();
+
+    // Add default unit
+    if (defaultUnit) units.add(defaultUnit);
+
+    // Add parsed unit if different
+    if (parsedUnit && parsedUnit !== defaultUnit) units.add(parsedUnit);
+
+    // Add API unit if different
+    if (apiUnit && apiUnit !== defaultUnit && apiUnit !== parsedUnit)
+      units.add(apiUnit);
+
+    // Add common units
+    const commonUnits = [
+      "g",
+      "kg",
+      "ml",
+      "l",
+      "cup",
+      "tbsp",
+      "tsp",
+      "piece",
+      "slice",
+      "serving",
+    ];
+    commonUnits.forEach((unit) => units.add(unit));
+
+    return Array.from(units).sort();
+  }
+
+  /**
+   * Extract comprehensive nutritional data
+   */
+  extractNutritionalData(result) {
+    const nutriments = result.nutriments || {};
+
+    // Nutritional data per 100g
+    const per100g = {
+      carbs: nutriments.carbohydrates_100g || nutriments.carbohydrates || 0,
+      protein: nutriments.proteins_100g || nutriments.proteins || 0,
+      fat: nutriments.fat_100g || nutriments.fat || 0,
+      fiber: nutriments.fiber_100g || nutriments.fiber || 0,
+      sugar: nutriments.sugars_100g || nutriments.sugars || 0,
+      sodium: nutriments.sodium_100g || nutriments.sodium || 0,
+    };
+
+    const caloriesPer100g =
+      nutriments["energy-kcal_100g"] || nutriments["energy-kcal"] || 0;
+
+    // Nutritional data per serving (when available)
+    const perServing = {
+      carbs: nutriments.carbohydrates_serving || null,
+      protein: nutriments.proteins_serving || null,
+      fat: nutriments.fat_serving || null,
+      fiber: nutriments.fiber_serving || null,
+      sugar: nutriments.sugars_serving || null,
+      sodium: nutriments.sodium_serving || null,
+    };
+
+    const caloriesPerServing = nutriments["energy-kcal_serving"] || null;
+
+    return {
+      per100g,
+      caloriesPer100g,
+      perServing,
+      caloriesPerServing,
+    };
   }
 }
 
