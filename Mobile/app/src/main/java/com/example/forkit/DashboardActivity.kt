@@ -66,7 +66,27 @@ import com.example.forkit.data.RetrofitClient
 import com.example.forkit.ui.theme.ForkItTheme
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
+
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.forkit.ui.meals.*
+import com.example.forkit.data.models.MealLog
+import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.text.TextStyle
+import com.example.forkit.ui.meals.AddFullMealActivity
+import com.example.forkit.ui.meals.MealDetailActivity
+import android.util.Log
+import kotlinx.coroutines.delay
+
+
 
 class DashboardActivity : ComponentActivity() {
     private var refreshCallback: (() -> Unit)? = null
@@ -1443,7 +1463,8 @@ fun DashboardScreen(
                         modifier = Modifier
                             .weight(1f)
                     ) {
-                        MealsScreen()
+                        MealsScreen(userId = userId)
+
                     }
                 }
                 2 -> {
@@ -1925,67 +1946,245 @@ fun FloatingIcon(
     }
 }
 
+// 🔧 Global tag for all meals-related logs
+private const val DEBUG_TAG = "MealsDebug"
+
+// ─────────────────────────────────────────────
+// 🥗 MealsScreen Composable
+// Handles listing, loading, and navigation to meal details
+// ─────────────────────────────────────────────
 @Composable
-fun MealsScreen() {
-    Column(
+fun MealsScreen(userId: String) {
+    val TAG = "MealsScreen"
+    val context = LocalContext.current
+
+    // 🔹 UI state variables
+    var meals by remember { mutableStateOf<List<MealLog>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // 🔹 Log the start of the screen
+    Log.d(DEBUG_TAG, "$TAG: Initializing MealsScreen for userId=$userId")
+
+    // ─────────────────────────────────────────────
+    // Load meals (temporary mock implementation)
+    // ─────────────────────────────────────────────
+    LaunchedEffect(userId) {
+        Log.d("MealsScreen", "Fetching real meals from API for userId=$userId")
+        try {
+            val response = RetrofitClient.api.getMealLogs(userId = userId)
+            if (response.isSuccessful && response.body()?.success == true) {
+                meals = response.body()?.data ?: emptyList()
+                Log.d("MealsScreen", "✅ Meals loaded: ${meals.size}")
+            } else {
+                Log.w("MealsScreen", "⚠️ Failed to fetch meals: ${response.message()}")
+                meals = emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e("MealsScreen", "❌ Error fetching meals", e)
+            meals = emptyList()
+        } finally {
+            isLoading = false
+        }
+    }
+
+
+    // ─────────────────────────────────────────────
+    // UI Composition
+    // ─────────────────────────────────────────────
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        Text(
-            text = "🍽️",
-            fontSize = 64.sp
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Text(
-            text = "Meals",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF22B27D)
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = "Track your meals and nutrition",
-            fontSize = 16.sp,
-            color = Color(0xFF666666),
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            // 🔹 Header section
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Coming Soon",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF333333)
+                    text = "Your Meals",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    style = TextStyle(
+                        brush = Brush.horizontalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.secondary
+                            )
+                        )
+                    )
                 )
-                Text(
-                    text = "Meal tracking features will be available here",
-                    fontSize = 14.sp,
-                    color = Color(0xFF666666),
-                    textAlign = TextAlign.Center
-                )
+                Spacer(modifier = Modifier.weight(1f))
+
+                IconButton(onClick = {
+                    Log.d(DEBUG_TAG, "$TAG: Refresh button clicked.")
+                    Toast.makeText(context, "Refreshing meals...", Toast.LENGTH_SHORT).show()
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Refresh",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
+
+            // 🔹 Conditional UI states
+            when {
+                isLoading -> {
+                    Log.d(DEBUG_TAG, "$TAG: Showing loading indicator...")
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+
+                errorMessage != null -> {
+                    Log.w(DEBUG_TAG, "$TAG: Displaying error message: $errorMessage")
+                    Text(
+                        text = "Error loading meals: $errorMessage",
+                        color = Color.Red,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+                }
+
+                meals.isEmpty() -> {
+                    Log.d(DEBUG_TAG, "$TAG: No meals found for user.")
+                    Text(
+                        text = "No meals logged yet.",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 24.dp)
+                    )
+                }
+
+                else -> {
+                    Log.d(DEBUG_TAG, "$TAG: Rendering meals list...")
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        items(meals) { meal ->
+                            MealCard(meal = meal) {
+                                Log.i(DEBUG_TAG, "$TAG: Clicked meal -> ${meal.name}")
+
+                                // Convert Ingredient objects to names
+                                val ingredientNames = ArrayList(meal.ingredients.map { it.name })
+
+                                val intent = Intent(context, MealDetailActivity::class.java).apply {
+                                    putExtra("MEAL_NAME", meal.name)
+                                    putStringArrayListExtra("INGREDIENTS", ingredientNames)
+                                    putExtra("CALORIES", meal.totalCalories)
+                                }
+
+                                context.startActivity(intent)
+                            }
+
+                        }
+                        item { Spacer(modifier = Modifier.height(80.dp)) }
+                    }
+                }
+            }
+        }
+
+        // 🔹 Floating Add Meal Button
+        FloatingActionButton(
+            onClick = {
+                Log.d(DEBUG_TAG, "$TAG: Add Meal button clicked. Opening AddFullMealActivity.")
+                val intent = Intent(context, AddFullMealActivity::class.java).apply {
+                    putExtra("USER_ID", userId)
+                }
+                context.startActivity(intent)
+            },
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = Color.White,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(24.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Add Meal")
         }
     }
 }
 
+// ─────────────────────────────────────────────
+// 🍱 Data Model for Meal
+// ─────────────────────────────────────────────
+data class Meal(
+    val name: String,
+    val ingredients: List<String>,
+    val calories: Double
+)
+
+// ─────────────────────────────────────────────
+// 🍽️ MealCard Composable
+// Displays each meal item in a card layout
+// ─────────────────────────────────────────────
+@Composable
+fun MealCard(meal: MealLog, onClick: () -> Unit) {
+    val TAG = "MealCard"
+    Log.v(DEBUG_TAG, "$TAG: Rendering card for ${meal.name}")
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                Log.d(DEBUG_TAG, "$TAG: Card clicked for ${meal.name}")
+                onClick()
+            },
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+
+                // 🟢 Meal name
+                Text(
+                    text = meal.name,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                // 🟢 Safely render ingredient preview
+                val ingredientNames = meal.ingredients.map { it.name }
+                val ingredientText = ingredientNames.joinToString(", ")
+                val abbreviatedText = if (ingredientText.length > 40)
+                    ingredientText.take(40) + "…"
+                else
+                    ingredientText
+
+                Text(
+                    text = "${meal.ingredients.size} ingredients: $abbreviatedText",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // 🟢 Calories display (from totalCalories field)
+            Text(
+                text = "${meal.totalCalories.toInt()} kcal",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
 
 
     @Preview(showBackground = true)
