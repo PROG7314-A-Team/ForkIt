@@ -424,7 +424,7 @@ fun AccountScreen(
                         )
                     } else {
                         Text(
-                            text = stringResource(id = R.string.update_your_preferences),
+                            text = stringResource(id = R.string.update_your_account),
                             color = Color.White,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium
@@ -524,7 +524,7 @@ private suspend fun loadUserData(
                         android.util.Log.d("AccountActivity", "First user data: $userData")
                         
                         // Extract individual fields - these might be null if not set
-                        val userAge = userData["age"]?.toString()?.toIntOrNull()
+                        val userAge = (userData["age"] as? Double)?.toInt()
                         val userHeight = userData["height"]?.toString()?.toDoubleOrNull()
                         val userWeight = userData["weight"]?.toString()?.toDoubleOrNull()
                         val userEmail = userData["email"]?.toString()

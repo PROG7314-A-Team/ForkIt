@@ -45,6 +45,7 @@
     <string name="height_label">Height</string>
     <string name="update_data">Update Data</string>
     <string name="update_your_preferences">Update Your Preferences</string>
+    <string name="update_your_account">Update Your Account</string>
     <string name="delete_account">Delete Account</string>
     <string name="delete_account_title">Delete Account</string>
     <string name="delete_account_message">Are you sure you want to delete your account? This action cannot be undone and will remove all your data.</string>
