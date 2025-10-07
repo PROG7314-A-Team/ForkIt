@@ -14,11 +14,11 @@ interface ApiService {
     suspend fun loginUser(@Body request: LoginRequest): Response<LoginResponse>
 
     // Register user with Google SSO
-    @POST("api/users/registerGoogleUser") // Denzel - Fixed endpoint
+    @POST("api/users/registerGoogleUser")
     suspend fun registerGoogleUser(@Body request: GoogleRegisterRequest): Response<GoogleRegisterResponse>
 
     // Login user with Google SSO
-    @POST("api/users/loginGoogleUser") // Denzel - Fixed endpoint
+    @POST("api/users/loginGoogleUser") 
     suspend fun loginGoogleUser(@Body request: GoogleLoginRequest): Response<GoogleLoginResponse>
 
     // Get user by id

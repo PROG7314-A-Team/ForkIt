@@ -410,19 +410,22 @@ private suspend fun signInWithGoogle(context: Context) {
                                     val body = response.body()
                                     val success = body?.success ?: false
                                     val message = body?.message ?: "Registration successful"
-                                    val userId = body?.userId
+                                    val uid = body?.uid
 
                                     Log.d(
                                         "Auth",
-                                        "Google user registered successfully: success=$success, message=$message, userId=$userId"
+                                        "Google user registered successfully: success=$success, message=$message, userId=$uid"
                                     )
 
                                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 
-                                    // Move to SignInActivity after registration
-                                    val intent = Intent(context, SignInActivity::class.java)
-                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    // Navigate to onboarding flow for new users
+                                    val intent = Intent(context, TellUsAboutYourselfActivity::class.java)
+                                    intent.putExtra("USER_ID", body?.uid)
+                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                     context.startActivity(intent)
+                                    (context as? ComponentActivity)?.finish()
+
                                 } else {
                                     val errorMsg =
                                         response.errorBody()?.string() ?: "Unknown registration error"

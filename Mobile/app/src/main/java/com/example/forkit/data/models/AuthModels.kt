@@ -31,15 +31,19 @@ data class GoogleRegisterRequest(
 data class GoogleRegisterResponse(
     val success: Boolean,
     val message: String,
-    val userId: String? = null
+    val uid: String? = null
 )
 
 data class GoogleLoginRequest(
-    val email: String
+    val email: String,
+    val idToken: String
+
 )
 
 data class GoogleLoginResponse(
     val success: Boolean,
     val message: String,
-    val userId: String? = null
+    val userId: String? = null,
+    val idToken: String
+
 )

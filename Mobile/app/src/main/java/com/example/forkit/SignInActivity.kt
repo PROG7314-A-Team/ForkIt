@@ -324,6 +324,7 @@ fun SignInScreen(prefilledEmail: String = "") {
     }
 }
 
+
 private suspend fun signInWithGoogle(context: Context) {
     val credentialManager = CredentialManager.create(context)
 
@@ -358,52 +359,71 @@ private suspend fun signInWithGoogle(context: Context) {
                     if (email != null) {
                         Log.d("Auth", "Firebase Google sign-in successful for $email")
 
-                        (context as? ComponentActivity)?.lifecycleScope?.launch {
-                            try {
-                                val response = RetrofitClient.api.loginGoogleUser(
-                                    GoogleLoginRequest(email)
-                                )
+                        // Get a Firebase ID token to verify identity on backend
+                        user.getIdToken(true)
+                            .addOnSuccessListener { result ->
+                                val firebaseIdToken = result.token
+                                if (firebaseIdToken == null) {
+                                    Toast.makeText(context, "Failed to get Firebase ID token", Toast.LENGTH_SHORT).show()
+                                    return@addOnSuccessListener
+                                }
 
-                                if (response.isSuccessful) {
-                                    val rawJson = response.errorBody()?.string() ?: response.body()?.toString()
-                                    Log.d("Auth", "Backend raw response: $rawJson")
+                                // Send ID token and email to backend
+                                (context as? ComponentActivity)?.lifecycleScope?.launch {
+                                    try {
+                                        val response = RetrofitClient.api.loginGoogleUser(
+                                            GoogleLoginRequest(
+                                                email = email,
+                                                idToken = firebaseIdToken
+                                            )
+                                        )
 
-                                    val body = response.body()
+                                        if (response.isSuccessful) {
+                                            val body = response.body()
+                                            Log.d("Auth", "Backend login response: $body")
 
-                                    // Check if "user" object exists (since backend doesn't send success flag)
-                                    if (body != null || response.code() == 200) {
-                                        Log.d("Auth", "Parsed response body: $body")
-                                        Toast.makeText(context, "Welcome back!", Toast.LENGTH_SHORT).show()
+                                            if (body != null) {
+                                                // Optionally save locally for persistence
+                                                val authPreferences = AuthPreferences(context)
+                                                body.userId?.let { userId ->
+                                                    body.idToken?.let { token ->
+                                                        authPreferences.saveLoginData(userId, token, email)
+                                                    }
+                                                }
 
-                                        val intent = Intent(context, DashboardActivity::class.java)
-                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                                        context.startActivity(intent)
-                                    } else {
-                                        Log.e("Auth", "Login failed - unexpected response body: $body")
+                                                Toast.makeText(context, "Welcome back!", Toast.LENGTH_SHORT).show()
+
+                                                // Navigate to DashboardActivity with userId
+                                                val intent = Intent(context, DashboardActivity::class.java)
+                                                intent.putExtra("USER_ID", body?.userId)
+                                                intent.putExtra("ID_TOKEN", body?.idToken)
+                                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                                context.startActivity(intent)
+                                                (context as? ComponentActivity)?.finish()
+
+                                            } else {
+                                                Log.e("Auth", "Backend returned empty body")
+                                                Toast.makeText(context, "Unexpected backend response", Toast.LENGTH_LONG).show()
+                                            }
+                                        } else {
+                                            val errorMsg = response.errorBody()?.string() ?: "Backend login failed"
+                                            Log.e("Auth", "Login failed: $errorMsg")
+                                            Toast.makeText(context, "Login failed: $errorMsg", Toast.LENGTH_LONG).show()
+                                        }
+                                    } catch (e: Exception) {
+                                        Log.e("Auth", "Error logging in with Google", e)
                                         Toast.makeText(
                                             context,
-                                            "Login failed - invalid response",
+                                            "Error logging in: ${e.localizedMessage}",
                                             Toast.LENGTH_LONG
                                         ).show()
                                     }
-                                } else {
-                                    val errorMsg = response.errorBody()?.string() ?: "Backend login failed"
-                                    Log.e("Auth", "Login failed: $errorMsg")
-                                    Toast.makeText(
-                                        context,
-                                        "Login failed: $errorMsg",
-                                        Toast.LENGTH_LONG
-                                    ).show()
                                 }
-                            } catch (e: Exception) {
-                                Log.e("Auth", "Error logging in with Google", e)
-                                Toast.makeText(
-                                    context,
-                                    "Error logging in: ${e.localizedMessage}",
-                                    Toast.LENGTH_LONG
-                                ).show()
                             }
-                        }
+                            .addOnFailureListener { e ->
+                                Log.e("Auth", "Failed to get Firebase ID token", e)
+                                Toast.makeText(context, "Failed to get Firebase ID token", Toast.LENGTH_SHORT).show()
+                            }
                     } else {
                         Toast.makeText(context, "No email found in Google account", Toast.LENGTH_SHORT).show()
                     }
@@ -421,6 +441,7 @@ private suspend fun signInWithGoogle(context: Context) {
         Log.e("Auth", "Unexpected error during Google sign-in", e)
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 fun SignInScreenPreview() {

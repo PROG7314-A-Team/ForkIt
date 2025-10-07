@@ -2,6 +2,7 @@ const { auth, db } = require("../config/firebase"); // your firebase.js file
 const axios = require("axios");
 const { Timestamp } = require("firebase-admin/firestore");
 const userController = require("../controllers/userController");
+const admin = require("firebase-admin");
 
 // create a new user - used by api/users/register endpoint
 const createUser = async (req, res) => {
@@ -63,6 +64,7 @@ const createUser = async (req, res) => {
   }
 };
 
+// login a user - used by api/users/login endpoint
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -98,6 +100,7 @@ const loginUser = async (req, res) => {
     });
   }
 };
+
 
 // Create document from Google Sign Up (SSO):
  const registerGoogleUser = async (req, res) => {
@@ -164,38 +167,43 @@ const loginUser = async (req, res) => {
   }
 };
 
-
-// Login User with Google Account:
+// Create document from Google Sign Up (SSO):
 const loginGoogleUser = async (req, res) => {
-  const { email } = req.body;
+  const { email, idToken } = req.body;
 
-  if (!email) {
-    return res.status(400).json({ message: "Email is required" });
+  if (!email || !idToken) {
+    return res.status(400).json({ message: "Email and idToken are required" });
   }
 
   try {
-    const userRecord = await auth.getUserByEmail(email);
-    const userDoc = await db.collection("users").doc(userRecord.uid).get();
+    // 1. Verify the token using Firebase Admin SDK
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const uid = decodedToken.uid;
 
+    // 2. Confirm user exists in Firestore
+    const userDoc = await db.collection("users").doc(uid).get();
     if (!userDoc.exists) {
       return res.status(404).json({ message: "User not found in Firestore" });
     }
 
+    // 3. Generate a new token for session management (optional)
+    const customToken = await admin.auth().createCustomToken(uid);
+
+    // 4. Respond with user details and token
     return res.status(200).json({
       message: "Google login successful",
-      user: userDoc.data(),
+      userId: uid,
+      idToken, // return original token if you wish to reuse it
+      customToken,
     });
   } catch (error) {
-    console.error("Google login error:", error);
-    return res.status(500).json({
-      message: "Error logging in Google user",
+    console.error("Error verifying Google ID token:", error);
+    return res.status(401).json({
+      message: "Invalid or expired token",
       error: error.message,
     });
   }
 };
-
-
-
 
 module.exports = {
   createUser,
