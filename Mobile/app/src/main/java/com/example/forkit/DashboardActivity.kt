@@ -85,6 +85,8 @@ import com.example.forkit.ui.meals.AddFullMealActivity
 import com.example.forkit.ui.meals.MealDetailActivity
 import android.util.Log
 import kotlinx.coroutines.delay
+import androidx.compose.ui.graphics.graphicsLayer
+
 
 
 
@@ -1920,34 +1922,50 @@ fun FloatingIcons(
     userId: String,
     onDismiss: () -> Unit
 ) {
+    // Smooth fade and scale animation when opened
     val animatedAlpha by animateFloatAsState(
         targetValue = 1f,
-        animationSpec = tween(300)
+        animationSpec = tween(400)
     )
-    
+
     val animatedScale by animateFloatAsState(
         targetValue = 1f,
-        animationSpec = tween(300)
+        animationSpec = tween(400)
     )
-    
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .clickable { onDismiss() } // Dismiss when clicking outside
+            .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f))
+            .clickable { onDismiss() } // Tap anywhere to close
     ) {
-        // Floating icons positioned on the right side, similar to the image
         Column(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 24.dp, top = 200.dp)
                 .alpha(animatedAlpha),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Meal Icon
-            FloatingIcon(
+            // 🍱 Full Meal Logging
+            FloatingActionItem(
                 icon = R.drawable.ic_meals,
-                label = "Meal",
-                onClick = { 
+                label = "Full Meal",
+                color = MaterialTheme.colorScheme.primary,
+                onClick = {
+                    val intent = Intent(context, AddFullMealActivity::class.java)
+                    intent.putExtra("USER_ID", userId)
+                    context.startActivity(intent)
+                    onDismiss()
+                },
+                scale = animatedScale
+            )
+
+            // 🍎 Food (Meal) Logging
+            FloatingActionItem(
+                icon = R.drawable.icon_logo_, // your icon in drawable
+                label = "Food (Meal)",
+                color = MaterialTheme.colorScheme.tertiary,
+                onClick = {
                     val intent = Intent(context, AddMealActivity::class.java)
                     intent.putExtra("USER_ID", userId)
                     context.startActivity(intent)
@@ -1955,12 +1973,13 @@ fun FloatingIcons(
                 },
                 scale = animatedScale
             )
-            
-            // Water Icon
-            FloatingIcon(
+
+            // 💧 Water Logging
+            FloatingActionItem(
                 icon = R.drawable.ic_water,
                 label = "Water",
-                onClick = { 
+                color = Color(0xFF2196F3), // blue
+                onClick = {
                     val intent = Intent(context, AddWaterActivity::class.java)
                     intent.putExtra("USER_ID", userId)
                     context.startActivity(intent)
@@ -1968,12 +1987,13 @@ fun FloatingIcons(
                 },
                 scale = animatedScale
             )
-            
-            // Workout Icon
-            FloatingIcon(
+
+            // 🏋️ Exercise Logging
+            FloatingActionItem(
                 icon = R.drawable.ic_workout,
-                label = "Workout",
-                onClick = { 
+                label = "Exercise",
+                color = Color(0xFF22B27D), // green accent
+                onClick = {
                     val intent = Intent(context, AddWorkoutActivity::class.java)
                     intent.putExtra("USER_ID", userId)
                     context.startActivity(intent)
@@ -1984,6 +2004,49 @@ fun FloatingIcons(
         }
     }
 }
+
+@Composable
+fun FloatingActionItem(
+    icon: Int,
+    label: String,
+    color: Color,
+    onClick: () -> Unit,
+    scale: Float
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(horizontal = 6.dp) // clean layout, no scaling here
+    ) {
+        // Circular icon button (scaled + clickable)
+        Box(
+            modifier = Modifier
+                .graphicsLayer(scaleX = scale, scaleY = scale) // ✅ scale icon only
+                .size(60.dp)
+                .clip(CircleShape)
+                .background(color)
+                .clickable { onClick() }, // ✅ click only applies to the circle
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(id = icon),
+                contentDescription = label,
+                tint = Color.White,
+                modifier = Modifier.size(30.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Label text below icon
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
 
 @Composable
 fun FloatingIcon(

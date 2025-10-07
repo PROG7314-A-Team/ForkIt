@@ -11,6 +11,26 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+
+import androidx.compose.ui.platform.LocalContext
+
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.forkit.data.RetrofitClient
+import com.example.forkit.data.models.UpdateUserGoalsRequest
+import com.example.forkit.ui.theme.ForkItTheme
+import com.example.forkit.R
+import kotlinx.coroutines.launch
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -26,12 +46,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.stringResource
-import com.example.forkit.data.RetrofitClient
-import com.example.forkit.data.models.UpdateUserGoalsRequest
-import com.example.forkit.ui.theme.ForkItTheme
-import com.example.forkit.R
 import kotlinx.coroutines.launch
+
 
 class SetGoalsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,13 +92,16 @@ fun SetGoalsScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
+
     var dailyCalories by remember { mutableStateOf("") }
     var weeklyExercises by remember { mutableStateOf("") }
     var dailyWater by remember { mutableStateOf("") }
     var dailySteps by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Track selected goal for highlight state
+    var selectedGoal by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -103,47 +122,31 @@ fun SetGoalsScreen(
                     tint = Color.Black
                 )
             }
-            
+
             Spacer(modifier = Modifier.weight(1f))
-            
+
             // Progress indicator
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                // First step - completed
-                Box(
-                    modifier = Modifier
-                        .width(40.dp)
-                        .height(4.dp)
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(
-                                    Color(0xFF22B27D),
-                                    Color(0xFF1E9ECD)
-                                )
-                            ),
-                            shape = RoundedCornerShape(2.dp)
-                        )
-                )
-                // Second step - completed
-                Box(
-                    modifier = Modifier
-                        .width(40.dp)
-                        .height(4.dp)
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(
-                                    Color(0xFF22B27D),
-                                    Color(0xFF1E9ECD)
-                                )
-                            ),
-                            shape = RoundedCornerShape(2.dp)
-                        )
-                )
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                repeat(2) {
+                    Box(
+                        modifier = Modifier
+                            .width(40.dp)
+                            .height(4.dp)
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color(0xFF22B27D),
+                                        Color(0xFF1E9ECD)
+                                    )
+                                ),
+                                shape = RoundedCornerShape(2.dp)
+                            )
+                    )
+                }
             }
-            
+
             Spacer(modifier = Modifier.weight(1f))
-            
+
             Text(
                 text = "2/2",
                 fontSize = 14.sp,
@@ -151,7 +154,7 @@ fun SetGoalsScreen(
                 fontWeight = FontWeight.Medium
             )
         }
-        
+
         // Main content
         Column(
             modifier = Modifier
@@ -160,7 +163,7 @@ fun SetGoalsScreen(
             verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             // Title
             Text(
                 text = "Set your goals",
@@ -169,7 +172,7 @@ fun SetGoalsScreen(
                 color = Color(0xFF22B27D),
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            
+
             // Subtitle
             Text(
                 text = "Let's set some targets to help you stay on track",
@@ -177,8 +180,10 @@ fun SetGoalsScreen(
                 color = Color(0xFF666666),
                 fontWeight = FontWeight.Medium
             )
-            
-            // Daily Calorie Goal
+
+            // ==========================
+            // 🔹 Daily Calorie Goal
+            // ==========================
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = "What's your daily calorie intake goal?",
@@ -186,7 +191,58 @@ fun SetGoalsScreen(
                     color = Color(0xFF666666),
                     fontWeight = FontWeight.Medium
                 )
-                
+
+                // 🔸 Weight goal selector buttons
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    val goalOptions = listOf(
+                        "Lose Weight" to 1800,
+                        "Maintain Weight" to 2200,
+                        "Gain Weight" to 2600
+                    )
+
+                    goalOptions.forEach { (label, kcal) ->
+                        val isSelected = selectedGoal == label
+                        val modifierBase = if (isSelected) {
+                            Modifier
+                                .background(
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(Color(0xFF22B27D), Color(0xFF1E9ECD))
+                                    ),
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                        } else {
+                            Modifier
+                                .background(Color.White, RoundedCornerShape(10.dp))
+                                .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(10.dp))
+                        }
+
+                        Box(
+                            modifier = modifierBase
+                                .weight(1f)
+                                .height(50.dp)
+                                .clickable {
+                                    selectedGoal = label
+                                    dailyCalories = kcal.toString()
+                                    errorMessage = null
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                color = if (isSelected) Color.White else Color(0xFF666666),
+                                fontSize = 13.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+
+                // 🔸 Calorie input field
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -209,8 +265,8 @@ fun SetGoalsScreen(
                     ) {
                         TextField(
                             value = dailyCalories,
-                            onValueChange = { 
-                                if (it.length <= 5 && (it.isEmpty() || it.all { char -> char.isDigit() })) {
+                            onValueChange = {
+                                if (it.length <= 5 && (it.isEmpty() || it.all { c -> c.isDigit() })) {
                                     dailyCalories = it
                                     errorMessage = null
                                 }
@@ -237,7 +293,7 @@ fun SetGoalsScreen(
                             ),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
-                        
+
                         Text(
                             text = "kcal",
                             color = Color(0xFF666666),
@@ -247,8 +303,10 @@ fun SetGoalsScreen(
                     }
                 }
             }
-            
-            // Weekly Exercise Goal
+
+            // ==========================
+            // 🔹 Weekly Exercise Goal
+            // ==========================
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = "How many workouts per week?",
@@ -256,7 +314,7 @@ fun SetGoalsScreen(
                     color = Color(0xFF666666),
                     fontWeight = FontWeight.Medium
                 )
-                
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -279,8 +337,8 @@ fun SetGoalsScreen(
                     ) {
                         TextField(
                             value = weeklyExercises,
-                            onValueChange = { 
-                                if (it.length <= 2 && (it.isEmpty() || it.all { char -> char.isDigit() })) {
+                            onValueChange = {
+                                if (it.length <= 2 && (it.isEmpty() || it.all { c -> c.isDigit() })) {
                                     weeklyExercises = it
                                     errorMessage = null
                                 }
@@ -307,7 +365,7 @@ fun SetGoalsScreen(
                             ),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
-                        
+
                         Text(
                             text = "sessions",
                             color = Color(0xFF666666),
@@ -317,8 +375,10 @@ fun SetGoalsScreen(
                     }
                 }
             }
-            
-            // Daily Water Goal
+
+            // ==========================
+            // 🔹 Daily Water Goal
+            // ==========================
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = "How much water should you drink daily?",
@@ -326,7 +386,7 @@ fun SetGoalsScreen(
                     color = Color(0xFF666666),
                     fontWeight = FontWeight.Medium
                 )
-                
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -336,10 +396,7 @@ fun SetGoalsScreen(
                             color = Color(0xFFE0E0E0),
                             shape = RoundedCornerShape(12.dp)
                         )
-                        .background(
-                            color = Color.White,
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                        .background(Color.White, RoundedCornerShape(12.dp))
                 ) {
                     Row(
                         modifier = Modifier
@@ -349,8 +406,8 @@ fun SetGoalsScreen(
                     ) {
                         TextField(
                             value = dailyWater,
-                            onValueChange = { 
-                                if (it.length <= 5 && (it.isEmpty() || it.all { char -> char.isDigit() })) {
+                            onValueChange = {
+                                if (it.length <= 5 && (it.isEmpty() || it.all { c -> c.isDigit() })) {
                                     dailyWater = it
                                     errorMessage = null
                                 }
@@ -377,7 +434,7 @@ fun SetGoalsScreen(
                             ),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
-                        
+
                         Text(
                             text = "ml",
                             color = Color(0xFF666666),
@@ -387,29 +444,24 @@ fun SetGoalsScreen(
                     }
                 }
             }
-            
-            // Daily Steps Goal
+
+            // ==========================
+            // 🔹 Daily Steps Goal
+            // ==========================
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = stringResource(id = R.string.steps_goal),
+                    text = "How many steps per day?",
                     fontSize = 16.sp,
                     color = Color(0xFF666666),
                     fontWeight = FontWeight.Medium
                 )
-                
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(60.dp)
-                        .border(
-                            width = 1.dp,
-                            color = Color(0xFFE0E0E0),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .background(
-                            color = Color.White,
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                        .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
+                        .background(Color.White, RoundedCornerShape(12.dp))
                 ) {
                     Row(
                         modifier = Modifier
@@ -419,8 +471,8 @@ fun SetGoalsScreen(
                     ) {
                         TextField(
                             value = dailySteps,
-                            onValueChange = { 
-                                if (it.length <= 5 && (it.isEmpty() || it.all { char -> char.isDigit() })) {
+                            onValueChange = {
+                                if (it.length <= 5 && (it.isEmpty() || it.all { c -> c.isDigit() })) {
                                     dailySteps = it
                                     errorMessage = null
                                 }
@@ -447,9 +499,9 @@ fun SetGoalsScreen(
                             ),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
-                        
+
                         Text(
-                            text = stringResource(id = R.string.steps),
+                            text = "steps",
                             color = Color(0xFF666666),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
@@ -457,8 +509,10 @@ fun SetGoalsScreen(
                     }
                 }
             }
-            
-            // Error message
+
+            // ==========================
+            // 🔹 Error Message
+            // ==========================
             errorMessage?.let { message ->
                 Text(
                     text = message,
@@ -467,46 +521,39 @@ fun SetGoalsScreen(
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
-            
+
             Spacer(modifier = Modifier.weight(1f))
-            
-            // Finish Button
+
+            // ==========================
+            // 🔹 Finish Button
+            // ==========================
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp)
                     .background(
                         brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFF22B27D),
-                                Color(0xFF1E9ECD)
-                            )
+                            colors = listOf(Color(0xFF22B27D), Color(0xFF1E9ECD))
                         ),
                         shape = RoundedCornerShape(12.dp)
                     )
-                    .clickable { 
+                    .clickable {
                         if (!isLoading) {
-                            // Validate inputs
                             val caloriesInt = dailyCalories.toIntOrNull()
                             val exercisesInt = weeklyExercises.toIntOrNull()
                             val waterInt = dailyWater.toIntOrNull()
                             val stepsInt = dailySteps.toIntOrNull()
-                            
+
                             when {
-                                dailyCalories.isEmpty() || caloriesInt == null || caloriesInt < 1200 || caloriesInt > 10000 -> {
-                                    errorMessage = "Please enter a valid calorie goal (1200-10000 kcal)"
-                                }
-                                weeklyExercises.isEmpty() || exercisesInt == null || exercisesInt < 0 || exercisesInt > 21 -> {
-                                    errorMessage = "Please enter a valid exercise goal (0-21 sessions)"
-                                }
-                                dailyWater.isEmpty() || waterInt == null || waterInt < 500 || waterInt > 10000 -> {
-                                    errorMessage = "Please enter a valid water goal (500-10000 ml)"
-                                }
-                                dailySteps.isEmpty() || stepsInt == null || stepsInt < 0 || stepsInt > 50000 -> {
-                                    errorMessage = "Please enter a valid steps goal (0-50000 steps)"
-                                }
+                                dailyCalories.isEmpty() || caloriesInt == null || caloriesInt < 1200 || caloriesInt > 10000 ->
+                                    errorMessage = "Please enter a valid calorie goal (1200–10000 kcal)"
+                                weeklyExercises.isEmpty() || exercisesInt == null || exercisesInt < 0 || exercisesInt > 21 ->
+                                    errorMessage = "Please enter a valid exercise goal (0–21 sessions)"
+                                dailyWater.isEmpty() || waterInt == null || waterInt < 500 || waterInt > 10000 ->
+                                    errorMessage = "Please enter a valid water goal (500–10000 ml)"
+                                dailySteps.isEmpty() || stepsInt == null || stepsInt < 0 || stepsInt > 50000 ->
+                                    errorMessage = "Please enter a valid steps goal (0–50000 steps)"
                                 else -> {
-                                    // Update goals via API
                                     scope.launch {
                                         updateUserGoals(
                                             context = context,
@@ -533,15 +580,14 @@ fun SetGoalsScreen(
                     )
                 } else {
                     Text(
-                        text = stringResource(id = R.string.finish),
+                        text = "Finish",
                         color = Color.White,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
             }
-            
-            // Bottom spacing
+
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
