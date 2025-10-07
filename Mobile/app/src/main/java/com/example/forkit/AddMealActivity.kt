@@ -50,16 +50,16 @@ class AddMealActivity : ComponentActivity() {
     companion object {
         private const val TAG = "AddMealActivity"
     }
-    
+
     // Use a mutable state to hold the scanned food
     private var scannedFoodState by mutableStateOf<Food?>(null)
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        
+
         val userId = intent.getStringExtra("USER_ID") ?: ""
-        
+
         setContent {
             ForkItTheme {
                 AddMealScreen(
@@ -94,19 +94,19 @@ class AddMealActivity : ComponentActivity() {
     private suspend fun handleScannedBarcode(barcode: String) {
         try {
             val response = RetrofitClient.api.getFoodFromBarcode(barcode)
-            
+
             if (response.isSuccessful && response.body()?.success == true) {
                 val foodData = response.body()?.data
-                
+
                 if (foodData != null) {
                     // Food object is already complete from API - just use it directly
                     scannedFoodState = foodData
-                    
+
                     Log.d(TAG, "Scanned food: ${foodData.name}, serving: ${foodData.servingSize?.quantity} ${foodData.servingSize?.unit}")
-                    
+
                     // Show success message
                     Toast.makeText(this, "Found: ${foodData.name}", Toast.LENGTH_SHORT).show()
-                    
+
                 } else {
                     Toast.makeText(this, "No food data found for this barcode", Toast.LENGTH_LONG).show()
                 }
@@ -119,7 +119,7 @@ class AddMealActivity : ComponentActivity() {
             Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
-    
+
     private fun startBarcodeScanner() {
         val intent = Intent(this, BarcodeScannerActivity::class.java)
         barcodeLauncher.launch(intent)
@@ -140,7 +140,7 @@ fun AddMealScreen(
     var currentScreen by remember { mutableStateOf("main") }
     var selectedFood by remember { mutableStateOf<RecentActivityEntry?>(null) }
     var selectedSearchFood by remember { mutableStateOf<SearchFoodItem?>(null) }
-    
+
     // Food data to be collected across screens
     var foodName by remember { mutableStateOf("") }
     var servingSize by remember { mutableStateOf("") }
@@ -151,43 +151,43 @@ fun AddMealScreen(
     var carbs by remember { mutableStateOf("") }
     var fat by remember { mutableStateOf("") }
     var protein by remember { mutableStateOf("") }
-    
+
     // Store base nutritional values (per 100g or per serving) for scaling
     var baseCaloriesPer100g by remember { mutableStateOf(0.0) }
     var baseCarbsPer100g by remember { mutableStateOf(0.0) }
     var baseFatPer100g by remember { mutableStateOf(0.0) }
     var baseProteinPer100g by remember { mutableStateOf(0.0) }
     var baseServingQuantity by remember { mutableStateOf(0.0) }
-    
+
     // Store unit category to filter available units
     var unitCategory by remember { mutableStateOf("all") } // "weight", "volume", or "all"
-    
+
     // Handle scanned food when it changes
     LaunchedEffect(scannedFood) {
         scannedFood?.let { food ->
             Log.d("AddMealActivity", "Scanned food: ${food.name}, serving: ${food.servingSize?.quantity} ${food.servingSize?.unit}")
-            
+
             // Pre-populate form fields with scanned food data
             foodName = food.name
-            
+
             // Use serving size from API if available
             val servingSizeData = food.servingSize
             if (servingSizeData != null) {
-                val quantity = servingSizeData.quantity ?: 
-                               (servingSizeData.apiQuantity?.toString()?.toDoubleOrNull()) ?: 100.0
+                val quantity = servingSizeData.quantity ?:
+                (servingSizeData.apiQuantity?.toString()?.toDoubleOrNull()) ?: 100.0
                 val unit = servingSizeData.unit ?: servingSizeData.apiUnit ?: "g"
-                
+
                 servingSize = quantity.toString()
                 measuringUnit = unit
                 baseServingQuantity = quantity
-                
+
                 // Determine unit category based on API response
                 unitCategory = when (unit.lowercase()) {
                     "g", "kg" -> "weight"
                     "ml", "l" -> "volume"
                     else -> "all"
                 }
-                
+
                 // Use per-serving nutrients if available, otherwise scale from per 100g
                 if (food.nutrientsPerServing != null && food.caloriesPerServing != null) {
                     calories = food.caloriesPerServing.toInt().toString()
@@ -213,46 +213,46 @@ fun AddMealScreen(
                 fat = String.format("%.1f", food.nutrients.fat)
                 protein = String.format("%.1f", food.nutrients.protein)
             }
-            
+
             // Store base values for scaling
             baseCaloriesPer100g = food.calories
             baseCarbsPer100g = food.nutrients.carbs
             baseFatPer100g = food.nutrients.fat
             baseProteinPer100g = food.nutrients.protein
-            
+
             // Navigate to adjust screen
             currentScreen = "adjust"
             // Clear the scanned food state
             onScannedFoodProcessed()
         }
     }
-    
+
     // Handle selected search food when it changes
     LaunchedEffect(selectedSearchFood) {
         selectedSearchFood?.let { food ->
             Log.d("AddMealActivity", "Search food selected: ${food.name}, serving: ${food.servingSize?.quantity} ${food.servingSize?.unit}")
-            
+
             // Pre-populate form fields with selected search food data
             foodName = food.name
-            
+
             // Use serving size from API if available
             val servingSizeData = food.servingSize
             if (servingSizeData != null) {
-                val quantity = servingSizeData.quantity ?: 
-                               (servingSizeData.apiQuantity?.toString()?.toDoubleOrNull()) ?: 100.0
+                val quantity = servingSizeData.quantity ?:
+                (servingSizeData.apiQuantity?.toString()?.toDoubleOrNull()) ?: 100.0
                 val unit = servingSizeData.unit ?: servingSizeData.apiUnit ?: "g"
-                
+
                 servingSize = quantity.toString()
                 measuringUnit = unit
                 baseServingQuantity = quantity
-                
+
                 // Determine unit category based on API response
                 unitCategory = when (unit.lowercase()) {
                     "g", "kg" -> "weight"
                     "ml", "l" -> "volume"
                     else -> "all"
                 }
-                
+
                 // Use per-serving nutrients if available
                 if (food.nutrientsPerServing != null && food.caloriesPerServing != null) {
                     calories = food.caloriesPerServing.toInt().toString()
@@ -278,20 +278,20 @@ fun AddMealScreen(
                 fat = String.format("%.1f", food.nutrients.fat)
                 protein = String.format("%.1f", food.nutrients.protein)
             }
-            
+
             // Store base values for scaling
             baseCaloriesPer100g = food.calories ?: 0.0
             baseCarbsPer100g = food.nutrients.carbs
             baseFatPer100g = food.nutrients.fat
             baseProteinPer100g = food.nutrients.protein
-            
+
             // Navigate to adjust screen
             currentScreen = "adjust"
             // Clear the selected search food state
             selectedSearchFood = null
         }
     }
-    
+
     when (currentScreen) {
         "main" -> AddFoodMainScreen(
             userId = userId,
@@ -307,7 +307,7 @@ fun AddMealScreen(
                 currentScreen = "adjust"
             },
             onBarcodeScan = onBarcodeScan,
-            onScannedFood = { food -> 
+            onScannedFood = { food ->
                 // Handle scanned food - this will be called from the Activity
                 Log.d("AddMealActivity", "Received scanned food in main screen: ${food.name}")
             },
@@ -343,28 +343,28 @@ fun AddMealScreen(
             onMeasuringUnitChange = { newUnit ->
                 val oldUnit = measuringUnit
                 val currentValue = servingSize.toDoubleOrNull() ?: 0.0
-                
+
                 // Convert between related units
                 val convertedValue = when {
                     // g ↔ kg conversions
                     oldUnit == "g" && newUnit == "kg" -> currentValue / 1000.0
                     oldUnit == "kg" && newUnit == "g" -> currentValue * 1000.0
-                    
+
                     // ml ↔ l conversions
                     oldUnit == "ml" && newUnit == "l" -> currentValue / 1000.0
                     oldUnit == "l" && newUnit == "ml" -> currentValue * 1000.0
-                    
+
                     // No conversion needed
                     else -> currentValue
                 }
-                
+
                 // Update unit first
                 measuringUnit = newUnit
-                
+
                 // Update serving size with converted value if conversion happened
                 if (convertedValue != currentValue && convertedValue > 0) {
                     servingSize = String.format("%.2f", convertedValue).trimEnd('0').trimEnd('.')
-                    
+
                     // Recalculate nutrients with the converted value
                     if (baseCaloriesPer100g > 0) {
                         val scale = when (newUnit.lowercase()) {
@@ -426,17 +426,17 @@ fun AddFoodMainScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
+
     // State for all unique foods user has ever logged
     var historyItems by remember { mutableStateOf<List<RecentActivityEntry>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf("") }
-    
+
     // Search functionality state
     var searchResults by remember { mutableStateOf<List<SearchFoodItem>>(emptyList()) }
     var isSearching by remember { mutableStateOf(false) }
     var showSearchResults by remember { mutableStateOf(false) }
-    
+
     // Search function
     fun performSearch(query: String) {
         if (query.isBlank()) {
@@ -444,7 +444,7 @@ fun AddFoodMainScreen(
             searchResults = emptyList()
             return
         }
-        
+
         scope.launch {
             isSearching = true
             try {
@@ -475,7 +475,7 @@ fun AddFoodMainScreen(
             }
         }
     }
-    
+
     // Handle search query changes
     LaunchedEffect(searchQuery) {
         if (searchQuery.isNotBlank()) {
@@ -487,7 +487,7 @@ fun AddFoodMainScreen(
             searchResults = emptyList()
         }
     }
-    
+
     // Fetch all food logs and create unique list when screen loads
     LaunchedEffect(userId) {
         isLoading = true
@@ -496,11 +496,11 @@ fun AddFoodMainScreen(
             val response = RetrofitClient.api.getFoodLogs(userId = userId)
             if (response.isSuccessful && response.body()?.success == true) {
                 val allFoodLogs = response.body()?.data ?: emptyList()
-                
+
                 // Group by food name (case-insensitive) and take the most recent entry for each unique food
                 historyItems = allFoodLogs
                     .groupBy { it.foodName.lowercase().trim() }
-                    .map { (_, logs) -> 
+                    .map { (_, logs) ->
                         // Get the most recent log for this food name
                         logs.maxByOrNull { it.createdAt } ?: logs.first()
                     }
@@ -519,7 +519,7 @@ fun AddFoodMainScreen(
                         )
                     }
                     .sortedByDescending { it.createdAt } // Most recently logged foods first
-                
+
                 errorMessage = ""
             } else {
                 errorMessage = "Failed to load food history"
@@ -530,7 +530,7 @@ fun AddFoodMainScreen(
             isLoading = false
         }
     }
-    
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -563,7 +563,7 @@ fun AddFoodMainScreen(
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
-            
+
             // Main content
             Column(
                 modifier = Modifier
@@ -571,7 +571,7 @@ fun AddFoodMainScreen(
                     .padding(horizontal = 24.dp)
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // Search bar
                 Box(
                     modifier = Modifier
@@ -625,9 +625,9 @@ fun AddFoodMainScreen(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(32.dp))
-                
+
                 // Show Search Results OR My Foods section, but not both
                 if (searchQuery.isNotBlank()) {
                     // Search Results section
@@ -639,7 +639,7 @@ fun AddFoodMainScreen(
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
-                        
+
                         // Make search results scrollable with a maximum height
                         Box(
                             modifier = Modifier
@@ -687,7 +687,7 @@ fun AddFoodMainScreen(
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    
+
                     // Loading, Error, or History items
                     when {
                         isLoading -> {
@@ -741,14 +741,14 @@ fun AddFoodMainScreen(
                                                         // Get today's date
                                                         val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                                                         val todayDate = apiDateFormatter.format(Date())
-                                                        
+
                                                         // Create food log request with the same details
                                                         // Estimate macronutrients based on calories (rough approximation)
                                                         val totalCalories = item.calories.toDouble()
                                                         val estimatedCarbs = (totalCalories * 0.5) / 4.0 // 50% carbs, 4 cal/g
-                                                        val estimatedProtein = (totalCalories * 0.2) / 4.0 // 20% protein, 4 cal/g  
+                                                        val estimatedProtein = (totalCalories * 0.2) / 4.0 // 20% protein, 4 cal/g
                                                         val estimatedFat = (totalCalories * 0.3) / 9.0 // 30% fat, 9 cal/g
-                                                        
+
                                                         val request = CreateFoodLogRequest(
                                                             userId = userId,
                                                             foodName = item.foodName,
@@ -762,11 +762,11 @@ fun AddFoodMainScreen(
                                                             protein = estimatedProtein,
                                                             foodId = null
                                                         )
-                                                        
+
                                                         Log.d("AddMealActivity", "Creating food log for My Foods: ${item.foodName}, Calories: $totalCalories")
                                                         val response = RetrofitClient.api.createFoodLog(request)
                                                         Log.d("AddMealActivity", "Food log response: ${response.code()}, Success: ${response.body()?.success}")
-                                                        
+
                                                         if (response.isSuccessful && response.body()?.success == true) {
                                                             Toast.makeText(context, "✓ ${item.foodName} added to today!", Toast.LENGTH_SHORT).show()
                                                         } else {
@@ -800,9 +800,9 @@ fun AddFoodMainScreen(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.weight(1f))
-                
+
                 // Action buttons
                 Column(
                     modifier = Modifier
@@ -844,7 +844,7 @@ fun AddFoodMainScreen(
                             )
                         }
                     }
-                    
+
                     // Add Food button
                     Button(
                         onClick = { onNavigateToAdjustServing(null) },
@@ -887,7 +887,7 @@ fun AddFoodMainScreen(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
@@ -935,7 +935,7 @@ fun SearchResultCard(
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.onBackground
                 )
-                
+
                 // Display brand if available
                 if (!foodItem.brand.isNullOrBlank()) {
                     Text(
@@ -945,7 +945,7 @@ fun SearchResultCard(
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
                 }
-                
+
                 // Display serving size if available
                 foodItem.servingSize?.let { serving ->
                     val servingText = if (serving.quantity != null && serving.unit != null) {
@@ -955,7 +955,7 @@ fun SearchResultCard(
                     } else {
                         "per 100g"
                     }
-                    
+
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -982,9 +982,9 @@ fun SearchResultCard(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 // Display macros per serving or per 100g
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1007,7 +1007,7 @@ fun SearchResultCard(
                     )
                 }
             }
-            
+
             if (foodItem.image != null) {
                 // You could add an image here if needed
                 // For now, just show a placeholder
@@ -1098,7 +1098,7 @@ fun FoodHistoryCard(
                     )
                 }
             }
-            
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -1109,7 +1109,7 @@ fun FoodHistoryCard(
                     fontWeight = FontWeight.Bold,
                     color = colorScheme.primary
                 )
-                
+
                 // Delete button
                 IconButton(
                     onClick = { showDeleteDialog = true },
@@ -1125,19 +1125,19 @@ fun FoodHistoryCard(
             }
         }
     }
-    
+
     // Delete confirmation dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { 
+            title = {
                 Text(
                     "Delete Food Log?",
                     fontWeight = FontWeight.Bold
-                ) 
+                )
             },
-            text = { 
-                Text("Are you sure you want to delete \"$foodName\" from your log?") 
+            text = {
+                Text("Are you sure you want to delete \"$foodName\" from your log?")
             },
             confirmButton = {
                 TextButton(
@@ -1182,27 +1182,27 @@ fun AdjustServingScreen(
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
     var showMeasuringUnitDialog by remember { mutableStateOf(false) }
-    
+
     // Format date for display
     val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
     val selectedDateString = remember(selectedDate) { dateFormatter.format(selectedDate) }
-    
+
     // Define all available measuring units by category
     val allMeasuringUnits = mapOf(
         "weight" to listOf("g", "kg"),
         "volume" to listOf("ml", "l"),
         "other" to listOf("serving", "portion", "piece", "slice", "whole", "scoop", "handful", "cup")
     )
-    
+
     // Filter units based on category
     val measuringUnits = when (unitCategory) {
         "weight" -> allMeasuringUnits["weight"]!! + listOf("─────") + allMeasuringUnits["other"]!!
         "volume" -> allMeasuringUnits["volume"]!! + listOf("─────") + allMeasuringUnits["other"]!!
-        else -> allMeasuringUnits["weight"]!! + listOf("─────") + 
-                allMeasuringUnits["volume"]!! + listOf("─────") + 
+        else -> allMeasuringUnits["weight"]!! + listOf("─────") +
+                allMeasuringUnits["volume"]!! + listOf("─────") +
                 allMeasuringUnits["other"]!!
     }
-    
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -1235,7 +1235,7 @@ fun AdjustServingScreen(
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
-            
+
             // Main content - centered
             Column(
                 modifier = Modifier
@@ -1284,7 +1284,7 @@ fun AdjustServingScreen(
                             )
                         )
                     }
-                    
+
                     // Serving size input field
                     Box(
                         modifier = Modifier
@@ -1350,7 +1350,7 @@ fun AdjustServingScreen(
                             }
                         }
                     }
-                    
+
                     // Date input field
                     Box(
                         modifier = Modifier
@@ -1378,9 +1378,9 @@ fun AdjustServingScreen(
                         )
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // Show nutritional preview if data is available
                 if (currentCalories.isNotBlank()) {
                     Card(
@@ -1405,7 +1405,7 @@ fun AdjustServingScreen(
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
-                            
+
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
@@ -1423,7 +1423,7 @@ fun AdjustServingScreen(
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
-                                
+
                                 Column {
                                     Text(
                                         text = "Carbs",
@@ -1437,7 +1437,7 @@ fun AdjustServingScreen(
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
-                                
+
                                 Column {
                                     Text(
                                         text = "Protein",
@@ -1451,7 +1451,7 @@ fun AdjustServingScreen(
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
-                                
+
                                 Column {
                                     Text(
                                         text = "Fat",
@@ -1469,9 +1469,9 @@ fun AdjustServingScreen(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // Select Type section
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -1484,7 +1484,7 @@ fun AdjustServingScreen(
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    
+
                     // Type buttons grid
                     Column(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -1529,9 +1529,9 @@ fun AdjustServingScreen(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(48.dp))
-                
+
                 // Continue button
                 Button(
                     onClick = onContinue,
@@ -1568,7 +1568,7 @@ fun AdjustServingScreen(
                 }
             }
         }
-        
+
         // Date Picker Dialog
         if (showDatePicker) {
             val datePickerState = rememberDatePickerState(
@@ -1597,17 +1597,17 @@ fun AdjustServingScreen(
                 DatePicker(state = datePickerState)
             }
         }
-        
+
         // Measuring Unit Dialog
         if (showMeasuringUnitDialog) {
             AlertDialog(
                 onDismissRequest = { showMeasuringUnitDialog = false },
-                title = { 
+                title = {
                     Text(
                         "Select Measuring Unit",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
-                    ) 
+                    )
                 },
                 text = {
                     Column(
@@ -1628,9 +1628,9 @@ fun AdjustServingScreen(
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(
-                                            if (unit == measuringUnit) 
+                                            if (unit == measuringUnit)
                                                 colorScheme.primary.copy(alpha = 0.1f)
-                                            else 
+                                            else
                                                 Color.Transparent
                                         )
                                         .clickable {
@@ -1715,26 +1715,26 @@ fun AddDetailsScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
+
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
-    
+
     // Calculate calories automatically when macros change
     LaunchedEffect(carbs, fat, protein) {
         val carbsValue = carbs.toDoubleOrNull() ?: 0.0
         val fatValue = fat.toDoubleOrNull() ?: 0.0
         val proteinValue = protein.toDoubleOrNull() ?: 0.0
-        
+
         // Standard calorie calculation: 4 kcal per gram of carbs/protein, 9 kcal per gram of fat
         val calculatedCalories = (carbsValue * 4) + (fatValue * 9) + (proteinValue * 4)
-        
+
         if (calculatedCalories > 0) {
             onCaloriesChange(calculatedCalories.toInt().toString())
         } else if (carbs.isEmpty() && fat.isEmpty() && protein.isEmpty()) {
             onCaloriesChange("")
         }
     }
-    
+
     // Function to save food log
     fun saveFoodLog() {
         // Validate inputs
@@ -1754,16 +1754,16 @@ fun AddDetailsScreen(
             Toast.makeText(context, "Please enter valid calories", Toast.LENGTH_SHORT).show()
             return
         }
-        
+
         scope.launch {
             isLoading = true
             errorMessage = ""
-            
+
             try {
                 // Format date for API
                 val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                 val dateString = apiDateFormatter.format(selectedDate)
-                
+
                 // Create food log request
                 val request = CreateFoodLogRequest(
                     userId = userId,
@@ -1778,9 +1778,9 @@ fun AddDetailsScreen(
                     protein = protein.toDoubleOrNull() ?: 0.0,
                     foodId = null
                 )
-                
+
                 val response = RetrofitClient.api.createFoodLog(request)
-                
+
                 if (response.isSuccessful && response.body()?.success == true) {
                     onSuccess()
                 } else {
@@ -1795,7 +1795,7 @@ fun AddDetailsScreen(
             }
         }
     }
-    
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -1828,7 +1828,7 @@ fun AddDetailsScreen(
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
-            
+
             // Main content - centered
             Column(
                 modifier = Modifier
@@ -1889,7 +1889,7 @@ fun AddDetailsScreen(
                             )
                         }
                     }
-                    
+
                     // Calculate calories hint
                     Text(
                         text = "ForkIt can calculate this for you!",
@@ -1897,7 +1897,7 @@ fun AddDetailsScreen(
                         color = colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 8.dp)
                     )
-                    
+
                     // Carbs input field
                     Column {
                         Text(
@@ -1954,7 +1954,7 @@ fun AddDetailsScreen(
                             }
                         }
                     }
-                    
+
                     // Fat input field
                     Column {
                         Text(
@@ -2011,7 +2011,7 @@ fun AddDetailsScreen(
                             }
                         }
                     }
-                    
+
                     // Protein input field
                     Column {
                         Text(
@@ -2069,9 +2069,9 @@ fun AddDetailsScreen(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(48.dp))
-                
+
                 // Add Food button
                 Button(
                     onClick = { saveFoodLog() },

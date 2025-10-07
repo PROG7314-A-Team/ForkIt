@@ -28,26 +28,68 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import com.example.forkit.ui.theme.ForkItTheme
 import android.util.Log
+import android.app.Activity
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.google.gson.Gson
+
+import androidx.activity.compose.setContent
+import com.example.forkit.ui.theme.ForkItTheme
 
 private const val DEBUG_TAG = "MealsDebug"
-
+private const val TAG= "MealsDebug"
 class AddFullMealActivity : ComponentActivity() {
+
+    // ✅ ActivityResultLauncher must be declared inside the class, not outside
+    private val ingredientLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val data = result.data
+            val ingredientJson = data?.getStringExtra("NEW_INGREDIENT")
+
+            if (ingredientJson != null) {
+                Log.d(DEBUG_TAG, "✅ Ingredient JSON received -> $ingredientJson")
+                // TODO: handle ingredient later
+            } else {
+                Log.w(DEBUG_TAG, "⚠️ No ingredient data returned from AddIngredientActivity")
+            }
+        } else {
+            Log.d(DEBUG_TAG, "ℹ️ AddIngredientActivity was cancelled")
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(DEBUG_TAG, "AddFullMealActivity: ✅ onCreate called — AddFullMealActivity launched.")
+
         setContent {
             ForkItTheme {
-                AddFullMealScreen(onBackPressed = { finish() })
+                AddFullMealScreen(
+                    onBackPressed = { finish() }, // ✅ handle back navigation
+                    onAddIngredientClick = {
+                        Log.d(DEBUG_TAG, "🍴 Launching AddIngredientActivity...")
+                        val intent = Intent(this, AddIngredientActivity::class.java)
+                        ingredientLauncher.launch(intent)
+                    }
+                )
             }
         }
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddFullMealScreen(onBackPressed: () -> Unit) {
-    val TAG = "AddFullMealScreen"
+fun AddFullMealScreen(
+    onBackPressed: () -> Unit,
+    onAddIngredientClick: () -> Unit // ✅ ADD THIS
+) {
     val context = LocalContext.current
+    // 🔹 Ingredient list (temporary mock list)
+    var ingredients = remember { mutableStateListOf<String>() }
+
 
     // 🔹 Local states for editable sections
     var mealName by remember { mutableStateOf("") }
@@ -56,8 +98,6 @@ fun AddFullMealScreen(onBackPressed: () -> Unit) {
     var mealDescription by remember { mutableStateOf("") }
     var isEditingDescription by remember { mutableStateOf(false) }
 
-    // 🔹 Ingredient list (temporary mock list)
-    var ingredients = remember { mutableStateListOf<String>() }
 
     // 🔹 Footer checkbox toggle
     var logToToday by remember { mutableStateOf(false) }
@@ -277,11 +317,11 @@ fun AddFullMealScreen(onBackPressed: () -> Unit) {
 
                 // Add Ingredient button
                 // 🔹 Add Ingredient button (now with gradient background)
+// 🔹 Add Ingredient button (calls parent activity callback)
                 Button(
                     onClick = {
-                        ingredients.add("New Ingredient ${(1..99).random()}")
-                        Log.d(DEBUG_TAG, "$TAG: Ingredient added — total count = ${ingredients.size}")
-                        Toast.makeText(context, "Added mock ingredient", Toast.LENGTH_SHORT).show()
+                        Log.d(DEBUG_TAG, "AddFullMealScreen: 🟢 Add Ingredient button clicked")
+                        onAddIngredientClick() // <- trigger the launcher in AddFullMealActivity
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -303,6 +343,7 @@ fun AddFullMealScreen(onBackPressed: () -> Unit) {
                         fontSize = 16.sp
                     )
                 }
+
             }
 
             // 🔹 Footer section (conditionally visible)
