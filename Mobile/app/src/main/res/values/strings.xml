@@ -1,3 +1,56 @@
 <resources>
     <string name="app_name">ForkIt</string>
+    <string name="app_tagline">Take your calorie tracking to the next level</string>
+    <string name="login">Login</string>
+    <string name="sign_up">Sign Up</string>
+    
+    <!-- Sign Up Screen -->
+    <string name="start_tracking">Start Tracking</string>
+    <string name="create_account_here">Create your account here</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="already_have_account">Already have an account?</string>
+    <string name="sign_up_with_google">Sign up with Google</string>
+    
+    <!-- Sign In Screen -->
+    <string name="dont_have_account">Don\'t have an account?</string>
+    <string name="continue_with_google">Continue with Google</string>
+    
+    <!-- Onboarding Screens -->
+    <string name="tell_us_about_yourself">Tell us about yourself</string>
+    <string name="how_old_are_you">How old are you?</string>
+    <string name="how_tall_are_you">How tall are you?</string>
+    <string name="current_weight">What\'s your current weight?</string>
+    <string name="years">years</string>
+    <string name="cm">cm</string>
+    <string name="kg">kg</string>
+    <string name="btn_continue">Continue</string>
+    <string name="set_your_goals">Set your goals</string>
+    <string name="goals_subtitle">Let\'s set some targets to help you stay on track</string>
+    <string name="daily_calorie_goal">What\'s your daily calorie intake goal?</string>
+    <string name="workouts_per_week">How many workouts per week?</string>
+    <string name="water_goal">How much water should you drink daily?</string>
+    <string name="steps_goal">How many steps should you walk daily?</string>
+    <string name="kcal">kcal</string>
+    <string name="sessions">sessions</string>
+    <string name="ml">ml</string>
+    <string name="steps">steps</string>
+    <string name="finish">Finish</string>
+    
+    <!-- Account Settings -->
+    <string name="account">Account</string>
+    <string name="weight_label">Weight</string>
+    <string name="age_label">Age</string>
+    <string name="height_label">Height</string>
+    <string name="update_data">Update Data</string>
+    <string name="update_your_preferences">Update Your Preferences</string>
+    <string name="update_your_account">Update Your Account</string>
+    <string name="delete_account">Delete Account</string>
+    <string name="delete_account_title">Delete Account</string>
+    <string name="delete_account_message">Are you sure you want to delete your account? This action cannot be undone and will remove all your data.</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+
+    <string name="default_web_client_id">308029174448-vcuvlj3rp3b60d68kjtie24p6rkp62r2.apps.googleusercontent.com</string>
 </resources>

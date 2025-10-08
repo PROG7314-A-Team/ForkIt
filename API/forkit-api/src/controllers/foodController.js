@@ -1,86 +1,145 @@
-// Mock data for demonstration
-const mockFoodDatabase = [
-  {
-    id: "1",
-    name: "Apple",
-    brand: "Fresh Market",
-    barcode: "1234567890123",
-    calories: 95,
-    protein: 0.5,
-    carbs: 25,
-    fat: 0.3,
-    fiber: 4.4,
-    sugar: 19,
-  },
-  {
-    id: "2",
-    name: "Banana",
-    brand: "Organic Valley",
-    barcode: "9876543210987",
-    calories: 105,
-    protein: 1.3,
-    carbs: 27,
-    fat: 0.4,
-    fiber: 3.1,
-    sugar: 14,
-  },
-];
+const axios = require("axios");
+const FirebaseService = require("../services/firebaseService");
+const FoodSearchService = require("../services/foodSearchService");
+const foodService = new FirebaseService("food");
+const foodSearchService = new FoodSearchService();
 
-// Get all food items (for search functionality)
-exports.getAllFood = async (req, res) => {
-  try {
-    const { search, limit = 10 } = req.query;
+// Helper function to check if food has valid macro nutrient values
+const hasValidMacroNutrients = (nutrients) => {
+  if (!nutrients) return false;
 
-    let results = mockFoodDatabase;
+  const { carbs, protein, fat } = nutrients;
 
-    // Simple search functionality
-    if (search) {
-      results = mockFoodDatabase.filter(
-        (food) =>
-          food.name.toLowerCase().includes(search.toLowerCase()) ||
-          food.brand.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-
-    // Limit results
-    results = results.slice(0, parseInt(limit));
-
-    res.json({
-      success: true,
-      data: results,
-      count: results.length,
-      message: "Food items retrieved successfully",
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      message: "Failed to retrieve food items",
-    });
-  }
+  // Check if at least one macro nutrient has a value greater than 0
+  return (carbs && carbs > 0) || (protein && protein > 0) || (fat && fat > 0);
 };
 
-// Get food by barcode (OpenFoodFacts integration placeholder)
+// Helper function to parse serving size using regex
+const parseServingSize = (servingSizeString) => {
+  if (!servingSizeString) {
+    return { quantity: null, unit: null, original: null };
+  }
+
+  // Remove extra whitespace and convert to string
+  const cleanSize = String(servingSizeString).trim();
+
+  // Regex to match number (including decimals) followed by optional unit
+  // Examples: "200g", "1 cup", "30.5ml", "1.5 serving", "250"
+  const regex =
+    /^(\d+(?:\.\d+)?)\s*([a-zA-Z\u00C0-\u017F\u0100-\u017F\u0180-\u024F\u1E00-\u1EFF]*)?$/;
+  const match = cleanSize.match(regex);
+
+  if (match) {
+    const quantity = parseFloat(match[1]);
+    const unit = match[2] ? match[2].trim() : null;
+
+    return {
+      quantity: quantity,
+      unit: unit,
+      original: cleanSize,
+    };
+  }
+
+  // If regex doesn't match, try to extract just the number
+  const numberMatch = cleanSize.match(/(\d+(?:\.\d+)?)/);
+  if (numberMatch) {
+    return {
+      quantity: parseFloat(numberMatch[1]),
+      unit: null,
+      original: cleanSize,
+    };
+  }
+
+  return { quantity: null, unit: null, original: cleanSize };
+};
+
+// Helper function to extract comprehensive nutritional data
+const extractNutritionalData = (product) => {
+  const nutriments = product.nutriments || {};
+
+  // Parse serving size using regex
+  const parsedServingSize = parseServingSize(product.serving_size);
+
+  return {
+    // Basic nutritional info per 100g
+    nutrients: {
+      carbs: nutriments.carbohydrates_100g || nutriments.carbohydrates || 0,
+      protein: nutriments.proteins_100g || nutriments.proteins || 0,
+      fat: nutriments.fat_100g || nutriments.fat || 0,
+    },
+    calories: nutriments["energy-kcal_100g"] || nutriments["energy-kcal"] || 0,
+
+    // Enhanced serving size information with regex parsing
+    servingSize: {
+      size: product.serving_size || null,
+      quantity: parsedServingSize.quantity,
+      unit: parsedServingSize.unit,
+      original: parsedServingSize.original,
+      // Keep original API values as fallback
+      apiQuantity: product.serving_quantity || null,
+      apiUnit: product.serving_quantity_unit || null,
+    },
+
+    // Nutritional info per serving (when available)
+    nutrientsPerServing: {
+      carbs: nutriments.carbohydrates_serving || null,
+      protein: nutriments.proteins_serving || null,
+      fat: nutriments.fat_serving || null,
+    },
+    caloriesPerServing: nutriments["energy-kcal_serving"] || null,
+  };
+};
+
+// Get food by barcode
 exports.getFoodByBarcode = async (req, res) => {
   try {
     const { code } = req.params;
 
-    // Find food by barcode in mock database
-    const food = mockFoodDatabase.find((item) => item.barcode === code);
+    const response = await axios.get(
+      `https://world.openfoodfacts.net/api/v1/product/${code}`
+    );
 
-    if (!food) {
+    const foodData = response.data;
+
+    if (!foodData || foodData.status === 0) {
       return res.status(404).json({
         success: false,
         message: "Food item not found for this barcode",
       });
     }
 
+    const nutritionalData = extractNutritionalData(foodData.product);
+
+    const transformedFood = {
+      id: foodData.code || code,
+      name: foodData.product?.product_name || "Unknown Product",
+      brand: foodData.product?.brands || "Unknown Brand",
+      barcode: code,
+      nutrients: nutritionalData.nutrients,
+      calories: nutritionalData.calories,
+      servingSize: nutritionalData.servingSize,
+      nutrientsPerServing: nutritionalData.nutrientsPerServing,
+      caloriesPerServing: nutritionalData.caloriesPerServing,
+      image: foodData.product?.image_url || null,
+      ingredients: foodData.product?.ingredients_text || null,
+    };
+
+    // Filter: Only return food items with valid macro nutrient values
+    if (!hasValidMacroNutrients(transformedFood.nutrients)) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "Food item found but lacks macro nutrient information (carbs, protein, fat)",
+      });
+    }
+
     res.json({
       success: true,
-      data: food,
+      data: transformedFood,
       message: "Food item found by barcode",
     });
   } catch (error) {
+    console.error("OpenFoodFacts API Error:", error.message);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -89,30 +148,65 @@ exports.getFoodByBarcode = async (req, res) => {
   }
 };
 
-// Get food by ID
-exports.getFoodById = async (req, res) => {
+// Get food by name with enhanced search and scoring
+exports.getFoodByName = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { name } = req.params;
+    const { maxResults = 25 } = req.query;
 
-    const food = mockFoodDatabase.find((item) => item.id === id);
+    // Use the enhanced search service
+    const scoredResults = await foodSearchService.searchFoodByName(
+      name,
+      parseInt(maxResults)
+    );
 
-    if (!food) {
+    if (scoredResults.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Food item not found",
+        message: "Food item not found by name",
       });
     }
 
-    res.json({
+    // Format results for API response
+    const formattedResults =
+      foodSearchService.formatResultsForAPI(scoredResults);
+
+    // Filter results to only include items with valid macro nutrients
+    const validResults = formattedResults.filter((food) => {
+      if (food.nutrients) {
+        return hasValidMacroNutrients(food.nutrients);
+      }
+      return true; // Include results without nutrition data for now
+    });
+
+    if (validResults.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No food items found with complete nutritional information",
+      });
+    }
+
+    console.log(
+      `Found ${validResults.length} scored food results for "${name}"`
+    );
+
+    return res.status(200).json({
       success: true,
-      data: food,
-      message: "Food item retrieved successfully",
+      data: validResults,
+      message: `Found ${validResults.length} food items with enhanced search scoring`,
+      searchInfo: {
+        searchTerm: name,
+        totalResults: validResults.length,
+        maxResults: parseInt(maxResults),
+        scoringEnabled: true,
+      },
     });
   } catch (error) {
+    console.error("Enhanced food search error:", error);
     res.status(500).json({
       success: false,
       error: error.message,
-      message: "Failed to retrieve food item",
+      message: "Failed to retrieve food by name",
     });
   }
 };
@@ -123,10 +217,10 @@ exports.createFood = async (req, res) => {
     const foodData = req.body;
 
     // Basic validation
-    if (!foodData.name) {
+    if (!foodData.name || !foodData.nutrients) {
       return res.status(400).json({
         success: false,
-        message: "Food name is required",
+        message: "Food name and nutriments are required",
       });
     }
 
@@ -137,12 +231,13 @@ exports.createFood = async (req, res) => {
       createdAt: new Date().toISOString(),
     };
 
-    // In a real app, you'd save to database here
-    mockFoodDatabase.push(newFood);
+    const foodId = await foodService.create(foodData);
+    foodData.foodId = String(foodId.id);
+    const updatedFood = await foodService.update(String(foodId.id), foodData);
 
     res.status(201).json({
       success: true,
-      data: newFood,
+      data: updatedFood,
       message: "Food item created successfully",
     });
   } catch (error) {
@@ -160,9 +255,11 @@ exports.updateFood = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    const foodIndex = mockFoodDatabase.findIndex((item) => item.id === id);
+    const foodIndex = await foodService.query([
+      { field: "foodId", operator: "==", value: id },
+    ]);
 
-    if (foodIndex === -1) {
+    if (foodIndex.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Food item not found",
@@ -170,15 +267,15 @@ exports.updateFood = async (req, res) => {
     }
 
     // Update the food item
-    mockFoodDatabase[foodIndex] = {
-      ...mockFoodDatabase[foodIndex],
+    foodIndex[0] = {
+      ...foodIndex[0],
       ...updateData,
       updatedAt: new Date().toISOString(),
     };
 
     res.json({
       success: true,
-      data: mockFoodDatabase[foodIndex],
+      data: foodIndex[0],
       message: "Food item updated successfully",
     });
   } catch (error) {
@@ -195,20 +292,22 @@ exports.deleteFood = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const foodIndex = mockFoodDatabase.findIndex((item) => item.id === id);
+    const foodIndex = await foodService.query([
+      { field: "foodId", operator: "==", value: id },
+    ]);
 
-    if (foodIndex === -1) {
+    if (foodIndex.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Food item not found",
       });
     }
 
-    const deletedFood = mockFoodDatabase.splice(foodIndex, 1)[0];
+    const deletedFood = await foodService.delete(foodIndex[0].id);
 
     res.json({
       success: true,
-      data: deletedFood,
+      data: { id: deletedFood.id } || deletedFood,
       message: "Food item deleted successfully",
     });
   } catch (error) {

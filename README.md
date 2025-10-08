@@ -1,68 +1,194 @@
-# ForkIt
+# ForkIt - Health & Fitness Tracking Application
+
+**Portfolio of Evidence for PROG7314 - Advanced Programming**
 
 A comprehensive Android application for calorie counting, exercise tracking, and dietary habit management designed to empower users in achieving their health and fitness goals.
+- **Video demonstration**: https://youtu.be/3Tp-dZ8jtqI?si=I1yy1ue7-Uae11AM
 
-## Overview
+## Project Overview
 
-ForkIt is a user-friendly health tracking application that provides a complete solution for monitoring daily calorie intake, exercise activities, and water consumption. The application features an intuitive dashboard, detailed analytics, and customizable goal tracking to support users in maintaining a healthy lifestyle.
+ForkIt is a modern health tracking application built with Android Jetpack Compose and a robust Node.js backend. The application provides a complete solution for monitoring daily calorie intake, exercise activities, water consumption, and step tracking with an intuitive dashboard, detailed analytics, and customizable goal tracking.
 
 ## Key Features
 
-### Food Logging
+### User Defined Feature 1: Food Logging & Nutrition Tracking
 
-- **Barcode Scanner Integration**: Instantly retrieve nutritional information by scanning food package barcodes using OpenFoodFacts API
-- **Comprehensive Food Database**: Search from an extensive database of food items with detailed nutritional information
-- **Custom Food Creation**: Add new food items when not found in the database, complete with nutritional details
-- **Meal Management**: Create and save custom meals with adjustable serving sizes and ingredient modifications
-- **Smart Suggestions**: Access recently logged foods with meal-specific recommendations
+- **Barcode Scanner Integration**: ML Kit-powered barcode scanning with OpenFoodFacts API integration
+- **Comprehensive Food Database**: Search from extensive database with detailed nutritional information
+- **Custom Food Creation**: Add new food items with complete nutritional details
+- **Meal Management**: Create and save custom meals with adjustable serving sizes
+- **Smart Calorie Calculator**: Real-time macronutrient-to-calorie conversion
 
-### Exercise and Water Tracking
+### User Defined Feature 2: Exercise & Activity Tracking
 
-- **Exercise Logging**: Record workout details including name, duration, calories burned, and exercise type
-- **Water Intake Monitoring**: Track daily water consumption with progress indicators against personal goals
+- **Exercise Logging**: Record workouts with duration, calories burned, and exercise type
+- **Step Tracking**: Native Android step tracking using Health Connect and sensor fallback
+- **Activity Recognition**: Automatic step counting with permission management
 - **Goal-Based Tracking**: Set and monitor progress toward daily and weekly targets
 
-### Analytics and Insights
+### User Defined Feature 3: Water & Hydration Monitoring
 
-- **Visual Data Analysis**: Comprehensive graphical representation of eating habits and nutritional intake
-- **Meal Distribution Charts**: Pie chart breakdowns showing calorie distribution across breakfast, lunch, dinner, and snacks
-- **Macro Tracking**: Monitor protein, carbohydrates, and fat intake with detailed metrics
-- **Streak Tracking**: Gamified consistency tracking to encourage regular logging habits
+- **Water Intake Tracking**: Monitor daily water consumption with progress indicators
+- **Hydration Goals**: Set personalized daily water intake targets
+- **Visual Progress**: Real-time progress bars and completion tracking
 
-### Habit and Goal Management
+### User Defined Feature 4: Analytics & Insights
 
-- **Custom Habit Creation**: Set personalized habits for various health goals
-- **Flexible Notifications**: Create custom reminders with specific days and times
-- **Progress Monitoring**: Track daily, weekly, and monthly habit completion
+- **Visual Data Analysis**: Comprehensive charts using Vico library
+- **Meal Distribution**: Pie chart breakdowns across breakfast, lunch, dinner, and snacks
+- **Macro Tracking**: Monitor protein, carbohydrates, and fat intake
+- **Trend Analysis**: Historical data visualization and progress tracking
 
-### User Experience
+### User Defined Feature 5: Habit & Goal Management
 
-- **Single Sign-On (SSO)**: Streamlined authentication using Google accounts
-- **Biometric Security**: Fingerprint and facial recognition for secure access to sensitive information
-- **Offline Functionality**: Continue logging activities without internet connection with automatic synchronization
-- **Multi-language Support**: Available in English, isiZulu, and Afrikaans
+- **Custom Habit Creation**: Set personalized health habits
+- **Flexible Notifications**: Custom reminders with specific days and times
+- **Progress Monitoring**: Track daily, weekly, and monthly completion rates
+- **Streak Tracking**: Gamified consistency tracking
+
+### Additional Features: Security & User Experience
+
+- **Biometric Authentication**: Fingerprint and facial recognition support
+- **Firebase Authentication**: Secure Google SSO integration
+- **Offline Functionality**: Continue logging without internet connection
+- **Material Design 3**: Modern, accessible UI following Google's design guidelines
 
 ## Technical Architecture
 
-### Frontend
+### Frontend (Android)
 
-- **Platform**: Android (API Level 29+)
-- **Design**: Material Design guidelines for consistent user experience
-- **Authentication**: Firebase Authentication with biometric support
+- **Platform**: Android 13+ (API Level 33+)
+- **UI Framework**: Jetpack Compose with Material Design 3
+- **Architecture**: MVVM with StateFlow and ViewModel
+- **Dependencies**:
+  - Retrofit 2.9.0 for API communication
+  - ML Kit 17.2.0 for barcode scanning
+  - CameraX 1.3.1 for camera functionality
+  - Health Connect 1.1.0 for step tracking
+  - Vico 2.0.0 for data visualization
+  - Biometric 1.2.0 for authentication
 
-### Backend
+### Backend (Node.js)
 
-- **API**: Node.js with Express.js framework
+- **Framework**: Express.js with comprehensive REST API
 - **Database**: Firebase Firestore for real-time data synchronization
-- **Hosting**: Azure App Service for reliable backend infrastructure
-- **External Integration**: OpenFoodFacts API for barcode scanning and food database access
+- **Authentication**: Firebase Admin SDK
+- **Testing**: Jest with 90%+ test coverage
+- **External APIs**: OpenFoodFacts integration for food data
 
-### Key Requirements
+### Testing & Quality Assurance
 
-- Android 10 (API Level 29) or higher
-- Internet connection for initial setup and data synchronization
-- Camera permissions for barcode scanning functionality
-- Biometric hardware for enhanced security features (optional)
+- **Backend Testing**: 11 comprehensive test suites covering all controllers
+- **Frontend Testing**: Unit tests for business logic and data models
+- **Test Coverage**: 90%+ backend coverage with detailed reporting
+- **API Documentation**: Complete endpoint documentation with examples
+
+## Project Structure
+
+```
+ForkIt/
+├── API/forkit-api/                 # Node.js Backend
+│   ├── src/
+│   │   ├── controllers/           # API route handlers
+│   │   ├── services/             # Business logic layer
+│   │   ├── routes/               # Express route definitions
+│   │   └── tests/                # Comprehensive test suites
+│   ├── coverage/                 # Test coverage reports
+│   └── API_ENDPOINTS_DOCUMENTATION.md
+├── Mobile/app/                    # Android Frontend
+│   ├── src/main/java/com/example/forkit/
+│   │   ├── activities/           # UI Activities
+│   │   ├── business/             # Business logic
+│   │   ├── models/               # Data models
+│   │   └── utils/                # Utility classes
+│   ├── src/test/                 # Unit tests
+│   └── build.gradle.kts          # Dependencies & configuration
+└── README.md
+```
+
+## Testing & Quality Assurance
+
+### Backend Testing (Node.js)
+
+- **Test Framework**: Jest with Supertest for API testing
+- **Coverage**: 90%+ code coverage across all modules
+- **Test Suites**: 11 comprehensive test files covering:
+  - Authentication Controller
+  - Food & Meal Log Controllers
+  - Exercise & Water Log Controllers
+  - User & Goals Controllers
+  - Calorie Calculator Service
+  - Habit Management
+  - Health Check endpoints
+
+### Frontend Testing (Android)
+
+- **Test Framework**: JUnit with Android Test Runner
+- **Test Coverage**: Unit tests for business logic and data models
+- **Test Categories**:
+  - Authentication tests
+  - Food logging functionality
+  - Exercise tracking
+  - Water intake monitoring
+  - Data model validation
+
+### API Documentation
+
+- **Complete Endpoint Documentation**: 50+ documented API endpoints
+- **Request/Response Examples**: Detailed JSON examples for all endpoints
+- **Error Handling**: Comprehensive error response documentation
+- **Authentication**: Firebase-based authentication flow
+
+## Getting Started
+
+### Prerequisites
+
+- **Android Development**: Android Studio (latest version)
+- **Backend Development**: Node.js 18+ and npm
+- **Database**: Firebase project with Firestore enabled
+- **External APIs**: OpenFoodFacts API key
+
+### Installation & Setup
+
+#### Backend Setup
+
+```bash
+cd API/forkit-api
+npm install
+npm run dev          # Development server
+npm test             # Run test suite
+npm run coverage     # Generate coverage report
+```
+
+#### Frontend Setup
+
+```bash
+cd Mobile
+./gradlew build      # Build Android project
+./gradlew test       # Run unit tests
+```
+
+### Environment Configuration
+
+1. **Firebase Setup**: Configure Firebase project with Firestore
+2. **API Keys**: Set up OpenFoodFacts API integration
+3. **Permissions**: Configure Android permissions for camera, biometrics, and health data
+
+## Performance Metrics
+
+- **Dashboard Loading**: < 3 seconds on standard devices
+- **Barcode Scanning**: < 2 seconds for food identification
+- **API Response Time**: < 500ms for standard queries
+- **Test Coverage**: 90%+ backend, comprehensive frontend testing
+- **Database Performance**: Optimized Firestore queries with indexing
+
+## Security Implementation
+
+- **Authentication**: Firebase Authentication with Google SSO
+- **Biometric Security**: Android BiometricPrompt for sensitive operations
+- **Data Encryption**: End-to-end encryption for sensitive health data
+- **Permission Management**: Granular Android permissions for health data access
+- **API Security**: JWT token validation and user authentication
 
 ## Development Team
 
@@ -72,57 +198,43 @@ ForkIt is a user-friendly health tracking application that provides a complete s
 - **Nicolas Christofides** (ST10339570) - Frontend Development & QA Testing
 - **Max van der Walt** (ST10354483) - Backend Development & QA Testing
 
-## Project Structure
+## Academic Context
 
-The application follows a modular architecture with clear separation between frontend and backend components:
+This project serves as a **Portfolio of Evidence for PROG7314 - Advanced Programming**, demonstrating:
 
-- User authentication and profile management
-- Food logging and database integration
-- Exercise and water tracking systems
-- Analytics and data visualization
-- Habit tracking and notification systems
-- Offline data synchronization
+- **Advanced Programming Concepts**: Modern Android development with Jetpack Compose
+- **API Development**: RESTful API design with comprehensive testing
+- **Database Integration**: Firebase Firestore with real-time synchronization
+- **Mobile Development**: Native Android features including biometrics and health tracking
+- **Testing & Quality Assurance**: Comprehensive test coverage and documentation
+- **Software Architecture**: MVVM pattern with clean separation of concerns
 
-## Getting Started
+## Development Tools & AI Assistance
 
-### Prerequisites
+This application was developed using **Cursor AI** as an integrated development environment and coding assistant. Cursor's AI-powered features were utilized throughout the development process for:
 
-- Android Studio for development
-- Node.js for backend development
-- Firebase project setup
-- Azure account for hosting
-
-### Installation
-
-1. Clone the repository
-2. Set up Firebase project and configuration
-3. Configure Azure App Service for backend hosting
-4. Install dependencies for both frontend and backend components
-5. Configure OpenFoodFacts API integration
-
-## Performance and Reliability
-
-- Dashboard loading time under 5 seconds on standard devices
-- Database searches and barcode scanning results in under 5 seconds
-- 99.5% uptime for backend services
-- Scalable architecture supporting 100,000+ concurrent users
-- Comprehensive error handling and data loss prevention
-
-## Security and Privacy
-
-- Secure password storage using bcrypt with unique salts
-- OAuth 2.0 compliance through Firebase Authentication
-- Biometric authentication for sensitive data access
-- Encrypted data transmission and storage
-
-## Contributing
-
-This project is developed as part of the PROG7314 course. Please refer to the project documentation for detailed implementation guidelines and coding standards.
-
-## License
-
-This project is developed for educational purposes as part of university coursework.
+- **Boiler Plate Code Generation**: Assisting with boilerplate code
+- **Debugging Support**: Identifying and resolving code issues and errors
+- **Architecture Guidance**: Providing recommendations for best practices and design patterns
+- **Documentation**: Helping generate comprehensive code comments and documentation
+- **Testing**: Assisting with test case development and coverage optimization
 
 ## Documentation
 
-For detailed technical specifications, API documentation, and implementation guidelines, please refer to the accompanying project documentation.
+- **API Documentation**: Complete endpoint documentation in `API/forkit-api/API_ENDPOINTS_DOCUMENTATION.md`
+- **Step Tracking Guide**: Detailed implementation guide in `Mobile/STEP_TRACKING_GUIDE.md`
+- **Test Coverage Reports**: Available in `API/forkit-api/coverage/`
+- **Code Comments**: Comprehensive inline documentation throughout the codebase
+
+## Key Achievements
+
+- **Modern Android Development**: Jetpack Compose with Material Design 3
+- **Comprehensive Backend**: 50+ API endpoints with 90%+ test coverage
+- **Health Integration**: Native step tracking with Health Connect
+- **Security Implementation**: Biometric authentication and secure data handling
+- **Real-time Features**: Live data synchronization with Firebase
+- **Professional Documentation**: Complete API and implementation documentation
+
+---
+
+**Note**: This project is developed for educational purposes as part of the PROG7314 Advanced Programming course at Varsity College.

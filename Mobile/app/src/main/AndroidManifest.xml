@@ -1,27 +1,212 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools"
+>
+  <!-- Biometric permissions -->
+  <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+  <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+  <!-- Internet Permission for API -->
+  <uses-permission android:name="android.permission.INTERNET" />
+  <!-- Camera permission for barcode scanning -->
+  <uses-permission android:name="android.permission.CAMERA" />
+  <!-- Step tracking permissions -->
+  <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+  <uses-permission android:name="android.permission.health.READ_STEPS" />
+  <!-- Notification permissions -->
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+  <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+  
+  <!-- Declare Health Connect integration so app appears in Health Connect -->
+  <queries>
+    <package android:name="com.google.android.apps.healthdata" />
+  </queries>
+  <application
+    android:allowBackup="true"
+    android:dataExtractionRules="@xml/data_extraction_rules"
+    android:fullBackupContent="@xml/backup_rules"
+    android:icon="@mipmap/forkit_logo"
+    android:label="@string/app_name"
+    android:roundIcon="@mipmap/forkit_logo"
+    android:supportsRtl="true"
+    android:theme="@style/Theme.ForkIt"
+    android:networkSecurityConfig="@xml/network_security_config"
+  >
+    <!-- Declare Health Connect data types this app uses -->
+    <activity-alias
+      android:name="ViewPermissionUsageActivity"
+      android:exported="true"
+      android:targetActivity=".DashboardActivity"
+      android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+      <intent-filter>
+        <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+      </intent-filter>
+    </activity-alias>
+    <!-- Allow http instead of just https connections for API -->
+    <activity
+      android:name=".SplashActivity"
+      android:exported="true"
+      android:label="@string/app_name"
+      android:theme="@style/Theme.ForkIt"
+    >
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+    <activity
+      android:name=".DevelopmentActivity"
+      android:exported="false"
+      android:label="Developer Tools"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".LoginActivity"
+      android:exported="false"
+      android:label="@string/app_name"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".SignUpActivity"
+      android:exported="false"
+      android:label="@string/app_name"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".SignInActivity"
+      android:exported="false"
+      android:label="@string/app_name"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".MainActivity"
+      android:exported="false"
+      android:label="@string/app_name"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".DashboardActivity"
+      android:exported="false"
+      android:label="@string/app_name"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".ProfileActivity"
+      android:exported="false"
+      android:label="@string/app_name"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".GoalsActivity"
+      android:exported="false"
+      android:label="Goals"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".AddMealActivity"
+      android:exported="false"
+      android:label="Add Meal"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".AddWaterActivity"
+      android:exported="false"
+      android:label="Add Water"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".AddWorkoutActivity"
+      android:exported="false"
+      android:label="Add Workout"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+        android:name=".ui.meals.AddFullMealActivity"
+        android:exported="false"
+        android:label="Add Full Meal"
+        android:theme="@style/Theme.ForkIt" />
+    <activity
+        android:name=".ui.meals.AddIngredientActivity"
+        android:exported="false"
+        android:label="Add Ingredient"
+        android:theme="@style/Theme.ForkIt" />
+    <activity
+        android:name=".ui.meals.MealDetailActivity"
+        android:exported="false"
+        android:label="Add Ingredient"
+        android:theme="@style/Theme.ForkIt" />
 
-    <application
-        android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.ForkIt">
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.ForkIt">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-    </application>
-
+    <activity
+      android:name=".AccountActivity"
+      android:exported="false"
+      android:label="Account"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".NotificationsActivity"
+      android:exported="false"
+      android:label="Notifications"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".AppSettingsActivity"
+      android:exported="false"
+      android:label="App Settings"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".AboutActivity"
+      android:exported="false"
+      android:label="About"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".HabitsActivity"
+      android:exported="false"
+      android:label="Habits"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".AddHabitActivity"
+      android:exported="false"
+      android:label="Add Habit"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".CoachActivity"
+      android:exported="false"
+      android:label="Coach"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".TestingActivity"
+      android:exported="false"
+      android:label="@string/app_name"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".BarcodeScannerActivity"
+      android:exported="false"
+      android:label="Scan Barcode"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".TellUsAboutYourselfActivity"
+      android:exported="false"
+      android:label="Onboarding"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <activity
+      android:name=".SetGoalsActivity"
+      android:exported="false"
+      android:label="Set Goals"
+      android:theme="@style/Theme.ForkIt"
+    />
+    <!-- Habit Notification Receiver -->
+    <receiver
+      android:name=".services.HabitNotificationReceiver"
+      android:enabled="true"
+      android:exported="false" />
+  </application>
 </manifest>

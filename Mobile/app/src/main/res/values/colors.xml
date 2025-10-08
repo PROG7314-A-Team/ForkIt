@@ -7,4 +7,9 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- ForkIt Brand Colors -->
+    <color name="forkit_green">#FF22B27D</color>
+    <color name="forkit_blue">#FF1E9ECD</color>
+    <color name="forkit_grey">#FFB4B4B4</color>
 </resources>
