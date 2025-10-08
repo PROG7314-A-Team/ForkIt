@@ -3,6 +3,7 @@
 **Portfolio of Evidence for PROG7314 - Advanced Programming**
 
 A comprehensive Android application for calorie counting, exercise tracking, and dietary habit management designed to empower users in achieving their health and fitness goals.
+- **Video demonstration**: https://youtu.be/3Tp-dZ8jtqI?si=I1yy1ue7-Uae11AM
 
 ## Project Overview
 
