@@ -1,0 +1,311 @@
+<resources>
+    <!-- App Name & Tagline -->
+    <string name="app_name">ForkIt</string>
+    <string name="app_tagline">Vat jou kalorie-opvolging na die volgende vlak</string>
+    
+    <!-- Common Actions -->
+    <string name="login">Teken aan</string>
+    <string name="sign_up">Registreer</string>
+    <string name="cancel">Kanselleer</string>
+    <string name="delete">Verwyder</string>
+    <string name="back">Terug</string>
+    <string name="home">Tuis</string>
+    <string name="add">Voeg by</string>
+    <string name="refresh">Verfris</string>
+    <string name="close">Sluit</string>
+    <string name="ok">OK</string>
+    <string name="continue_btn">Gaan voort</string>
+    <string name="finish">Klaar</string>
+    <string name="logout">Teken uit</string>
+    
+    <!-- Sign Up Screen -->
+    <string name="start_tracking">Begin opvolging</string>
+    <string name="create_account_here">Skep jou rekening hier</string>
+    <string name="email">E-pos</string>
+    <string name="password">Wagwoord</string>
+    <string name="confirm_password">Bevestig wagwoord</string>
+    <string name="already_have_account">Het jy reeds \'n rekening?</string>
+    <string name="sign_up_with_google">Registreer met Google</string>
+    
+    <!-- Sign In Screen -->
+    <string name="dont_have_account">Het jy nie \'n rekening nie?</string>
+    <string name="continue_with_google">Gaan voort met Google</string>
+    
+    <!-- Onboarding Screens -->
+    <string name="tell_us_about_yourself">Vertel ons van jouself</string>
+    <string name="how_old_are_you">Hoe oud is jy?</string>
+    <string name="how_tall_are_you">Hoe lank is jy?</string>
+    <string name="current_weight">Wat is jou huidige gewig?</string>
+    <string name="years">jare</string>
+    <string name="cm">cm</string>
+    <string name="kg">kg</string>
+    <string name="btn_continue">Gaan voort</string>
+    <string name="set_your_goals">Stel jou doelwitte</string>
+    <string name="goals_subtitle">Kom ons stel \'n paar teikens om jou op koers te hou</string>
+    <string name="daily_calorie_goal">Wat is jou daaglikse kalorie-inname doel?</string>
+    <string name="workouts_per_week">Hoeveel oefensessies per week?</string>
+    <string name="water_goal">Hoeveel water moet jy daagliks drink?</string>
+    <string name="steps_goal">Hoeveel stappe moet jy daagliks loop?</string>
+    <string name="kcal">kcal</string>
+    <string name="sessions">sessies</string>
+    <string name="ml">ml</string>
+    <string name="steps">stappe</string>
+    
+    <!-- Account Settings -->
+    <string name="account">Rekening</string>
+    <string name="weight_label">Gewig</string>
+    <string name="age_label">Ouderdom</string>
+    <string name="height_label">Hoogte</string>
+    <string name="update_data">Dateer op</string>
+    <string name="update_your_preferences">Dateer jou voorkeure op</string>
+    <string name="update_your_account">Dateer jou rekening op</string>
+    <string name="delete_account">Verwyder rekening</string>
+    <string name="delete_account_title">Verwyder rekening</string>
+    <string name="delete_account_message">Is jy seker jy wil jou rekening verwyder? Hierdie aksie kan nie ongedaan gemaak word nie en sal al jou data verwyder.</string>
+    
+    <!-- Dashboard -->
+    <string name="error">⚠️ Fout</string>
+    <string name="water">Water</string>
+    <string name="meal">Maaltyd</string>
+    <string name="meals">Maaltye</string>
+    <string name="workout">Oefening</string>
+    <string name="carbs_calories">Koolhidrate: %1$d kcal</string>
+    <string name="protein_calories">Proteïene: %1$d kcal</string>
+    <string name="fat_calories">Vette: %1$d kcal</string>
+    <string name="dashboard">Dashboard</string>
+    <string name="profile">Profiel</string>
+    <string name="habits">Gewoontes</string>
+    <string name="coach">Afrigter</string>
+    <string name="add_water">Voeg water by</string>
+    <string name="add_meal">Voeg maaltyd by</string>
+    <string name="add_workout">Voeg oefening by</string>
+    
+    <!-- Meal Logging -->
+    <string name="add_food">Voeg kos by</string>
+    <string name="scan_barcode">Skandeer strepieskode</string>
+    <string name="search_food">Soek kos</string>
+    <string name="my_foods">My kos</string>
+    <string name="search_results">Soekresultate</string>
+    <string name="no_results_found">Geen resultate gevind vir \"%1$s\"</string>
+    <string name="no_foods_logged">Nog geen kos aangeteken nie. Begin deur jou eerste maaltyd by te voeg!</string>
+    <string name="adjust_serving">Pas porsie aan</string>
+    <string name="add_details">Voeg besonderhede by</string>
+    <string name="food_name">Kosnaam</string>
+    <string name="food_name_required">Kosnaam*</string>
+    <string name="serving_size">Porsiegrootte</string>
+    <string name="serving_size_required">Porsiegrootte*</string>
+    <string name="select_type">Kies tipe</string>
+    <string name="breakfast">Ontbyt</string>
+    <string name="lunch">Middagete</string>
+    <string name="dinner">Aandete</string>
+    <string name="snacks">Peuselhappies</string>
+    <string name="calories">Kalorieë</string>
+    <string name="calories_required">Kalorieë*</string>
+    <string name="carbs">Koolhidrate</string>
+    <string name="protein">Proteïene</string>
+    <string name="fat">Vette</string>
+    <string name="enter_amount">Voer hoeveelheid in</string>
+    <string name="nutritional_info">Voedingswaarde inligting</string>
+    <string name="forkit_can_calculate">ForkIt kan dit vir jou bereken!</string>
+    <string name="grams">g</string>
+    <string name="delete_food_log_title">Verwyder koslogboek?</string>
+    <string name="delete_food_log_message">Is jy seker jy wil \"%1$s\" uit jou logboek verwyder?</string>
+    
+    <!-- Ingredient Management -->
+    <string name="add_ingredient">Voeg bestanddeel by</string>
+    <string name="select_measuring_unit">Kies meeteenheid</string>
+    
+    <!-- Exercise -->
+    <string name="add_exercise">Voeg oefening by</string>
+    <string name="exercise_name">Oefening naam</string>
+    <string name="exercise_name_placeholder">bv. Oggendstappie, Opstotte</string>
+    <string name="calories_burned">Kalorieë verbrand (kcal)</string>
+    <string name="enter_calories_burned">Voer kalorieë verbrand in</string>
+    <string name="duration">Duur (minute) - Opsioneel</string>
+    <string name="enter_duration">Voer duur in</string>
+    <string name="type">Tipe</string>
+    <string name="cardio">Kardio</string>
+    <string name="strength">Krag</string>
+    <string name="please_enter_exercise_name">Voer asseblief oefening naam in</string>
+    <string name="please_enter_calories_burned">Voer asseblief kalorieë verbrand in</string>
+    <string name="please_enter_valid_calories">Voer asseblief geldige kalorieë in</string>
+    <string name="please_select_exercise_type">Kies asseblief oefening tipe</string>
+    <string name="exercise_logged_success">Oefening suksesvol aangeteken! 💪</string>
+    
+    <!-- Water -->
+    <string name="amount_ml">Hoeveelheid (ml)</string>
+    <string name="enter_amount_ml">Voer hoeveelheid in ml in</string>
+    <string name="quick_adds">Vinnige byvoegsels</string>
+    <string name="add_250ml">+250ml</string>
+    <string name="add_500ml">+500ml</string>
+    <string name="add_1000ml">+1000ml</string>
+    <string name="please_enter_amount">Voer asseblief \'n hoeveelheid in</string>
+    <string name="please_enter_valid_amount">Voer asseblief \'n geldige hoeveelheid in</string>
+    <string name="water_logged_success">Water suksesvol aangeteken! 💧</string>
+    <string name="food_logged_success">Kos suksesvol aangeteken! 🍽️</string>
+    
+    <!-- Profile -->
+    <string name="your_profile">Profiel</string>
+    <string name="manage_account_settings">Bestuur jou rekening instellings</string>
+    <string name="goals">Doelwitte</string>
+    <string name="set_daily_health_goals">Stel jou daaglikse gesondheids- en fiksheidsdoelwitte</string>
+    <string name="notifications">Kennisgewings</string>
+    <string name="configure_notifications">Konfigureer kennisgewings voorkeure</string>
+    <string name="app_settings">Program instellings</string>
+    <string name="customize_app_settings">Pas program instellings aan</string>
+    <string name="about">Oor</string>
+    <string name="app_info_version">Program inligting en weergawe</string>
+    <string name="developer_tools">Ontwikkelaar gereedskap</string>
+    <string name="access_dev_features">Toegang tot ontwikkeling en toets eienskappe</string>
+    
+    <!-- Habits -->
+    <string name="your_habits">Jou gewoontes</string>
+    <string name="new_habit">Nuwe gewoonte</string>
+    <string name="today">Vandag</string>
+    <string name="weekly">Weekliks</string>
+    <string name="monthly">Maandeliks</string>
+    <string name="no_habits_yet">Nog geen gewoontes nie!</string>
+    <string name="create_first_habit">Skep jou eerste gewoonte om volhoubaarheid te begin bou</string>
+    <string name="loading_habits">Laai jou gewoontes...</string>
+    <string name="delete_habit_title">Verwyder gewoonte?</string>
+    <string name="delete_habit_message">Is jy seker jy wil \"%1$s\" verwyder? Dit sal alle vorderingsopvolging vir hierdie gewoonte verwyder.</string>
+    
+    <!-- Validation Messages -->
+    <string name="user_id_not_found">Gebruikers ID nie gevind nie. Teken asseblief weer aan.</string>
+    <string name="please_enter_food_name">Voer asseblief kosnaam in</string>
+    <string name="please_enter_valid_serving_size">Voer asseblief geldige porsiegrootte in</string>
+    <string name="please_select_meal_type">Kies asseblief maaltydtipe</string>
+    
+    <!-- Toast Messages -->
+    <string name="added_to_today">✓ %1$s bygevoeg by vandag!</string>
+    <string name="failed_to_add_food">Kon nie kos byvoeg nie</string>
+    <string name="food_deleted_successfully">Kos suksesvol verwyder</string>
+    <string name="failed_to_delete_food">Kon nie kos verwyder nie</string>
+    <string name="error_message">Fout: %1$s</string>
+    <string name="found_food">Gevind: %1$s</string>
+    <string name="no_food_found_barcode">Geen kos data gevind vir hierdie strepieskode nie</string>
+    <string name="failed_get_food">Kon nie kos kry nie: %1$s</string>
+    <string name="no_results_found_api">Geen resultate gevind nie</string>
+    <string name="search_failed_retries">Soektog het misluk na herproberinge</string>
+    <string name="search_timeout_try_again">Soektog tyd verstreke: Probeer asseblief weer</string>
+    <string name="network_error_check_connection">Netwerk fout: Kontroleer jou verbinding</string>
+    <string name="connection_error_server_unavailable">Verbindingsfout: Bediener nie beskikbaar nie</string>
+    <string name="search_error">Soekfout: %1$s</string>
+    <string name="deleted_successfully">Suksesvol verwyder</string>
+    <string name="failed_to_delete">Kon nie verwyder nie</string>
+    <string name="no_ingredient_found_barcode">Geen bestanddeel gevind vir hierdie strepieskode nie</string>
+    <string name="failed_fetch_ingredient">Kon nie bestanddeel kry nie: %1$s</string>
+    
+    <!-- Unit Conversion Hints -->
+    <string name="conversion_kg_g">1 kg = 1000 g</string>
+    <string name="conversion_g_kg">1000 g = 1 kg</string>
+    <string name="conversion_l_ml">1 l = 1000 ml</string>
+    <string name="conversion_ml_l">1000 ml = 1 l</string>
+    
+    <!-- HomeScreen -->
+    <string name="welcome_dashboard">Welkom by die Dashboard</string>
+    <string name="track_health_journey">Volg jou gesondheids- en fiksheidstog</string>
+    <string name="todays_caloric_intake">Vandag se kalorie-inname</string>
+    <string name="consumed">Verbruik</string>
+    <string name="burned">Verbrand</string>
+    <string name="todays_calorie_budget">Vandag se kalorie begroting</string>
+    <string name="percent_used">%1$d%% gebruik</string>
+    <string name="over_budget">Oor begroting! ⚠️</string>
+    <string name="kcal_remaining">%1$d kcal oor</string>
+    <string name="no_food_logged_today">Geen kos vandag aangeteken nie</string>
+    <string name="start_logging_meals">Begin jou maaltye aanteken om jou voedingsafbraak te sien</string>
+    <string name="recent_meals">Onlangse maaltye</string>
+    <string name="see_all_meals">Sien alle maaltye →</string>
+    <string name="no_meals_today">Geen maaltye vandag aangeteken nie</string>
+    <string name="recent_workouts">Onlangse oefeninge</string>
+    <string name="no_workouts_today">Geen oefeninge vandag aangeteken nie</string>
+    <string name="todays_water_intake">Vandag se water inname</string>
+    <string name="entries">%1$d inskrywings</string>
+    <string name="no_water_logged_today">Geen water vandag aangeteken nie</string>
+    <string name="daily_steps">Daaglikse stappe</string>
+    <string name="goal_progress">%1$d / %2$d</string>
+    <string name="step_tracking_unavailable">Stap-opvolging nie beskikbaar nie</string>
+    <string name="delete_meal_title">Verwyder maaltyd?</string>
+    <string name="delete_meal_message">Is jy seker jy wil \"%1$s\" verwyder?</string>
+    <string name="delete_workout_title">Verwyder oefening?</string>
+    <string name="delete_workout_message">Is jy seker jy wil \"%1$s\" verwyder?</string>
+    <string name="delete_water_log_title">Verwyder water logboek?</string>
+    <string name="delete_water_log_message">Is jy seker jy wil hierdie water logboek verwyder (%1$d ml)?</string>
+    
+    <!-- MealsScreen -->
+    <string name="your_meals">Jou maaltye.</string>
+    <string name="refreshing_meals">Verfris maaltye...</string>
+    <string name="error_loading_meals">Fout met laai van maaltye: %1$s</string>
+    <string name="no_meals_logged_yet">Nog geen maaltye aangeteken nie.</string>
+    <string name="ingredients_count">%1$d bestanddele: %2$s</string>
+    
+    <!-- HabitsScreen -->
+    <string name="todo">Om te doen</string>
+    <string name="completed">Voltooi</string>
+    <string name="using_offline_data">Gebruik vanlyn data: %1$s</string>
+    <string name="no_completed_habits">Nog geen voltooide gewoontes nie</string>
+    
+    <!-- Appearance & Language -->
+    <string name="appearance">Voorkoms</string>
+    <string name="choose_preferred_theme">Kies jou voorkeur tema</string>
+    <string name="system">Stelsel</string>
+    <string name="light">Lig</string>
+    <string name="dark">Donker</string>
+    <string name="following_device_settings">Volg toestel instellings</string>
+    <string name="always_light_mode">Altyd lig modus</string>
+    <string name="always_dark_mode">Altyd donker modus</string>
+    <string name="language">Taal</string>
+    <string name="select_preferred_language">Kies jou voorkeur taal</string>
+    
+    <!-- Coach Screen -->
+    <string name="track_metrics_over_time">Volg jou gesondheidsmetings oor tyd</string>
+    <string name="calorie_tracking">Kalorie opvolging</string>
+    <string name="track_daily_budget">Volg jou daaglikse begroting</string>
+    <string name="water_tracking">Water opvolging</string>
+    <string name="monitor_hydration">Monitor jou hidrasie</string>
+    <string name="workout_tracking">Oefening opvolging</string>
+    <string name="track_exercises">Volg jou oefeninge</string>
+    <string name="stay_within_budget">Bly binne jou daaglikse kalorie begroting</string>
+    <string name="week_calorie_tracking">Hierdie week se kalorie begroting opvolging (Ma-So)</string>
+    <string name="month_calorie_tracking">%1$s kalorie begroting opvolging (1-%2$d)</string>
+    <string name="track_calorie_over_time">Volg jou kalorie begroting oor tyd</string>
+    <string name="calorie_budget">Kalorie begroting</string>
+    <string name="below">Onder</string>
+    <string name="over_goal">Oor doel</string>
+    <string name="error_loading_data">Fout met laai van data</string>
+    <string name="no_data_period">Geen data beskikbaar vir hierdie periode nie</string>
+    <string name="start_logging_meals_trends">Begin jou maaltye aanteken om jou tendense te sien!</string>
+    <string name="statistics">Statistieke</string>
+    <string name="average">Gemiddeld</string>
+    <string name="highest">Hoogste</string>
+    <string name="lowest">Laagste</string>
+    <string name="daily_budget">Daaglikse begroting</string>
+    <string name="within_budget">Binne begroting</string>
+    <string name="over_budget_stat">Oor begroting</string>
+    <string name="budget_label">Begroting:</string>
+    <string name="day">Dag</string>
+    <string name="week">Week</string>
+    <string name="month">Maand</string>
+    <string name="water_intake">Water inname</string>
+    <string name="goal_met">Doel bereik</string>
+    <string name="calories_burned_label">Kalorieë verbrand</string>
+    <string name="todays_water_intake_subtitle">Vandag se water inname</string>
+    <string name="week_water_intake">Hierdie week se water inname (Ma-So)</string>
+    <string name="month_water_intake">%1$s water inname (1-%2$d)</string>
+    <string name="track_water_over_time">Volg jou water inname oor tyd</string>
+    <string name="start_logging_water">Begin jou water inname aanteken!</string>
+    <string name="goal_colon">Doel:</string>
+    <string name="daily_goal">Daaglikse doel</string>
+    <string name="todays_calories_burned">Vandag se kalorieë verbrand</string>
+    <string name="week_calories_burned">Hierdie week se kalorieë verbrand (Ma-So)</string>
+    <string name="month_calories_burned">%1$s kalorieë verbrand (1-%2$d)</string>
+    <string name="track_workout_calories">Volg jou oefening kalorieë oor tyd</string>
+    <string name="start_logging_workouts">Begin jou oefeninge aanteken!</string>
+    <string name="active_days">Aktiewe dae</string>
+    <string name="total_workouts">Totale oefeninge</string>
+    <string name="days_stat">%1$d dae</string>
+    <string name="exercises_stat">%1$d oefeninge</string>
+
+    <string name="default_web_client_id">308029174448-vcuvlj3rp3b60d68kjtie24p6rkp62r2.apps.googleusercontent.com</string>
+</resources>
+

@@ -34,6 +34,7 @@ import com.example.forkit.data.RetrofitClient
 import com.example.forkit.data.models.TrendEntry
 import com.example.forkit.ui.theme.ForkItTheme
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
 
 class CoachActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -164,7 +165,7 @@ fun CoachMainScreen(
     ) {
         // Header
         Text(
-            text = "Coach",
+            text = stringResource(R.string.coach),
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
             style = androidx.compose.ui.text.TextStyle(
@@ -179,7 +180,7 @@ fun CoachMainScreen(
         )
         
         Text(
-            text = "Track your health metrics over time",
+            text = stringResource(R.string.track_metrics_over_time),
             fontSize = 14.sp,
             color = Color(0xFF666666),
             modifier = Modifier.padding(bottom = 32.dp)
@@ -226,7 +227,7 @@ fun CoachMainScreen(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_meals),
-                            contentDescription = "Calorie Tracking",
+                            contentDescription = stringResource(R.string.calorie_tracking),
                             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                             modifier = Modifier.size(48.dp)
                         )
@@ -234,13 +235,13 @@ fun CoachMainScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = "Calorie Tracking",
+                                text = stringResource(R.string.calorie_tracking),
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "Track your daily budget",
+                                text = stringResource(R.string.track_daily_budget),
                                 fontSize = 14.sp,
                                 color = Color(0xFF666666)
                             )
@@ -298,7 +299,7 @@ fun CoachMainScreen(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_water),
-                            contentDescription = "Water Tracking",
+                            contentDescription = stringResource(R.string.water_tracking),
                             tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f),
                             modifier = Modifier.size(48.dp)
                         )
@@ -306,13 +307,13 @@ fun CoachMainScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = "Water Tracking",
+                                text = stringResource(R.string.water_tracking),
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.secondary
                             )
                             Text(
-                                text = "Monitor your hydration",
+                                text = stringResource(R.string.monitor_hydration),
                                 fontSize = 14.sp,
                                 color = Color(0xFF666666)
                             )
@@ -370,7 +371,7 @@ fun CoachMainScreen(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_workout),
-                            contentDescription = "Workout Tracking",
+                            contentDescription = stringResource(R.string.workout_tracking),
                             tint = Color(0xFF673AB7).copy(alpha = 0.7f),
                             modifier = Modifier.size(48.dp)
                         )
@@ -378,13 +379,13 @@ fun CoachMainScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = "Workout Tracking",
+                                text = stringResource(R.string.workout_tracking),
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF673AB7)
                             )
                             Text(
-                                text = "Track your exercises",
+                                text = stringResource(R.string.track_exercises),
                                 fontSize = 14.sp,
                                 color = Color(0xFF666666)
                             )
@@ -560,12 +561,12 @@ fun CalorieDetailScreen(
             IconButton(onClick = onBack) {
                 androidx.compose.material.Icon(
                     imageVector = ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.back),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             }
             Text(
-                text = "Calorie Tracking",
+                text = stringResource(R.string.calorie_tracking),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -574,14 +575,14 @@ fun CalorieDetailScreen(
         }
         
         val subtitle = when (selectedPeriod) {
-            "Day" -> "Stay within your daily calorie budget"
-            "Week" -> "This week's calorie budget tracking (Mon-Sun)"
+            "Day" -> stringResource(R.string.stay_within_budget)
+            "Week" -> stringResource(R.string.week_calorie_tracking)
             "Month" -> {
                 val monthName = java.time.LocalDate.now().month.toString().lowercase().replaceFirstChar { it.uppercase() }
                 val daysInMonth = java.time.LocalDate.now().lengthOfMonth()
-                "$monthName calorie budget tracking (1-$daysInMonth)"
+                stringResource(R.string.month_calorie_tracking, monthName, daysInMonth)
             }
-            else -> "Track your calorie budget over time"
+            else -> stringResource(R.string.track_calorie_over_time)
         }
         
         Text(
@@ -647,7 +648,7 @@ fun CalorieDetailScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Calorie Budget",
+                        text = stringResource(R.string.calorie_budget),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -702,7 +703,7 @@ fun CalorieDetailScreen(
                                     )
                             )
                             Text(
-                                text = "Over Goal",
+                                text = stringResource(R.string.over_goal),
                                 fontSize = 9.sp,
                                 color = Color(0xFF999999)
                             )
@@ -760,13 +761,13 @@ fun CalorieDetailScreen(
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "No data available for this period",
+                                    text = stringResource(R.string.no_data_period),
                                     color = Color(0xFF999999),
                                     textAlign = TextAlign.Center
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Start logging your meals to see your trends!",
+                                    text = stringResource(R.string.start_logging_meals_trends),
                                     fontSize = 12.sp,
                                     color = Color(0xFFBBBBBB),
                                     textAlign = TextAlign.Center
@@ -801,7 +802,7 @@ fun CalorieDetailScreen(
                         .padding(20.dp)
                 ) {
                     Text(
-                        text = "Statistics",
+                        text = stringResource(R.string.statistics),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -821,17 +822,17 @@ fun CalorieDetailScreen(
                     val daysOverGoal = chartData.count { it.calories > dailyGoal }
                     val totalDaysWithData = chartData.count { it.calories > 0 }
                     
-                    StatRow(label = "Average", value = "$avgCalories kcal", color = MaterialTheme.colorScheme.secondary)
+                    StatRow(label = stringResource(R.string.average), value = "$avgCalories ${stringResource(R.string.kcal)}", color = MaterialTheme.colorScheme.secondary)
                     Spacer(modifier = Modifier.height(8.dp))
-                    StatRow(label = "Highest", value = "$maxCalories kcal", color = Color(0xFFE53935))
+                    StatRow(label = stringResource(R.string.highest), value = "$maxCalories ${stringResource(R.string.kcal)}", color = Color(0xFFE53935))
                     Spacer(modifier = Modifier.height(8.dp))
-                    StatRow(label = "Lowest", value = "$minCalories kcal", color = Color(0xFF22B27D))
+                    StatRow(label = stringResource(R.string.lowest), value = "$minCalories ${stringResource(R.string.kcal)}", color = Color(0xFF22B27D))
                     Spacer(modifier = Modifier.height(8.dp))
-                    StatRow(label = "Daily Budget", value = "$dailyGoal kcal", color = Color(0xFFFF9800))
+                    StatRow(label = stringResource(R.string.daily_budget), value = "$dailyGoal ${stringResource(R.string.kcal)}", color = Color(0xFFFF9800))
                     Spacer(modifier = Modifier.height(8.dp))
-                    StatRow(label = "Within Budget", value = "$daysWithinGoal / $totalDaysWithData days", color = Color(0xFF22B27D))
+                    StatRow(label = stringResource(R.string.within_budget), value = stringResource(R.string.days_stat, daysWithinGoal) + " / ${stringResource(R.string.days_stat, totalDaysWithData)}", color = Color(0xFF22B27D))
                     Spacer(modifier = Modifier.height(8.dp))
-                    StatRow(label = "Over Budget", value = "$daysOverGoal / $totalDaysWithData days", color = Color(0xFFE53935))
+                    StatRow(label = stringResource(R.string.over_budget_stat), value = stringResource(R.string.days_stat, daysOverGoal) + " / ${stringResource(R.string.days_stat, totalDaysWithData)}", color = Color(0xFFE53935))
                 }
             }
         }
@@ -877,7 +878,7 @@ fun SimpleCalorieChart(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "Budget:",
+                            text = stringResource(R.string.budget_label),
                             fontSize = 10.sp,
                             color = Color.White,
                             fontWeight = FontWeight.Medium
@@ -1177,12 +1178,12 @@ fun WaterDetailScreen(
             IconButton(onClick = onBack) {
                 androidx.compose.material.Icon(
                     imageVector = ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.back),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             }
             Text(
-                text = "Water Tracking",
+                text = stringResource(R.string.water_tracking),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.secondary,
@@ -1191,14 +1192,14 @@ fun WaterDetailScreen(
         }
         
         val subtitle = when (selectedPeriod) {
-            "Day" -> "Today's water intake"
-            "Week" -> "This week's water intake (Mon-Sun)"
+            "Day" -> stringResource(R.string.todays_water_intake_subtitle)
+            "Week" -> stringResource(R.string.week_water_intake)
             "Month" -> {
                 val monthName = java.time.LocalDate.now().month.toString().lowercase().replaceFirstChar { it.uppercase() }
                 val daysInMonth = java.time.LocalDate.now().lengthOfMonth()
-                "$monthName water intake (1-$daysInMonth)"
+                stringResource(R.string.month_water_intake, monthName, daysInMonth)
             }
-            else -> "Track your water intake over time"
+            else -> stringResource(R.string.track_water_over_time)
         }
         
         Text(
@@ -1221,12 +1222,18 @@ fun WaterDetailScreen(
                     .padding(8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                listOf("Day", "Week", "Month").forEach { period ->
+                val periodKeys = listOf("Day", "Week", "Month")
+                val periodLabels = listOf(
+                    stringResource(R.string.day),
+                    stringResource(R.string.week),
+                    stringResource(R.string.month)
+                )
+                periodKeys.forEachIndexed { index, periodKey ->
                     Button(
-                        onClick = { selectedPeriod = period },
+                        onClick = { selectedPeriod = periodKey },
                         modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (selectedPeriod == period) 
+                            containerColor = if (selectedPeriod == periodKey) 
                                 MaterialTheme.colorScheme.secondary 
                             else 
                                 Color(0xFFE8E8E8)
@@ -1234,8 +1241,8 @@ fun WaterDetailScreen(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = period,
-                            color = if (selectedPeriod == period) Color.White else Color(0xFF666666),
+                            text = periodLabels[index],
+                            color = if (selectedPeriod == periodKey) Color.White else Color(0xFF666666),
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -1264,7 +1271,7 @@ fun WaterDetailScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Water Intake",
+                        text = stringResource(R.string.water_intake),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -1317,7 +1324,7 @@ fun WaterDetailScreen(
                                     )
                             )
                             Text(
-                                text = "Goal Met",
+                                text = stringResource(R.string.goal_met),
                                 fontSize = 9.sp,
                                 color = Color(0xFF999999)
                             )
@@ -1351,7 +1358,7 @@ fun WaterDetailScreen(
                                 Text(text = "⚠️", fontSize = 48.sp)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = errorMessage ?: "Error loading data",
+                                    text = errorMessage ?: stringResource(R.string.error_loading_data),
                                     color = Color(0xFF999999),
                                     textAlign = TextAlign.Center
                                 )
@@ -1369,13 +1376,13 @@ fun WaterDetailScreen(
                                 Text(text = "💧", fontSize = 48.sp)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "No data available for this period",
+                                    text = stringResource(R.string.no_data_period),
                                     color = Color(0xFF999999),
                                     textAlign = TextAlign.Center
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Start logging your water intake!",
+                                    text = stringResource(R.string.start_logging_water),
                                     fontSize = 12.sp,
                                     color = Color(0xFFBBBBBB),
                                     textAlign = TextAlign.Center
@@ -1428,15 +1435,15 @@ fun WaterDetailScreen(
                     val daysGoalMet = chartData.count { it.amount >= dailyGoal }
                     val totalDaysWithData = chartData.count { it.amount > 0 }
                     
-                    StatRow(label = "Average", value = "$avgWater ml", color = MaterialTheme.colorScheme.secondary)
+                    StatRow(label = stringResource(R.string.average), value = "$avgWater ${stringResource(R.string.ml)}", color = MaterialTheme.colorScheme.secondary)
                     Spacer(modifier = Modifier.height(8.dp))
-                    StatRow(label = "Highest", value = "$maxWater ml", color = Color(0xFF2196F3))
+                    StatRow(label = stringResource(R.string.highest), value = "$maxWater ${stringResource(R.string.ml)}", color = Color(0xFF2196F3))
                     Spacer(modifier = Modifier.height(8.dp))
-                    StatRow(label = "Lowest", value = "$minWater ml", color = Color(0xFF03A9F4))
+                    StatRow(label = stringResource(R.string.lowest), value = "$minWater ${stringResource(R.string.ml)}", color = Color(0xFF03A9F4))
                     Spacer(modifier = Modifier.height(8.dp))
-                    StatRow(label = "Daily Goal", value = "$dailyGoal ml", color = Color(0xFF2196F3))
+                    StatRow(label = stringResource(R.string.daily_goal), value = "$dailyGoal ${stringResource(R.string.ml)}", color = Color(0xFF2196F3))
                     Spacer(modifier = Modifier.height(8.dp))
-                    StatRow(label = "Goal Met", value = "$daysGoalMet / $totalDaysWithData days", color = Color(0xFF64B5F6))
+                    StatRow(label = stringResource(R.string.goal_met), value = stringResource(R.string.days_stat, daysGoalMet) + " / ${stringResource(R.string.days_stat, totalDaysWithData)}", color = Color(0xFF64B5F6))
                 }
             }
         }
@@ -1576,12 +1583,12 @@ fun WorkoutDetailScreen(
             IconButton(onClick = onBack) {
                 androidx.compose.material.Icon(
                     imageVector = ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.back),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             }
             Text(
-                text = "Workout Tracking",
+                text = stringResource(R.string.workout_tracking),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = workoutColor,
@@ -1590,14 +1597,14 @@ fun WorkoutDetailScreen(
         }
         
         val subtitle = when (selectedPeriod) {
-            "Day" -> "Today's calories burned"
-            "Week" -> "This week's calories burned (Mon-Sun)"
+            "Day" -> stringResource(R.string.todays_calories_burned)
+            "Week" -> stringResource(R.string.week_calories_burned)
             "Month" -> {
                 val monthName = java.time.LocalDate.now().month.toString().lowercase().replaceFirstChar { it.uppercase() }
                 val daysInMonth = java.time.LocalDate.now().lengthOfMonth()
-                "$monthName calories burned (1-$daysInMonth)"
+                stringResource(R.string.month_calories_burned, monthName, daysInMonth)
             }
-            else -> "Track your workout calories over time"
+            else -> stringResource(R.string.track_workout_calories)
         }
         
         Text(
@@ -1620,12 +1627,18 @@ fun WorkoutDetailScreen(
                     .padding(8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                listOf("Day", "Week", "Month").forEach { period ->
+                val periodKeys = listOf("Day", "Week", "Month")
+                val periodLabels = listOf(
+                    stringResource(R.string.day),
+                    stringResource(R.string.week),
+                    stringResource(R.string.month)
+                )
+                periodKeys.forEachIndexed { index, periodKey ->
                     Button(
-                        onClick = { selectedPeriod = period },
+                        onClick = { selectedPeriod = periodKey },
                         modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (selectedPeriod == period) 
+                            containerColor = if (selectedPeriod == periodKey) 
                                 workoutColor 
                             else 
                                 Color(0xFFE8E8E8)
@@ -1633,8 +1646,8 @@ fun WorkoutDetailScreen(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            text = period,
-                            color = if (selectedPeriod == period) Color.White else Color(0xFF666666),
+                            text = periodLabels[index],
+                            color = if (selectedPeriod == periodKey) Color.White else Color(0xFF666666),
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -1663,7 +1676,7 @@ fun WorkoutDetailScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Calories Burned",
+                        text = stringResource(R.string.calories_burned_label),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -1692,7 +1705,7 @@ fun WorkoutDetailScreen(
                                     )
                             )
                             Text(
-                                text = "Workout",
+                                text = stringResource(R.string.workout),
                                 fontSize = 9.sp,
                                 color = Color(0xFF999999)
                             )
@@ -1744,13 +1757,13 @@ fun WorkoutDetailScreen(
                                 Text(text = "💪", fontSize = 48.sp)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "No data available for this period",
+                                    text = stringResource(R.string.no_data_period),
                                     color = Color(0xFF999999),
                                     textAlign = TextAlign.Center
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Start logging your workouts!",
+                                    text = stringResource(R.string.start_logging_workouts),
                                     fontSize = 12.sp,
                                     color = Color(0xFFBBBBBB),
                                     textAlign = TextAlign.Center
@@ -1784,7 +1797,7 @@ fun WorkoutDetailScreen(
                         .padding(20.dp)
                 ) {
                     Text(
-                        text = "Statistics",
+                        text = stringResource(R.string.statistics),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -1802,15 +1815,15 @@ fun WorkoutDetailScreen(
                     val totalDaysWithData = chartData.count { it.calories > 0 }
                     val totalWorkouts = chartData.sumOf { it.exercises }
                     
-                    StatRow(label = "Average", value = "$avgCalories kcal", color = workoutColor)
+                    StatRow(label = stringResource(R.string.average), value = "$avgCalories ${stringResource(R.string.kcal)}", color = workoutColor)
                     Spacer(modifier = Modifier.height(8.dp))
-                    StatRow(label = "Highest", value = "$maxCalories kcal", color = Color(0xFF9C27B0))
+                    StatRow(label = stringResource(R.string.highest), value = "$maxCalories ${stringResource(R.string.kcal)}", color = Color(0xFF9C27B0))
                     Spacer(modifier = Modifier.height(8.dp))
-                    StatRow(label = "Lowest", value = "$minCalories kcal", color = Color(0xFF7B1FA2))
+                    StatRow(label = stringResource(R.string.lowest), value = "$minCalories ${stringResource(R.string.kcal)}", color = Color(0xFF7B1FA2))
                     Spacer(modifier = Modifier.height(8.dp))
-                    StatRow(label = "Active Days", value = "$totalDaysWithData days", color = Color(0xFF8E24AA))
+                    StatRow(label = stringResource(R.string.active_days), value = stringResource(R.string.days_stat, totalDaysWithData), color = Color(0xFF8E24AA))
                     Spacer(modifier = Modifier.height(8.dp))
-                    StatRow(label = "Total Workouts", value = "$totalWorkouts exercises", color = Color(0xFFBA68C8))
+                    StatRow(label = stringResource(R.string.total_workouts), value = stringResource(R.string.exercises_stat, totalWorkouts), color = Color(0xFFBA68C8))
                 }
             }
         }
@@ -1856,7 +1869,7 @@ fun WaterChart(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "Goal:",
+                            text = stringResource(R.string.goal_colon),
                             fontSize = 10.sp,
                             color = Color.White,
                             fontWeight = FontWeight.Medium

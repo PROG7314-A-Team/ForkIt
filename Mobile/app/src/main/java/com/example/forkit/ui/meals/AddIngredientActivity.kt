@@ -69,11 +69,14 @@ import androidx.compose.ui.unit.sp
 import com.example.forkit.BarcodeScannerActivity
 import com.example.forkit.TypeButton
 import com.example.forkit.data.RetrofitClient
+import androidx.compose.ui.res.stringResource
+import com.example.forkit.R
 import com.example.forkit.data.models.*
 import com.example.forkit.ui.theme.ForkItTheme
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -214,26 +217,26 @@ class AddIngredientActivity : ComponentActivity() {
                     Log.d(TAG, "🔁 [handleScannedBarcode] -> scannedFoodState updated successfully.")
 
                     // 🎉 Step 5: Provide UI feedback to user
-                    Toast.makeText(this, "Found: ${ingredientData.name}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(com.example.forkit.R.string.found_food, ingredientData.name), Toast.LENGTH_SHORT).show()
                     Log.d(TAG, "📢 [handleScannedBarcode] -> Toast displayed for ingredient: ${ingredientData.name}")
 
                 } else {
                     // ❌ Case: No ingredient data returned
                     Log.w(TAG, "⚠️ [handleScannedBarcode] -> API returned success=true but data=null.")
-                    Toast.makeText(this, "No ingredient found for this barcode", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(com.example.forkit.R.string.no_ingredient_found_barcode), Toast.LENGTH_SHORT).show()
                 }
 
             } else {
                 // ❌ Case: API call failed or returned error status
                 val errorMsg = response.body()?.message ?: "Unknown API error"
                 Log.e(TAG, "❌ [handleScannedBarcode] -> Failed API response. Reason: $errorMsg")
-                Toast.makeText(this, "Failed to fetch ingredient: $errorMsg", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(com.example.forkit.R.string.failed_fetch_ingredient, errorMsg), Toast.LENGTH_SHORT).show()
             }
 
         } catch (e: Exception) {
             // 💥 Catch-all for any exceptions (network, parsing, etc.)
             Log.e(TAG, "🔥 [handleScannedBarcode] -> Exception occurred while fetching ingredient.", e)
-            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(com.example.forkit.R.string.error_message, e.message ?: ""), Toast.LENGTH_SHORT).show()
         }
 
         Log.d(TAG, "🏁 [handleScannedBarcode] -> Completed execution for barcode: $barcode")
@@ -498,6 +501,23 @@ fun AddFoodMainScreen(
     var showSearchResults by remember { mutableStateOf(false) }
 
     // -------------------------------------------------------------
+    // 🔄 FUNCTION: performSearchWithRetry
+    // -------------------------------------------------------------
+    suspend fun performSearchWithRetry(query: String, maxRetries: Int = 2): retrofit2.Response<com.example.forkit.data.models.GetFoodFromNameResponse>? {
+        repeat(maxRetries) { attempt ->
+            try {
+                Log.d(TAG, "Search attempt ${attempt + 1} for query: $query")
+                return RetrofitClient.api.getFoodFromName(query)
+            } catch (e: Exception) {
+                Log.d(TAG, "Search attempt ${attempt + 1} failed: ${e.message}")
+                if (attempt == maxRetries - 1) throw e
+                delay(1000L * (attempt + 1)) // Exponential backoff: 1s, 2s
+            }
+        }
+        return null
+    }
+
+    // -------------------------------------------------------------
     // 🔎 FUNCTION: performSearch
     // -------------------------------------------------------------
     fun performSearch(query: String) {
@@ -510,27 +530,48 @@ fun AddFoodMainScreen(
         scope.launch {
             isSearching = true
             try {
-                val response = RetrofitClient.api.getFoodFromName(query)
-                Log.d(TAG, "Food response ${response.body()?.data}")
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val data = response.body()?.data
-                    if (data != null) {
-                        // Convert map to list of SearchFoodItem
-                        searchResults = data.toList()
-                        showSearchResults = true
+                val response = performSearchWithRetry(query)
+                if (response != null) {
+                    Log.d(TAG, "Food response ${response.body()?.data}")
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        val data = response.body()?.data
+                        if (data != null) {
+                            // Convert map to list of SearchFoodItem
+                            searchResults = data.toList()
+                            showSearchResults = true
+                        } else {
+                            searchResults = emptyList()
+                            showSearchResults = false
+                        }
                     } else {
                         searchResults = emptyList()
                         showSearchResults = false
+                        Toast.makeText(context, "No results found", Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     searchResults = emptyList()
                     showSearchResults = false
-                    Toast.makeText(context, "No results found", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Search failed after retries", Toast.LENGTH_SHORT).show()
                 }
+            } catch (e: java.net.SocketTimeoutException) {
+                searchResults = emptyList()
+                showSearchResults = false
+                Log.d(TAG, "Search timeout: ${e.message}")
+                Toast.makeText(context, "Search timeout: Please try again", Toast.LENGTH_SHORT).show()
+            } catch (e: java.net.UnknownHostException) {
+                searchResults = emptyList()
+                showSearchResults = false
+                Log.d(TAG, "Network error: ${e.message}")
+                Toast.makeText(context, "Network error: Check your connection", Toast.LENGTH_SHORT).show()
+            } catch (e: java.net.ConnectException) {
+                searchResults = emptyList()
+                showSearchResults = false
+                Log.d(TAG, "Connection error: ${e.message}")
+                Toast.makeText(context, "Connection error: Server unavailable", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 searchResults = emptyList()
                 showSearchResults = false
-                Log.d(TAG, "Fething food error ${e.message}")
+                Log.d(TAG, "Search error: ${e.message}")
                 Toast.makeText(context, "Search error: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
                 isSearching = false
@@ -631,12 +672,12 @@ fun AddFoodMainScreen(
                 }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.back),
                         tint = colorScheme.onBackground
                     )
                 }
                 Text(
-                    text = "Add Ingredient",
+                    text = stringResource(R.string.add_ingredient),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
                     color = colorScheme.primary,
@@ -676,7 +717,7 @@ fun AddFoodMainScreen(
                         TextField(
                             value = searchQuery,
                             onValueChange = onSearchQueryChange,
-                            placeholder = { Text("Search food", color = colorScheme.onSurfaceVariant) },
+                            placeholder = { Text(stringResource(R.string.search_food), color = colorScheme.onSurfaceVariant) },
                             modifier = Modifier.weight(1f),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
@@ -701,7 +742,7 @@ fun AddFoodMainScreen(
                 if (searchQuery.isNotBlank()) {
                     Log.d(TAG, "🔎 [AddFoodMainScreen] -> Displaying search results UI.")
                     if (showSearchResults && searchResults.isNotEmpty()) {
-                        Text("Search Results", fontSize = 16.sp, color = colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium, modifier = Modifier.padding(bottom = 16.dp))
+                        Text(stringResource(R.string.search_results), fontSize = 16.sp, color = colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium, modifier = Modifier.padding(bottom = 16.dp))
                         Column(
                             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -718,14 +759,14 @@ fun AddFoodMainScreen(
                             CircularProgressIndicator()
                         }
                     } else {
-                        Text("No results found for \"$searchQuery\"", fontSize = 14.sp, color = colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 16.dp))
+                        Text(stringResource(R.string.no_results_found, searchQuery), fontSize = 14.sp, color = colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 16.dp))
                     }
                 } else {
                     // -----------------------------------------------------
                     // HISTORY SECTION
                     // -----------------------------------------------------
                     Log.d(TAG, "📚 [AddFoodMainScreen] -> Displaying My Foods (history).")
-                    Text("My Foods", fontSize = 16.sp, color = colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium, modifier = Modifier.padding(bottom = 16.dp))
+                    Text(stringResource(R.string.my_foods), fontSize = 16.sp, color = colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium, modifier = Modifier.padding(bottom = 16.dp))
 
                     when {
                         isLoading -> {
@@ -737,7 +778,7 @@ fun AddFoodMainScreen(
                             Text(text = errorMessage, fontSize = 14.sp, color = colorScheme.error, modifier = Modifier.padding(vertical = 16.dp))
                         }
                         historyItems.isEmpty() -> {
-                            Text("No foods logged yet. Start by adding your first ingredient!", fontSize = 14.sp, color = colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 16.dp))
+                            Text(stringResource(R.string.no_foods_logged), fontSize = 14.sp, color = colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 16.dp))
                         }
                         else -> {
                             Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -759,14 +800,14 @@ fun AddFoodMainScreen(
                                                     val response = RetrofitClient.api.deleteFoodLog(item.id)
                                                     if (response.isSuccessful && response.body()?.success == true) {
                                                         historyItems = historyItems.filter { it.id != item.id }
-                                                        Toast.makeText(context, "Deleted successfully", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, context.getString(R.string.deleted_successfully), Toast.LENGTH_SHORT).show()
                                                         Log.d(TAG, "✅ [AddFoodMainScreen] -> Deleted ${item.foodName} from history.")
                                                     } else {
-                                                        Toast.makeText(context, "Failed to delete", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, context.getString(R.string.failed_to_delete), Toast.LENGTH_SHORT).show()
                                                     }
                                                 } catch (e: Exception) {
                                                     Log.e(TAG, "🔥 [AddFoodMainScreen] -> Error deleting: ${e.message}")
-                                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, context.getString(R.string.error_message, e.message ?: ""), Toast.LENGTH_SHORT).show()
                                                 }
                                             }
                                         }
@@ -803,7 +844,7 @@ fun AddFoodMainScreen(
                             ),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("Scan Barcode", fontSize = 20.sp, fontWeight = FontWeight.Medium, color = colorScheme.background)
+                            Text(stringResource(R.string.scan_barcode), fontSize = 20.sp, fontWeight = FontWeight.Medium, color = colorScheme.background)
                         }
                     }
 
@@ -827,7 +868,7 @@ fun AddFoodMainScreen(
                             if (isLoading) {
                                 CircularProgressIndicator(color = colorScheme.background, modifier = Modifier.size(24.dp))
                             } else {
-                                Text("Add Ingredient", fontSize = 20.sp, fontWeight = FontWeight.Medium, color = colorScheme.background)
+                                Text(stringResource(R.string.add_ingredient), fontSize = 20.sp, fontWeight = FontWeight.Medium, color = colorScheme.background)
                             }
                         }
                     }
@@ -1200,7 +1241,7 @@ fun AdjustServingScreen(
                     )
                 }
                 Text(
-                    text = "Adjust Serving",
+                    text = stringResource(R.string.adjust_serving),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
                     color = colorScheme.primary,
@@ -1238,7 +1279,7 @@ fun AdjustServingScreen(
                                 Log.d(TAG, "✏️ [AdjustServingScreen] -> Food name updated: $it")
                                 onFoodNameChange(it)
                             },
-                            placeholder = { Text("Food name*", color = colorScheme.onSurfaceVariant) },
+                            placeholder = { Text(stringResource(R.string.food_name_required), color = colorScheme.onSurfaceVariant) },
                             modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
@@ -1271,7 +1312,7 @@ fun AdjustServingScreen(
                                     Log.d(TAG, "📏 [AdjustServingScreen] -> Serving size changed: $it")
                                     onServingSizeChange(it)
                                 },
-                                placeholder = { Text("Serving size*", color = colorScheme.onSurfaceVariant) },
+                                placeholder = { Text(stringResource(R.string.serving_size_required), color = colorScheme.onSurfaceVariant) },
                                 modifier = Modifier.weight(1f),
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent,
@@ -1347,23 +1388,23 @@ fun AdjustServingScreen(
                         border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.3f))
                     ) {
                         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                            Text("Nutritional Info", fontSize = 14.sp, color = colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+                            Text(stringResource(R.string.nutritional_info), fontSize = 14.sp, color = colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column {
-                                    Text("Calories", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
-                                    Text("$currentCalories kcal", fontSize = 16.sp, color = colorScheme.primary, fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.calories), fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
+                                    Text("$currentCalories ${stringResource(R.string.kcal)}", fontSize = 16.sp, color = colorScheme.primary, fontWeight = FontWeight.Bold)
                                 }
                                 Column {
-                                    Text("Carbs", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
-                                    Text("${currentCarbs}g", fontSize = 14.sp, color = colorScheme.onBackground, fontWeight = FontWeight.Medium)
+                                    Text(stringResource(R.string.carbs), fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
+                                    Text("${currentCarbs}${stringResource(R.string.grams)}", fontSize = 14.sp, color = colorScheme.onBackground, fontWeight = FontWeight.Medium)
                                 }
                                 Column {
-                                    Text("Protein", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
-                                    Text("${currentProtein}g", fontSize = 14.sp, color = colorScheme.onBackground, fontWeight = FontWeight.Medium)
+                                    Text(stringResource(R.string.protein), fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
+                                    Text("${currentProtein}${stringResource(R.string.grams)}", fontSize = 14.sp, color = colorScheme.onBackground, fontWeight = FontWeight.Medium)
                                 }
                                 Column {
-                                    Text("Fat", fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
-                                    Text("${currentFat}g", fontSize = 14.sp, color = colorScheme.onBackground, fontWeight = FontWeight.Medium)
+                                    Text(stringResource(R.string.fat), fontSize = 12.sp, color = colorScheme.onSurfaceVariant)
+                                    Text("${currentFat}${stringResource(R.string.grams)}", fontSize = 14.sp, color = colorScheme.onBackground, fontWeight = FontWeight.Medium)
                                 }
                             }
                         }
@@ -1400,7 +1441,7 @@ fun AdjustServingScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Add Ingredient",
+                            text = stringResource(R.string.add_ingredient),
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Medium,
                             color = colorScheme.background

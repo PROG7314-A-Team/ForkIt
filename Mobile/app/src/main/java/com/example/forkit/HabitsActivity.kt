@@ -48,6 +48,7 @@ import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.data.models.Habit
 import com.example.forkit.data.models.MockHabits
 import com.example.forkit.data.RetrofitClient
+import androidx.compose.ui.res.stringResource
 import com.example.forkit.data.models.HabitsResponse
 import com.example.forkit.data.models.UpdateHabitRequest
 import com.example.forkit.services.HabitNotificationScheduler
@@ -215,7 +216,7 @@ fun HabitsScreen(
             ) {
                 // "Your Habits" title with gradient
                 Text(
-                    text = "Your Habits",
+                    text = stringResource(R.string.your_habits),
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     style = TextStyle(
@@ -267,7 +268,7 @@ fun HabitsScreen(
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Text(
-                        text = "New Habit",
+                        text = stringResource(R.string.new_habit),
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
@@ -289,7 +290,11 @@ fun HabitsScreen(
                 Row(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    val timeFilters = listOf("Today", "Weekly", "Monthly")
+                    val timeFilters = listOf(
+                        stringResource(R.string.today),
+                        stringResource(R.string.weekly),
+                        stringResource(R.string.monthly)
+                    )
                     timeFilters.forEachIndexed { index, filter ->
                         Box(
                             modifier = Modifier

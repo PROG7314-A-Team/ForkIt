@@ -64,6 +64,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.forkit.data.RetrofitClient
 import com.example.forkit.ui.theme.ForkItTheme
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 
@@ -86,6 +87,10 @@ import com.example.forkit.ui.meals.MealDetailActivity
 import android.util.Log
 import kotlinx.coroutines.delay
 import androidx.compose.ui.graphics.graphicsLayer
+import com.example.forkit.ui.screens.HomeScreen
+import com.example.forkit.ui.screens.MealsScreen
+import com.example.forkit.ui.screens.HabitsScreen
+import com.example.forkit.ui.screens.CoachScreen
 
 
 
@@ -96,6 +101,9 @@ class DashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Apply saved language
+        LanguageManager.applyLanguage(this)
         
         val userId = intent.getStringExtra("USER_ID") ?: ""
         val initialTab = intent.getIntExtra("SELECTED_TAB", 0)
@@ -603,7 +611,7 @@ fun DashboardScreen(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Text(
-                            text = "⚠️ Error",
+                            text = stringResource(R.string.error),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFD32F2F)
@@ -622,909 +630,42 @@ fun DashboardScreen(
             when (selectedTab) {
                 0 -> {
                     // Home/Dashboard content
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        // Top Header with Logo and Profile
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // ForkIt Logo
-                            Image(
-                                painter = painterResource(id = R.drawable.forkit_logo),
-                                contentDescription = "ForkIt Logo",
-                                modifier = Modifier.size(40.dp)
-                            )
-
-
-
-
-                    // Profile Tab
-                    Card(
-                        modifier = Modifier.clickable { 
-                            val intent = Intent(context, ProfileActivity::class.java)
-                            intent.putExtra("USER_ID", userId)
-                            context.startActivity(intent)
-                        },
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary) // ForkIt blue border
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Profile",
-                                tint = MaterialTheme.colorScheme.secondary, // ForkIt blue color
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                text = "PROFILE",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.secondary // ForkIt blue color
-                            )
-                        }
-                    }
-                }
-                
-                // Welcome Card
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary) // ForkIt green border
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Welcome to the Dashboard",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.secondary,
-                            textAlign = TextAlign.Center
+                    Box(modifier = Modifier.weight(1f)) {
+                        HomeScreen(
+                            userId = userId,
+                            consumed = consumed,
+                            burned = burned,
+                            carbsCalories = carbsCalories,
+                            proteinCalories = proteinCalories,
+                            fatCalories = fatCalories,
+                            waterAmount = waterAmount,
+                            waterEntries = waterEntries,
+                            recentMeals = recentMeals,
+                            recentWorkouts = recentWorkouts,
+                            recentWaterLogs = recentWaterLogs,
+                            isLoading = isLoading,
+                            dailyGoal = dailyGoal,
+                            dailyWaterGoal = dailyWaterGoal,
+                            dailyStepsGoal = dailyStepsGoal,
+                            currentSteps = currentSteps,
+                            isStepTrackingAvailable = isStepTrackingAvailable,
+                            total = total,
+                            progressPercentage = progressPercentage,
+                            caloriesRemaining = caloriesRemaining,
+                            isOverBudget = isOverBudget,
+                            isWithinBudget = isWithinBudget,
+                            animatedProgress = animatedProgress,
+                            refreshData = refreshData,
+                            onMealDelete = { meal -> 
+                                recentMeals = recentMeals.filter { it.id != meal.id }
+                            },
+                            onWorkoutDelete = { workout ->
+                                recentWorkouts = recentWorkouts.filter { it.id != workout.id }
+                            },
+                            onWaterLogDelete = { waterLog ->
+                                recentWaterLogs = recentWaterLogs.filter { it.id != waterLog.id }
+                            }
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Track your health and fitness journey",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-                
-                
-                
-                // Total Caloric Intake Card
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                   Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                brush = Brush.horizontalGradient(
-                                    colors = listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.secondary
-                                    )
-                                )
-                            )
-                            .padding(16.dp)
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Today's Caloric Intake",
-                                fontSize = 14.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "$total kcal",
-                                fontSize = 24.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-                
-                
-                
-                // Consumed and Burned Cards
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Consumed Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Consumed",
-                                fontSize = 12.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "$consumed kcal",
-                                fontSize = 18.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                    
-                    // Burned Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Burned",
-                                fontSize = 12.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "$burned kcal",
-                                fontSize = 18.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Daily Goal Progress Card
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp)
-                    ) {
-                        // Header
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Today's Calorie Budget",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "$consumed / $dailyGoal kcal",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isOverBudget) Color(0xFFE53935) else MaterialTheme.colorScheme.onBackground
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        // Progress Bar - red when over budget, green when within budget
-                        LinearProgressIndicator(
-                            progress = { animatedProgress },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(12.dp)
-                                .clip(RoundedCornerShape(6.dp)),
-                            color = if (isOverBudget) Color(0xFFE53935) else MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.outline
-                        )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // Progress Text
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "${(animatedProgress * 100).toInt()}% Used",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Text(
-                                text = if (isOverBudget) "Over Budget! ⚠️" else if (caloriesRemaining >= 0) "$caloriesRemaining kcal remaining" else "0 kcal remaining",
-                                fontSize = 12.sp,
-                                color = if (isOverBudget) Color(0xFFE53935) else if (isWithinBudget) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
-                                fontWeight = if (isOverBudget) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Today's Calorie Wheel Card
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-                ) {
-                    if (!isLoading && consumed == 0.0) {
-                        // Empty state when no food logged
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "🍽️",
-                                fontSize = 48.sp
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "No food logged today",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Start logging your meals to see your nutrition breakdown",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    } else {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(32.dp)
-                        ) {
-                            // Calorie Wheel (Left side)
-                            CalorieWheel(
-                                carbsCalories = carbsCalories.toInt(),
-                                proteinCalories = proteinCalories.toInt(),
-                                fatCalories = fatCalories.toInt(),
-                                totalCalories = consumed.toInt(),
-                                isLoading = isLoading
-                            )
-                            
-                            // Macronutrient Breakdown (Right side)
-                            MacronutrientBreakdown(
-                                carbsCalories = carbsCalories.toInt(),
-                                proteinCalories = proteinCalories.toInt(),
-                                fatCalories = fatCalories.toInt(),
-                                totalCalories = consumed.toInt()
-                            )
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Additional Stats Cards
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Water Intake Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondary)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "💧",
-                                fontSize = 24.sp
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Water",
-                                fontSize = 14.sp,
-                                color = Color(0xFF333333), // Black text
-                                fontWeight = FontWeight.Medium
-                            )
-                            
-                            if (isLoading) {
-                                Text(
-                                    text = "Loading...",
-                                    fontSize = 14.sp,
-                                    color = Color(0xFF333333).copy(alpha = 0.8f)
-                                )
-                            } else {
-                                // Amount and Goal
-                                Text(
-                                    text = "${waterAmount.toInt()} / $dailyWaterGoal ml",
-                                    fontSize = 16.sp,
-                                    color = Color(0xFF333333), // Black text
-                                    fontWeight = FontWeight.Bold
-                                )
-                                
-                                Spacer(modifier = Modifier.height(8.dp))
-                                
-                                // Progress bar
-                                val waterProgress = (waterAmount.toFloat() / dailyWaterGoal.toFloat()).coerceIn(0f, 1f)
-                                LinearProgressIndicator(
-                                    progress = { waterProgress },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(6.dp)
-                                        .clip(RoundedCornerShape(3.dp)),
-                                    color = Color(0xFF333333),
-                                    trackColor = Color(0xFF333333).copy(alpha = 0.3f)
-                                )
-                                
-                                Spacer(modifier = Modifier.height(4.dp))
-                                
-                                // Percentage
-                                Text(
-                                    text = "${(waterProgress * 100).toInt()}%",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF333333).copy(alpha = 0.9f)
-                                )
-                            }
-                        }
-                    }
-                    
-                    // Steps Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "👟",
-                                fontSize = 24.sp
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Steps",
-                                fontSize = 14.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.Medium
-                            )
-                            
-                            if (isLoading) {
-                                Text(
-                                    text = "Loading...",
-                                    fontSize = 14.sp,
-                                    color = Color.White.copy(alpha = 0.8f)
-                                )
-                            } else if (!isStepTrackingAvailable) {
-                                Text(
-                                    text = "Not available",
-                                    fontSize = 14.sp,
-                                    color = Color.White.copy(alpha = 0.8f)
-                                )
-                            } else {
-                                // Steps and Goal
-                                Text(
-                                    text = "$currentSteps / $dailyStepsGoal",
-                                    fontSize = 16.sp,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                
-                                Spacer(modifier = Modifier.height(8.dp))
-                                
-                                // Progress bar with actual data
-                                val stepsProgress = (currentSteps.toFloat() / dailyStepsGoal.toFloat()).coerceIn(0f, 1f)
-                                LinearProgressIndicator(
-                                    progress = { stepsProgress },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(6.dp)
-                                        .clip(RoundedCornerShape(3.dp)),
-                                    color = Color.White,
-                                    trackColor = Color.White.copy(alpha = 0.3f)
-                                )
-                                
-                                Spacer(modifier = Modifier.height(4.dp))
-                                
-                                // Percentage
-                                Text(
-                                    text = "${(stepsProgress * 100).toInt()}%",
-                                    fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.9f)
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Recent Meals Card
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp)
-                    ) {
-                        Text(
-                            text = "Today's Meals",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // Show loading or meals
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.align(Alignment.CenterHorizontally),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        } else if (recentMeals.isEmpty()) {
-                            Text(
-                                text = "No meals logged today",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.padding(vertical = 16.dp)
-                            )
-                        } else {
-                            // Display real meal items from API
-                            var mealToDelete by remember { mutableStateOf<com.example.forkit.data.models.RecentActivityEntry?>(null) }
-                            
-                            recentMeals.forEach { meal ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text(
-                                            text = meal.foodName,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.onBackground
-                                        )
-                                        Text(
-                                            text = "${meal.mealType} - ${meal.calories} kcal",
-                                            fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                                        )
-                                    }
-                                    
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = meal.time,
-                                            fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.onBackground
-                                        )
-                                        
-                                        // Delete button
-                                        IconButton(
-                                            onClick = { mealToDelete = meal },
-                                            modifier = Modifier.size(32.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Delete,
-                                                contentDescription = "Delete",
-                                                tint = Color(0xFFE53935),
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // Delete confirmation dialog
-                            mealToDelete?.let { meal ->
-                                AlertDialog(
-                                    onDismissRequest = { mealToDelete = null },
-                                    title = { 
-                                        Text(
-                                            "Delete Food Log?",
-                                            fontWeight = FontWeight.Bold
-                                        ) 
-                                    },
-                                    text = { 
-                                        Text("Are you sure you want to delete \"${meal.foodName}\" from your log?") 
-                                    },
-                                    confirmButton = {
-                                        TextButton(
-                                            onClick = {
-                                                scope.launch {
-                                                    try {
-                                                        val response = RetrofitClient.api.deleteFoodLog(meal.id)
-                                                        if (response.isSuccessful && response.body()?.success == true) {
-                                                            // Remove from local list and refresh data
-                                                            recentMeals = recentMeals.filter { it.id != meal.id }
-                                                            mealToDelete = null
-                                                            
-                                                            // Refresh dashboard data
-                                                            refreshData()
-                                                            
-                                                            Toast.makeText(context, "Food deleted successfully", Toast.LENGTH_SHORT).show()
-                                                        } else {
-                                                            Toast.makeText(context, "Failed to delete food", Toast.LENGTH_SHORT).show()
-                                                        }
-                                                    } catch (e: Exception) {
-                                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }
-                                            }
-                                        ) {
-                                            Text("Delete", color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
-                                        }
-                                    },
-                                    dismissButton = {
-                                        TextButton(onClick = { mealToDelete = null }) {
-                                            Text("Cancel")
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Today's Workouts Card
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(2.dp, Color(0xFF673AB7)) // Dark purple border
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Today's Workouts",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF333333), // Black text like meals
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                        
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.align(Alignment.CenterHorizontally),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        } else if (recentWorkouts.isEmpty()) {
-                            Text(
-                                text = "No workouts logged today",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.padding(vertical = 16.dp)
-                            )
-                        } else {
-                            // Display real workout items from API
-                            var workoutToDelete by remember { mutableStateOf<com.example.forkit.data.models.RecentExerciseActivityEntry?>(null) }
-                            
-                            recentWorkouts.forEach { workout ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text(
-                                            text = workout.name,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = "${workout.type} • ${workout.caloriesBurnt} cal${if (workout.duration != null) " • ${workout.duration}min" else ""}",
-                                            fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.onBackground
-                                        )
-                                        Text(
-                                            text = workout.time,
-                                            fontSize = 10.sp,
-                                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                                        )
-                                    }
-                                    
-                                    IconButton(
-                                        onClick = { workoutToDelete = workout }
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete workout",
-                                            tint = Color(0xFFE53935),
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            
-                            // Delete confirmation dialog
-                            workoutToDelete?.let { workout ->
-                                AlertDialog(
-                                    onDismissRequest = { workoutToDelete = null },
-                                    title = { 
-                                        Text(
-                                            "Delete Workout?",
-                                            fontWeight = FontWeight.Bold
-                                        ) 
-                                    },
-                                    text = { 
-                                        Text("Are you sure you want to delete \"${workout.name}\" from your log?") 
-                                    },
-                                    confirmButton = {
-                                        TextButton(
-                                            onClick = {
-                                                scope.launch {
-                                                    try {
-                                                        val response = RetrofitClient.api.deleteExerciseLog(workout.id)
-                                                        if (response.isSuccessful && response.body()?.success == true) {
-                                                            // Remove from local list and refresh data
-                                                            recentWorkouts = recentWorkouts.filter { it.id != workout.id }
-                                                            workoutToDelete = null
-                                                            
-                                                            // Refresh dashboard data
-                                                            refreshData()
-                                                            
-                                                            Toast.makeText(context, "Workout deleted successfully", Toast.LENGTH_SHORT).show()
-                                                        } else {
-                                                            Toast.makeText(context, "Failed to delete workout", Toast.LENGTH_SHORT).show()
-                                                        }
-                                                    } catch (e: Exception) {
-                                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }
-                                            }
-                                        ) {
-                                            Text("Delete", color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
-                                        }
-                                    },
-                                    dismissButton = {
-                                        TextButton(onClick = { workoutToDelete = null }) {
-                                            Text("Cancel")
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                // Today's Water Logs Card
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(2.dp, Color(0xFF1E9ECD)) // ForkIt blue border
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Today's Water Logs",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E9ECD), // ForkIt blue
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                        
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.align(Alignment.CenterHorizontally),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        } else if (recentWaterLogs.isEmpty()) {
-                            Text(
-                                text = "No water logged today",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.padding(vertical = 16.dp)
-                            )
-                        } else {
-                            // Display real water log items from API
-                            var waterLogToDelete by remember { mutableStateOf<com.example.forkit.data.models.RecentWaterActivityEntry?>(null) }
-                            
-                            recentWaterLogs.forEach { waterLog ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text(
-                                            text = "${waterLog.amount}ml",
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = "Water intake",
-                                            fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.onBackground
-                                        )
-                                        Text(
-                                            text = waterLog.time,
-                                            fontSize = 10.sp,
-                                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                                        )
-                                    }
-                                    
-                                    IconButton(
-                                        onClick = { waterLogToDelete = waterLog }
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete water log",
-                                            tint = Color(0xFFE53935),
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            
-                            // Delete confirmation dialog
-                            waterLogToDelete?.let { waterLog ->
-                                AlertDialog(
-                                    onDismissRequest = { waterLogToDelete = null },
-                                    title = { 
-                                        Text(
-                                            "Delete Water Log?",
-                                            fontWeight = FontWeight.Bold
-                                        ) 
-                                    },
-                                    text = { 
-                                        Text("Are you sure you want to delete ${waterLog.amount}ml of water from your log?") 
-                                    },
-                                    confirmButton = {
-                                        TextButton(
-                                            onClick = {
-                                                scope.launch {
-                                                    try {
-                                                        val response = RetrofitClient.api.deleteWaterLog(waterLog.id)
-                                                        if (response.isSuccessful && response.body()?.success == true) {
-                                                            // Remove from local list and refresh data
-                                                            recentWaterLogs = recentWaterLogs.filter { it.id != waterLog.id }
-                                                            waterLogToDelete = null
-                                                            
-                                                            // Refresh dashboard data
-                                                            refreshData()
-                                                            
-                                                            Toast.makeText(context, "Water log deleted successfully", Toast.LENGTH_SHORT).show()
-                                                        } else {
-                                                            Toast.makeText(context, "Failed to delete water log", Toast.LENGTH_SHORT).show()
-                                                        }
-                                                    } catch (e: Exception) {
-                                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }
-                                            }
-                                        ) {
-                                            Text("Delete", color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
-                                        }
-                                    },
-                                    dismissButton = {
-                                        TextButton(onClick = { waterLogToDelete = null }) {
-                                            Text("Cancel")
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                        // Bottom padding to ensure last content is visible above navigation
-                        Spacer(modifier = Modifier.height(80.dp))
                     }
                 }
                 1 -> {
@@ -1533,8 +674,7 @@ fun DashboardScreen(
                         modifier = Modifier
                             .weight(1f)
                     ) {
-                        MealsScreen(userId = userId)
-
+                        com.example.forkit.ui.screens.MealsScreen(userId = userId)
                     }
                 }
                 2 -> {
@@ -1542,12 +682,16 @@ fun DashboardScreen(
                     Spacer(modifier = Modifier.weight(1f))
                 }
                 3 -> {
-                    // Habits Screen - Navigate to HabitsActivity
-                    Spacer(modifier = Modifier.weight(1f))
+                    // Habits Screen
+                    Box(modifier = Modifier.weight(1f)) {
+                        HabitsScreen(userId = userId)
+                    }
                 }
                 4 -> {
-                    // Coach Screen - Navigate to CoachActivity
-                    Spacer(modifier = Modifier.weight(1f))
+                    // Coach Screen
+                    Box(modifier = Modifier.weight(1f)) {
+                        CoachScreen(userId = userId)
+                    }
                 }
             }
             
@@ -1555,19 +699,8 @@ fun DashboardScreen(
             BottomNavigationBar(
                 selectedTab = selectedTab,
                 onTabSelected = { tabIndex ->
-                    if (tabIndex == 3) {
-                        // Navigate to HabitsActivity
-                        val intent = Intent(context, HabitsActivity::class.java)
-                        intent.putExtra("USER_ID", userId)
-                        context.startActivity(intent)
-                    } else if (tabIndex == 4) {
-                        // Navigate to CoachActivity
-                        val intent = Intent(context, CoachActivity::class.java)
-                        intent.putExtra("USER_ID", userId)
-                        context.startActivity(intent)
-                    } else {
-                        selectedTab = tabIndex
-                    }
+                    // All tabs now switch instantly within the same activity
+                    selectedTab = tabIndex
                 },
                 showFloatingIcons = showFloatingIcons,
                 onAddButtonClick = { showFloatingIcons = true }
@@ -1578,28 +711,114 @@ fun DashboardScreen(
         PullRefreshIndicator(
             refreshing = isRefreshing,
             state = pullRefreshState,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 56.dp), // Below the status bar
-            backgroundColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary
+            modifier = Modifier.align(Alignment.TopCenter)
         )
         
-        // Floating Icons Overlay (when add button is clicked)
+        // Add Floating Action Menu
         if (showFloatingIcons) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)) // Semi-transparent overlay
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable { showFloatingIcons = false }
+            )
+            
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 80.dp)
+                    .navigationBarsPadding(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                FloatingIcons(
-                    context = context,
-                    userId = userId,
-                    onDismiss = { showFloatingIcons = false } // Hide the overlay
-                )
+                // Water Button
+                FloatingActionButton(
+                    onClick = {
+                        val intent = Intent(context, AddWaterActivity::class.java)
+                        intent.putExtra("USER_ID", userId)
+                        context.startActivity(intent)
+                        showFloatingIcons = false
+                    },
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = Color.White
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_water),
+                            contentDescription = "Add Water",
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.water),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+                
+                // Meal Button
+                FloatingActionButton(
+                    onClick = {
+                        val intent = Intent(context, AddMealActivity::class.java)
+                        intent.putExtra("USER_ID", userId)
+                        context.startActivity(intent)
+                        showFloatingIcons = false
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_meals),
+                            contentDescription = "Add Meal",
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.meal),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+                
+                // Workout Button
+                FloatingActionButton(
+                    onClick = {
+                        val intent = Intent(context, AddWorkoutActivity::class.java)
+                        intent.putExtra("USER_ID", userId)
+                        context.startActivity(intent)
+                        showFloatingIcons = false
+                    },
+                    containerColor = Color(0xFF673AB7),
+                    contentColor = Color.White
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_workout),
+                            contentDescription = "Add Workout",
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.workout),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
             }
         }
-        
     }
 }
 
@@ -1609,101 +828,65 @@ fun CalorieWheel(
     proteinCalories: Int,
     fatCalories: Int,
     totalCalories: Int,
-    isLoading: Boolean = false
+    isLoading: Boolean
 ) {
-    val carbsProgress = if (totalCalories > 0) carbsCalories.toFloat() / totalCalories else 0f
-    val proteinProgress = if (totalCalories > 0) proteinCalories.toFloat() / totalCalories else 0f
-    val fatProgress = if (totalCalories > 0) fatCalories.toFloat() / totalCalories else 0f
-    
-    val animatedCarbs by animateFloatAsState(
-        targetValue = carbsProgress,
+    val animatedCarbsCalories by animateFloatAsState(
+        targetValue = carbsCalories.toFloat(),
         animationSpec = tween(1000)
     )
-    val animatedProtein by animateFloatAsState(
-        targetValue = proteinProgress,
+    val animatedProteinCalories by animateFloatAsState(
+        targetValue = proteinCalories.toFloat(),
         animationSpec = tween(1000)
     )
-    val animatedFat by animateFloatAsState(
-        targetValue = fatProgress,
+    val animatedFatCalories by animateFloatAsState(
+        targetValue = fatCalories.toFloat(),
         animationSpec = tween(1000)
     )
-    
-    // ForkIt brand colors for macronutrients
-    val outlineColor = MaterialTheme.colorScheme.outline
-    val carbsColor = Color(0xFF1E9ECD) // ForkIt Blue
-    val proteinColor = Color(0xFF22B27D) // ForkIt Green
-    val fatColor = Color(0xFF6B4FA0) // Dark Purple
-    
+
     Box(
-        modifier = Modifier.size(140.dp),
+        modifier = Modifier.size(120.dp),
         contentAlignment = Alignment.Center
     ) {
-        Canvas(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            val strokeWidth = 12.dp.toPx()
-            val radius = (size.minDimension - strokeWidth) / 2
-            
-            // Background circle
-            drawCircle(
-                color = outlineColor,
-                radius = radius,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-            )
-            
-            var currentAngle = -90f
-            
-            // Carbs segment (ForkIt Blue)
-            drawArc(
-                color = carbsColor,
-                startAngle = currentAngle,
-                sweepAngle = 360f * animatedCarbs,
-                useCenter = false,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-            )
-            currentAngle += 360f * animatedCarbs
-            
-            // Protein segment (ForkIt Green)
-            drawArc(
-                color = proteinColor,
-                startAngle = currentAngle,
-                sweepAngle = 360f * animatedProtein,
-                useCenter = false,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-            )
-            currentAngle += 360f * animatedProtein
-            
-            // Fat segment (Dark Purple)
-            drawArc(
-                color = fatColor,
-                startAngle = currentAngle,
-                sweepAngle = 360f * animatedFat,
-                useCenter = false,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-            )
-        }
-        
-        // Center content
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(32.dp),
-                    color = MaterialTheme.colorScheme.primary
+        if (isLoading) {
+            CircularProgressIndicator()
+        } else {
+            Canvas(modifier = Modifier.size(120.dp)) {
+                val strokeWidth = 20.dp.toPx()
+                val radius = (size.minDimension - strokeWidth) / 2
+
+                val carbsAngle = if (totalCalories > 0) (animatedCarbsCalories / totalCalories * 360f) else 0f
+                val proteinAngle = if (totalCalories > 0) (animatedProteinCalories / totalCalories * 360f) else 0f
+                val fatAngle = if (totalCalories > 0) (animatedFatCalories / totalCalories * 360f) else 0f
+
+                var startAngle = -90f
+
+                // Carbs (Yellow)
+                drawArc(
+                    color = Color(0xFFFFA726),
+                    startAngle = startAngle,
+                    sweepAngle = carbsAngle,
+                    useCenter = false,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                 )
-            } else {
-                Text(
-                    text = totalCalories.toString(),
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary // ForkIt Green
+                startAngle += carbsAngle
+
+                // Protein (Red)
+                drawArc(
+                    color = Color(0xFFEF5350),
+                    startAngle = startAngle,
+                    sweepAngle = proteinAngle,
+                    useCenter = false,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                 )
-                Text(
-                    text = "Today's Calories",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    textAlign = TextAlign.Center
+                startAngle += proteinAngle
+
+                // Fat (Blue)
+                drawArc(
+                    color = Color(0xFF42A5F5),
+                    startAngle = startAngle,
+                    sweepAngle = fatAngle,
+                    useCenter = false,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                 )
             }
         }
@@ -1718,66 +901,56 @@ fun MacronutrientBreakdown(
     totalCalories: Int
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-
         // Carbs
-        MacronutrientItem(
-            name = "Carbs",
-            calories = carbsCalories,
-            color = Color(0xFF1E9ECD), // ForkIt Blue
-            percentage = if (totalCalories > 0) (carbsCalories * 100 / totalCalories) else 0
-        )
-        
-        // Protein
-        MacronutrientItem(
-            name = "Protein",
-            calories = proteinCalories,
-            color = Color(0xFF22B27D), // ForkIt Green
-            percentage = if (totalCalories > 0) (proteinCalories * 100 / totalCalories) else 0
-        )
-        
-        // Fat
-        MacronutrientItem(
-            name = "Fat",
-            calories = fatCalories,
-            color = Color(0xFF6B4FA0), // Dark Purple
-            percentage = if (totalCalories > 0) (fatCalories * 100 / totalCalories) else 0
-        )
-    }
-}
-
-@Composable
-fun MacronutrientItem(
-    name: String,
-    calories: Int,
-    color: Color,
-    percentage: Int
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // Color indicator
-        Box(
-            modifier = Modifier
-                .size(12.dp)
-                .background(color, CircleShape)
-        )
-        
-        Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .background(Color(0xFFFFA726), CircleShape)
+            )
             Text(
-                text = name,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
+                text = stringResource(R.string.carbs_calories, carbsCalories),
+                fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            
+        }
+
+        // Protein
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .background(Color(0xFFEF5350), CircleShape)
+            )
             Text(
-                text = "${calories}cal (${percentage}%)",
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onBackground
+                text = stringResource(R.string.protein_calories, proteinCalories),
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        // Fat
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .background(Color(0xFF42A5F5), CircleShape)
+            )
+            Text(
+                text = stringResource(R.string.fat_calories, fatCalories),
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -1790,129 +963,55 @@ fun BottomNavigationBar(
     showFloatingIcons: Boolean,
     onAddButtonClick: () -> Unit
 ) {
-    Card(
+    NavigationBar(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding(),
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF22B27D)) // ForkIt Green background
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.Home, contentDescription = stringResource(R.string.home)) },
+            label = { Text(stringResource(R.string.home)) },
+            selected = selectedTab == 0,
+            onClick = { onTabSelected(0) }
+        )
+        NavigationBarItem(
+            icon = { Icon(painter = painterResource(id = R.drawable.ic_meals), contentDescription = stringResource(R.string.meals)) },
+            label = { Text(stringResource(R.string.meals)) },
+            selected = selectedTab == 1,
+            onClick = { onTabSelected(1) }
+        )
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.weight(1f)
         ) {
-            // Home Tab
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable { onTabSelected(0) }
+            FloatingActionButton(
+                onClick = onAddButtonClick,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = Color.White,
+                modifier = Modifier.size(56.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Home,
-                    contentDescription = "Home",
-                    tint = if (selectedTab == 0) Color.White else Color.White.copy(alpha = 0.7f)
-                )
-                Text(
-                    text = "Home",
-                    fontSize = 12.sp,
-                    color = if (selectedTab == 0) Color.White else Color.White.copy(alpha = 0.7f)
-                )
-            }
-            
-            // Meals Tab
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable { onTabSelected(1) }
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_meals),
-                    contentDescription = "Meals",
-                    modifier = Modifier.size(24.dp),
-                    colorFilter = ColorFilter.tint(
-                        if (selectedTab == 1) Color.White else Color.White.copy(alpha = 0.7f)
-                    )
-                )
-                Text(
-                    text = "Meals",
-                    fontSize = 12.sp,
-                    color = if (selectedTab == 1) Color.White else Color.White.copy(alpha = 0.7f)
-                )
-            }
-            
-            // Add Tab (Special styling)
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable { onAddButtonClick() }
-            ) {
-                Card(
-                    modifier = Modifier.size(48.dp),
-                    shape = CircleShape,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.rotate(
-                                animateFloatAsState(
-                                    targetValue = if (showFloatingIcons) 45f else 0f,
-                                    animationSpec = tween(300)
-                                ).value
-                            )
-                        )
-                    }
-                }
-                Text(
-                    text = "Add",
-                    fontSize = 12.sp,
-                    color = if (showFloatingIcons) Color.White else Color.White.copy(alpha = 0.7f)
-                )
-            }
-            
-            // Habits Tab
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable { onTabSelected(3) }
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_habits),
-                    contentDescription = "Habits",
-                    modifier = Modifier.size(24.dp),
-                    colorFilter = ColorFilter.tint(
-                        if (selectedTab == 3) Color.White else Color.White.copy(alpha = 0.7f)
-                    )
-                )
-                Text(
-                    text = "Habits",
-                    fontSize = 12.sp,
-                    color = if (selectedTab == 3) Color.White else Color.White.copy(alpha = 0.7f)
-                )
-            }
-            
-            // Coach Tab
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable { onTabSelected(4) }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = "Coach",
-                    tint = if (selectedTab == 4) Color.White else Color.White.copy(alpha = 0.7f)
-                )
-                Text(
-                    text = "Coach",
-                    fontSize = 12.sp,
-                    color = if (selectedTab == 4) Color.White else Color.White.copy(alpha = 0.7f)
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add",
+                    modifier = Modifier
+                        .size(28.dp)
+                        .rotate(if (showFloatingIcons) 45f else 0f)
                 )
             }
         }
+        NavigationBarItem(
+            icon = { Icon(painter = painterResource(id = R.drawable.ic_habits), contentDescription = stringResource(R.string.habits)) },
+            label = { Text(stringResource(R.string.habits)) },
+            selected = selectedTab == 3,
+            onClick = { onTabSelected(3) }
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.Info, contentDescription = stringResource(R.string.coach)) },
+            label = { Text(stringResource(R.string.coach)) },
+            selected = selectedTab == 4,
+            onClick = { onTabSelected(4) }
+        )
     }
 }
 
@@ -1922,416 +1021,112 @@ fun FloatingIcons(
     userId: String,
     onDismiss: () -> Unit
 ) {
-    // Smooth fade and scale animation when opened
-    val animatedAlpha by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(400)
-    )
-
-    val animatedScale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(400)
-    )
-
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f))
-            .clickable { onDismiss() } // Tap anywhere to close
+            .padding(bottom = 80.dp)
+            .navigationBarsPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Bottom
     ) {
         Column(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 24.dp, top = 200.dp)
-                .alpha(animatedAlpha),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 🍱 Full Meal Logging
-            FloatingActionItem(
-                icon = R.drawable.ic_meals,
-                label = "Full Meal",
-                color = MaterialTheme.colorScheme.primary,
-                onClick = {
-                    val intent = Intent(context, AddFullMealActivity::class.java)
-                    intent.putExtra("USER_ID", userId)
-                    context.startActivity(intent)
-                    onDismiss()
-                },
-                scale = animatedScale
-            )
-
-            // 🍎 Food (Meal) Logging
-            FloatingActionItem(
-                icon = R.drawable.icon_logo_, // your icon in drawable
-                label = "Food (Meal)",
-                color = MaterialTheme.colorScheme.tertiary,
-                onClick = {
-                    val intent = Intent(context, AddMealActivity::class.java)
-                    intent.putExtra("USER_ID", userId)
-                    context.startActivity(intent)
-                    onDismiss()
-                },
-                scale = animatedScale
-            )
-
-            // 💧 Water Logging
-            FloatingActionItem(
-                icon = R.drawable.ic_water,
-                label = "Water",
-                color = Color(0xFF2196F3), // blue
+            // Water Button
+            FloatingActionButton(
                 onClick = {
                     val intent = Intent(context, AddWaterActivity::class.java)
                     intent.putExtra("USER_ID", userId)
                     context.startActivity(intent)
                     onDismiss()
                 },
-                scale = animatedScale
-            )
-
-            // 🏋️ Exercise Logging
-            FloatingActionItem(
-                icon = R.drawable.ic_workout,
-                label = "Exercise",
-                color = Color(0xFF22B27D), // green accent
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = Color.White
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_water),
+                        contentDescription = stringResource(R.string.add_water),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.water),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+            
+            // Meal Button
+            FloatingActionButton(
+                onClick = {
+                    val intent = Intent(context, AddMealActivity::class.java)
+                    intent.putExtra("USER_ID", userId)
+                    context.startActivity(intent)
+                    onDismiss()
+                },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = Color.White
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_meals),
+                        contentDescription = stringResource(R.string.add_meal),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.meal),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+            
+            // Workout Button
+            FloatingActionButton(
                 onClick = {
                     val intent = Intent(context, AddWorkoutActivity::class.java)
                     intent.putExtra("USER_ID", userId)
                     context.startActivity(intent)
                     onDismiss()
                 },
-                scale = animatedScale
-            )
-        }
-    }
-}
-
-@Composable
-fun FloatingActionItem(
-    icon: Int,
-    label: String,
-    color: Color,
-    onClick: () -> Unit,
-    scale: Float
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(horizontal = 6.dp) // clean layout, no scaling here
-    ) {
-        // Circular icon button (scaled + clickable)
-        Box(
-            modifier = Modifier
-                .graphicsLayer(scaleX = scale, scaleY = scale) // ✅ scale icon only
-                .size(60.dp)
-                .clip(CircleShape)
-                .background(color)
-                .clickable { onClick() }, // ✅ click only applies to the circle
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                painter = painterResource(id = icon),
-                contentDescription = label,
-                tint = Color.White,
-                modifier = Modifier.size(30.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        // Label text below icon
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-
-@Composable
-fun FloatingIcon(
-    icon: Int,
-    label: String,
-    onClick: () -> Unit,
-    scale: Float
-) {
-    Card(
-        modifier = Modifier
-            .clickable { onClick() }
-            .scale(scale)
-            .size(56.dp), // Fixed size like a floating action button
-        shape = CircleShape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary), // Green background like in the image
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(id = icon),
-                contentDescription = label,
-                modifier = Modifier.size(24.dp),
-                colorFilter = ColorFilter.tint(Color.White) // White icon on green background
-            )
-        }
-    }
-}
-
-// 🔧 Global tag for all meals-related logs
-private const val DEBUG_TAG = "MealsDebug"
-
-// ─────────────────────────────────────────────
-// 🥗 MealsScreen Composable
-// Handles listing, loading, and navigation to meal details
-// ─────────────────────────────────────────────
-@Composable
-fun MealsScreen(userId: String) {
-    val TAG = "MealsScreen"
-    val context = LocalContext.current
-
-    // 🔹 UI state variables
-    var meals by remember { mutableStateOf<List<MealLog>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-
-    // 🔹 Log the start of the screen
-    Log.d(DEBUG_TAG, "$TAG: Initializing MealsScreen for userId=$userId")
-
-    // ─────────────────────────────────────────────
-    // Load meals
-    // ─────────────────────────────────────────────
-    LaunchedEffect(userId) {
-        Log.d("MealsScreen", "Fetching real meals from API for userId=$userId")
-        try {
-            val response = RetrofitClient.api.getMealLogs(userId = userId)
-            if (response.isSuccessful && response.body()?.success == true) {
-                val allMeals = response.body()?.data ?: emptyList()
-
-                // 🧹 Remove duplicates by unique name + calories + date combination
-                meals = allMeals.distinctBy { "${it.name}-${it.totalCalories}-${it.date}" }
-
-                Log.d("MealsScreen", "✅ Meals loaded: ${allMeals.size}, unique after filter: ${meals.size}")
-            }
-            else {
-                Log.w("MealsScreen", "⚠️ Failed to fetch meals: ${response.message()}")
-                meals = emptyList()
-            }
-        } catch (e: Exception) {
-            Log.e("MealsScreen", "❌ Error fetching meals", e)
-            meals = emptyList()
-        } finally {
-            isLoading = false
-        }
-    }
-
-
-    // ─────────────────────────────────────────────
-    // UI Composition
-    // ─────────────────────────────────────────────
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp)
-        ) {
-            // 🔹 Header section
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                containerColor = Color(0xFF673AB7),
+                contentColor = Color.White
             ) {
-                Text(
-                    text = "Your Meals.",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    style = TextStyle(
-                        brush = Brush.horizontalGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.secondary
-                            )
-                        )
-                    )
-                )
-                Spacer(modifier = Modifier.weight(1f))
-
-                IconButton(onClick = {
-                    Log.d(DEBUG_TAG, "$TAG: Refresh button clicked.")
-                    Toast.makeText(context, "Refreshing meals...", Toast.LENGTH_SHORT).show()
-                }) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Refresh",
-                        tint = MaterialTheme.colorScheme.primary
+                        painter = painterResource(id = R.drawable.ic_workout),
+                        contentDescription = stringResource(R.string.add_workout),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.workout),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
                     )
                 }
             }
-
-            // 🔹 Conditional UI states
-            when {
-                isLoading -> {
-                    Log.d(DEBUG_TAG, "$TAG: Showing loading indicator...")
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-
-                errorMessage != null -> {
-                    Log.w(DEBUG_TAG, "$TAG: Displaying error message: $errorMessage")
-                    Text(
-                        text = "Error loading meals: $errorMessage",
-                        color = Color.Red,
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-                }
-
-                meals.isEmpty() -> {
-                    Log.d(DEBUG_TAG, "$TAG: No meals found for user.")
-                    Text(
-                        text = "No meals logged yet.",
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 24.dp)
-                    )
-                }
-
-                else -> {
-                    Log.d(DEBUG_TAG, "$TAG: Rendering meals list...")
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        items(meals) { meal ->
-                            MealCard(meal = meal) {
-                                Log.i(DEBUG_TAG, "$TAG: Clicked meal -> ${meal.name}")
-
-                                // Convert Ingredient objects to names
-                                val ingredientNames = ArrayList(meal.ingredients.map { it.name })
-
-                                val intent = Intent(context, MealDetailActivity::class.java).apply {
-                                    putExtra("MEAL_NAME", meal.name)
-                                    putExtra("MEAL_DESCRIPTION", meal.description ?: "No description available")
-                                    putStringArrayListExtra("INGREDIENTS", ingredientNames)
-                                    putExtra("CALORIES", meal.totalCalories)
-                                    putExtra("USER_ID", userId)
-                                }
-
-
-                                context.startActivity(intent)
-                            }
-
-                        }
-                        item { Spacer(modifier = Modifier.height(80.dp)) }
-                    }
-                }
-            }
-        }
-
-        // 🔹 Floating Add Meal Button
-        FloatingActionButton(
-            onClick = {
-                Log.d(DEBUG_TAG, "$TAG: Add Meal button clicked. Opening AddFullMealActivity.")
-                val intent = Intent(context, AddFullMealActivity::class.java).apply {
-                    putExtra("USER_ID", userId)
-                }
-                context.startActivity(intent)
-            },
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = Color.White,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(24.dp)
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Add Meal")
         }
     }
 }
 
-// ─────────────────────────────────────────────
-// 🍱 Data Model for Meal
-// ─────────────────────────────────────────────
-data class Meal(
-    val name: String,
-    val ingredients: List<String>,
-    val calories: Double
-)
-
-// ─────────────────────────────────────────────
-// 🍽️ MealCard Composable
-// Displays each meal item in a card layout
-// ─────────────────────────────────────────────
+@Preview(showBackground = true)
 @Composable
-fun MealCard(meal: MealLog, onClick: () -> Unit) {
-    val TAG = "MealCard"
-    Log.v(DEBUG_TAG, "$TAG: Rendering card for ${meal.name}")
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                Log.d(DEBUG_TAG, "$TAG: Card clicked for ${meal.name}")
-                onClick()
-            },
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-
-                // 🟢 Meal name
-                Text(
-                    text = meal.name,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                // 🟢 Safely render ingredient preview
-                val ingredientNames = meal.ingredients.map { it.name }
-                val ingredientText = ingredientNames.joinToString(", ")
-                val abbreviatedText = if (ingredientText.length > 40)
-                    ingredientText.take(40) + "…"
-                else
-                    ingredientText
-
-                Text(
-                    text = "${meal.ingredients.size} ingredients: $abbreviatedText",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            // 🟢 Calories display (from totalCalories field)
-            Text(
-                text = "${meal.totalCalories.toInt()} kcal",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
+fun DashboardScreenPreview() {
+    ForkItTheme {
+        DashboardScreen()
     }
 }
-
-
-    @Preview(showBackground = true)
-    @Composable
-    fun DashboardScreenPreview() {
-        ForkItTheme {
-            DashboardScreen()
-        }
-    }
-

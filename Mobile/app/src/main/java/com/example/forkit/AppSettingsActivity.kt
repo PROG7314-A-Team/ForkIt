@@ -30,17 +30,27 @@ import androidx.compose.material3.SwitchDefaults
 import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.ThemeManager
 import com.example.forkit.ThemeMode
+import com.example.forkit.LanguageManager
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.res.stringResource
+import android.content.Intent
 
 class AppSettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
+        // Initialize LanguageManager
+        LanguageManager.initialize(this)
+        
         setContent {
             ForkItTheme {
                 AppSettingsScreen(
-                    onBackPressed = { finish() }
+                    onBackPressed = { finish() },
+                    onLanguageChanged = {
+                        // Recreate activity to apply new language
+                        recreate()
+                    }
                 )
             }
         }
@@ -50,22 +60,23 @@ class AppSettingsActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppSettingsScreen(
-    onBackPressed: () -> Unit
+    onBackPressed: () -> Unit,
+    onLanguageChanged: () -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     
     // Use ThemeManager for theme mode state
     val currentThemeMode = ThemeManager.themeMode
     
-    // Language state
-    var selectedLanguage by remember { mutableStateOf("English") }
+    // Language state from LanguageManager
+    val currentLanguage = LanguageManager.currentLanguage
     
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "App Settings",
+                        text = stringResource(R.string.app_settings),
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -74,7 +85,7 @@ fun AppSettingsScreen(
                     IconButton(onClick = onBackPressed) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.back),
                             tint = Color.White
                         )
                     }
@@ -95,14 +106,14 @@ fun AppSettingsScreen(
         ) {
             // Header
             Text(
-                text = "App Settings",
+                text = stringResource(R.string.app_settings),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.secondary
             )
             
             Text(
-                text = "Customize your app experience",
+                text = stringResource(R.string.customize_app_settings),
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -125,7 +136,7 @@ fun AppSettingsScreen(
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_appearance),
-                            contentDescription = "Appearance",
+                            contentDescription = stringResource(R.string.app_settings),
                             modifier = Modifier.size(24.dp),
                             colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.secondary)
                         )
@@ -136,13 +147,13 @@ fun AppSettingsScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(
-                                text = "Appearance",
+                                text = stringResource(R.string.app_settings),
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Choose your preferred theme",
+                                text = stringResource(R.string.customize_app_settings),
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
@@ -158,7 +169,7 @@ fun AppSettingsScreen(
                     ) {
                         // System Default Button
                         ThemeOptionButton(
-                            text = "System",
+                            text = stringResource(R.string.app_settings),
                             isSelected = currentThemeMode == ThemeMode.SYSTEM,
                             onClick = { ThemeManager.saveThemeMode(context, ThemeMode.SYSTEM) },
                             modifier = Modifier.weight(1f)
@@ -166,7 +177,7 @@ fun AppSettingsScreen(
                         
                         // Light Button
                         ThemeOptionButton(
-                            text = "Light",
+                            text = "Light", // Keep as "Light" - universal
                             isSelected = currentThemeMode == ThemeMode.LIGHT,
                             onClick = { ThemeManager.saveThemeMode(context, ThemeMode.LIGHT) },
                             modifier = Modifier.weight(1f)
@@ -174,7 +185,7 @@ fun AppSettingsScreen(
                         
                         // Dark Button
                         ThemeOptionButton(
-                            text = "Dark",
+                            text = "Dark", // Keep as "Dark" - universal
                             isSelected = currentThemeMode == ThemeMode.DARK,
                             onClick = { ThemeManager.saveThemeMode(context, ThemeMode.DARK) },
                             modifier = Modifier.weight(1f)
@@ -185,9 +196,9 @@ fun AppSettingsScreen(
                     
                     Text(
                         text = when (currentThemeMode) {
-                            ThemeMode.SYSTEM -> "Following device settings"
-                            ThemeMode.LIGHT -> "Always light mode"
-                            ThemeMode.DARK -> "Always dark mode"
+                            ThemeMode.SYSTEM -> "System"
+                            ThemeMode.LIGHT -> "Light"
+                            ThemeMode.DARK -> "Dark"
                         },
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
@@ -236,21 +247,53 @@ fun AppSettingsScreen(
                         }
                         
                         Text(
-                            text = selectedLanguage,
+                            text = currentLanguage.displayName,
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.secondary,
                             fontWeight = FontWeight.Medium
                         )
                     }
                     
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     
-                    Text(
-                        text = "Language options coming soon",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontStyle = FontStyle.Italic
-                    )
+                    // Language Options - Grid Layout
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // English Button
+                        ThemeOptionButton(
+                            text = "English",
+                            isSelected = currentLanguage == LanguageManager.Language.ENGLISH,
+                            onClick = {
+                                LanguageManager.saveLanguage(context, LanguageManager.Language.ENGLISH)
+                                onLanguageChanged()
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        
+                        // Afrikaans Button
+                        ThemeOptionButton(
+                            text = "Afrikaans",
+                            isSelected = currentLanguage == LanguageManager.Language.AFRIKAANS,
+                            onClick = {
+                                LanguageManager.saveLanguage(context, LanguageManager.Language.AFRIKAANS)
+                                onLanguageChanged()
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        
+                        // Zulu Button
+                        ThemeOptionButton(
+                            text = "isiZulu",
+                            isSelected = currentLanguage == LanguageManager.Language.ZULU,
+                            onClick = {
+                                LanguageManager.saveLanguage(context, LanguageManager.Language.ZULU)
+                                onLanguageChanged()
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }

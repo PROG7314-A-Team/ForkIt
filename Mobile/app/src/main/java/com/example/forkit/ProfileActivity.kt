@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.utils.AuthPreferences
+import androidx.compose.ui.res.stringResource
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,8 +56,13 @@ class ProfileActivity : ComponentActivity() {
     }
 }
 
+enum class ProfileOptionType {
+    ACCOUNT, GOALS, NOTIFICATIONS, APP_SETTINGS, ABOUT, DEVELOPER_TOOLS
+}
+
 data class ProfileOption(
     val icon: ImageVector,
+    val type: ProfileOptionType,
     val title: String,
     val description: String
 )
@@ -75,33 +81,39 @@ fun ProfileScreen(userId: String = "") {
     val profileOptions = listOf(
         ProfileOption(
             icon = Icons.Default.Person,
-            title = "Account",
-            description = "Manage your account settings"
+            type = ProfileOptionType.ACCOUNT,
+            title = stringResource(R.string.account),
+            description = stringResource(R.string.manage_account_settings)
         ),
         ProfileOption(
             icon = Icons.Default.Star,
-            title = "Goals",
-            description = "Set your daily health and fitness goals"
+            type = ProfileOptionType.GOALS,
+            title = stringResource(R.string.goals),
+            description = stringResource(R.string.set_daily_health_goals)
         ),
         ProfileOption(
             icon = Icons.Default.Notifications,
-            title = "Notifications",
-            description = "Configure notification preferences"
+            type = ProfileOptionType.NOTIFICATIONS,
+            title = stringResource(R.string.notifications),
+            description = stringResource(R.string.configure_notifications)
         ),
         ProfileOption(
             icon = Icons.Default.Settings,
-            title = "App Settings",
-            description = "Customize app settings"
+            type = ProfileOptionType.APP_SETTINGS,
+            title = stringResource(R.string.app_settings),
+            description = stringResource(R.string.customize_app_settings)
         ),
         ProfileOption(
             icon = Icons.Default.Info,
-            title = "About",
-            description = "App information and version"
+            type = ProfileOptionType.ABOUT,
+            title = stringResource(R.string.about),
+            description = stringResource(R.string.app_info_version)
         ),
         ProfileOption(
             icon = Icons.Default.Build,
-            title = "Developer Tools",
-            description = "Access development and testing features"
+            type = ProfileOptionType.DEVELOPER_TOOLS,
+            title = stringResource(R.string.developer_tools),
+            description = stringResource(R.string.access_dev_features)
         )
     )
 
@@ -134,7 +146,7 @@ fun ProfileScreen(userId: String = "") {
             Spacer(modifier = Modifier.width(16.dp))
             
             Text(
-                text = "Profile",
+                text = stringResource(R.string.profile),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary // ForkIt Green
@@ -152,31 +164,31 @@ fun ProfileScreen(userId: String = "") {
                 ProfileOptionCard(
                     option = option,
                     onClick = { 
-                        when (option.title) {
-                            "Account" -> {
+                        when (option.type) {
+                            ProfileOptionType.ACCOUNT -> {
                                 val intent = Intent(context, AccountActivity::class.java)
                                 intent.putExtra("USER_ID", userId)
                                 context.startActivity(intent)
                             }
-                            "Goals" -> {
+                            ProfileOptionType.GOALS -> {
                                 val intent = Intent(context, GoalsActivity::class.java)
                                 intent.putExtra("USER_ID", userId)
                                 context.startActivity(intent)
                             }
-                            "Notifications" -> {
+                            ProfileOptionType.NOTIFICATIONS -> {
                                 val intent = Intent(context, NotificationsActivity::class.java)
                                 intent.putExtra("USER_ID", userId)
                                 context.startActivity(intent)
                             }
-                            "App Settings" -> {
+                            ProfileOptionType.APP_SETTINGS -> {
                                 val intent = Intent(context, AppSettingsActivity::class.java)
                                 context.startActivity(intent)
                             }
-                            "About" -> {
+                            ProfileOptionType.ABOUT -> {
                                 val intent = Intent(context, AboutActivity::class.java)
                                 context.startActivity(intent)
                             }
-                            "Developer Tools" -> {
+                            ProfileOptionType.DEVELOPER_TOOLS -> {
                                 val intent = Intent(context, DevelopmentActivity::class.java)
                                 context.startActivity(intent)
                             }
@@ -239,7 +251,7 @@ fun ProfileScreen(userId: String = "") {
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Logout",
+                                text = stringResource(R.string.logout),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
