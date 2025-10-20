@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.BackHandler
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -42,15 +43,34 @@ import com.example.forkit.utils.AuthPreferences
 import androidx.compose.ui.res.stringResource
 
 class ProfileActivity : ComponentActivity() {
+    
+    private val appSettingsLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        // If language was changed in AppSettingsActivity, recreate this activity
+        if (result.resultCode == AppSettingsActivity.RESULT_LANGUAGE_CHANGED) {
+            recreate()
+        }
+    }
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Apply saved language
+        LanguageManager.applyLanguage(this)
         
         val userId = intent.getStringExtra("USER_ID") ?: ""
         
         setContent {
             ForkItTheme {
-                ProfileScreen(userId = userId)
+                ProfileScreen(
+                    userId = userId,
+                    onNavigateToAppSettings = {
+                        val intent = Intent(this, AppSettingsActivity::class.java)
+                        appSettingsLauncher.launch(intent)
+                    }
+                )
             }
         }
     }
@@ -68,7 +88,10 @@ data class ProfileOption(
 )
 
 @Composable
-fun ProfileScreen(userId: String = "") {
+fun ProfileScreen(
+    userId: String = "",
+    onNavigateToAppSettings: () -> Unit = {}
+) {
     val context = LocalContext.current
     
     // Handle back button press
@@ -181,8 +204,7 @@ fun ProfileScreen(userId: String = "") {
                                 context.startActivity(intent)
                             }
                             ProfileOptionType.APP_SETTINGS -> {
-                                val intent = Intent(context, AppSettingsActivity::class.java)
-                                context.startActivity(intent)
+                                onNavigateToAppSettings()
                             }
                             ProfileOptionType.ABOUT -> {
                                 val intent = Intent(context, AboutActivity::class.java)

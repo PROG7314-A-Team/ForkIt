@@ -36,6 +36,10 @@ import androidx.compose.ui.res.stringResource
 import android.content.Intent
 
 class AppSettingsActivity : ComponentActivity() {
+    companion object {
+        const val RESULT_LANGUAGE_CHANGED = 100
+    }
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -48,6 +52,8 @@ class AppSettingsActivity : ComponentActivity() {
                 AppSettingsScreen(
                     onBackPressed = { finish() },
                     onLanguageChanged = {
+                        // Set result to notify caller that language changed
+                        setResult(RESULT_LANGUAGE_CHANGED)
                         // Recreate activity to apply new language
                         recreate()
                     }

@@ -49,6 +49,9 @@ class NotificationsActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
+        // Apply saved language
+        LanguageManager.applyLanguage(this)
+        
         val userId = intent.getStringExtra("USER_ID") ?: ""
         
         // Request notification permission for Android 13+
@@ -69,6 +72,18 @@ class NotificationsActivity : ComponentActivity() {
                     onBackPressed = { finish() }
                 )
             }
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Check if language changed while in another activity
+        val savedLanguageCode = LanguageManager.getCurrentLanguageCode(this)
+        val currentLocale = resources.configuration.locales[0].language
+        
+        // If language changed, recreate the activity to apply new language
+        if (savedLanguageCode != currentLocale) {
+            recreate()
         }
     }
 }
