@@ -45,7 +45,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -1497,7 +1497,7 @@ fun AdjustServingScreen(
                     Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
                         measuringUnits.forEach { unit ->
                             if (unit == "─────") {
-                                Divider(Modifier.padding(vertical = 8.dp), color = colorScheme.outline.copy(alpha = 0.3f))
+                                HorizontalDivider(Modifier.padding(vertical = 8.dp), color = colorScheme.outline.copy(alpha = 0.3f))
                             } else {
                                 Box(
                                     modifier = Modifier

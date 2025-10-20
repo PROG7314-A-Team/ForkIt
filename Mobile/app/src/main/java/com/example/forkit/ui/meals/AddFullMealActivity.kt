@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -42,15 +42,10 @@ import java.util.Date
 import java.util.Locale
 import com.example.forkit.data.models.CreateMealLogRequest
 import com.example.forkit.data.models.Ingredient
-
-
-
-import androidx.activity.compose.setContent
-import com.example.forkit.ui.theme.ForkItTheme
 import kotlinx.coroutines.launch
 
 private const val DEBUG_TAG = "MealsDebug"
-private const val TAG= "MealsDebug"
+private const val TAG = "MealsDebug"
 // ✅ Shared list reference so launcher can access composable state
 private var ingredientsListState: MutableList<MealIngredient>? = null
 
@@ -174,7 +169,7 @@ class AddFullMealActivity : ComponentActivity() {
                         onBackPressed()
                     }) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = Color.Black
                         )

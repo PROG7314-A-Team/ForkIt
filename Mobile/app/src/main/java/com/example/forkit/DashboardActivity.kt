@@ -860,9 +860,9 @@ fun CalorieWheel(
 
                 var startAngle = -90f
 
-                // Carbs (Yellow)
+                // Carbs (Green - ForkIt Brand)
                 drawArc(
-                    color = Color(0xFFFFA726),
+                    color = Color(0xFF22B27D),
                     startAngle = startAngle,
                     sweepAngle = carbsAngle,
                     useCenter = false,
@@ -870,9 +870,9 @@ fun CalorieWheel(
                 )
                 startAngle += carbsAngle
 
-                // Protein (Red)
+                // Protein (Purple)
                 drawArc(
-                    color = Color(0xFFEF5350),
+                    color = Color(0xFF8B5CF6),
                     startAngle = startAngle,
                     sweepAngle = proteinAngle,
                     useCenter = false,
@@ -880,9 +880,9 @@ fun CalorieWheel(
                 )
                 startAngle += proteinAngle
 
-                // Fat (Blue)
+                // Fat (Blue - ForkIt Brand)
                 drawArc(
-                    color = Color(0xFF42A5F5),
+                    color = Color(0xFF1E9ECD),
                     startAngle = startAngle,
                     sweepAngle = fatAngle,
                     useCenter = false,
@@ -911,7 +911,7 @@ fun MacronutrientBreakdown(
             Box(
                 modifier = Modifier
                     .size(12.dp)
-                    .background(Color(0xFFFFA726), CircleShape)
+                    .background(Color(0xFF22B27D), CircleShape) // ForkIt Green
             )
             Text(
                 text = stringResource(R.string.carbs_calories, carbsCalories),
@@ -928,7 +928,7 @@ fun MacronutrientBreakdown(
             Box(
                 modifier = Modifier
                     .size(12.dp)
-                    .background(Color(0xFFEF5350), CircleShape)
+                    .background(Color(0xFF8B5CF6), CircleShape) // Purple
             )
             Text(
                 text = stringResource(R.string.protein_calories, proteinCalories),
@@ -945,7 +945,7 @@ fun MacronutrientBreakdown(
             Box(
                 modifier = Modifier
                     .size(12.dp)
-                    .background(Color(0xFF42A5F5), CircleShape)
+                    .background(Color(0xFF1E9ECD), CircleShape) // ForkIt Blue
             )
             Text(
                 text = stringResource(R.string.fat_calories, fatCalories),

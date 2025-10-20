@@ -382,6 +382,7 @@ private suspend fun signInWithGoogle(context: Context) {
             GoogleIdTokenCredential.createFrom(result.credential.data)
         val idToken = googleIdTokenCredential.idToken
 
+        @Suppress("SENSELESS_COMPARISON")
         if (idToken == null) {
             Toast.makeText(context, "Google sign-in failed: No ID token", Toast.LENGTH_SHORT).show()
             Log.e("Auth", "Google sign-in failed: No ID token")

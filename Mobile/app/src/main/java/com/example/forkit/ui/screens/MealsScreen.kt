@@ -36,18 +36,22 @@ private const val DEBUG_TAG = "MealsDebug"
 fun MealsScreen(userId: String) {
     val TAG = "MealsScreen"
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     // UI state variables
     var meals by remember { mutableStateOf<List<MealLog>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var refreshTrigger by remember { mutableStateOf(0) }
 
     // Log the start of the screen
     Log.d(DEBUG_TAG, "$TAG: Initializing MealsScreen for userId=$userId")
 
-    // Load meals
-    LaunchedEffect(userId) {
+    // Function to fetch meals
+    val fetchMeals: suspend () -> Unit = {
         Log.d("MealsScreen", "Fetching real meals from API for userId=$userId")
+        isLoading = true
+        errorMessage = null
         try {
             val response = RetrofitClient.api.getMealLogs(userId = userId)
             if (response.isSuccessful && response.body()?.success == true) {
@@ -60,14 +64,21 @@ fun MealsScreen(userId: String) {
             }
             else {
                 Log.w("MealsScreen", "⚠️ Failed to fetch meals: ${response.message()}")
+                errorMessage = response.message()
                 meals = emptyList()
             }
         } catch (e: Exception) {
             Log.e("MealsScreen", "❌ Error fetching meals", e)
+            errorMessage = e.message
             meals = emptyList()
         } finally {
             isLoading = false
         }
+    }
+
+    // Load meals on initial load or when refresh is triggered
+    LaunchedEffect(userId, refreshTrigger) {
+        fetchMeals()
     }
 
 
@@ -108,6 +119,7 @@ fun MealsScreen(userId: String) {
                 IconButton(onClick = {
                     Log.d(DEBUG_TAG, "$TAG: Refresh button clicked.")
                     Toast.makeText(context, context.getString(R.string.refreshing_meals), Toast.LENGTH_SHORT).show()
+                    refreshTrigger++ // Trigger refresh
                 }) {
                     Icon(
                         imageVector = Icons.Default.Refresh,

@@ -516,6 +516,7 @@ private suspend fun loadUserData(
             if (responseBody?.data != null) {
                 try {
                     // Parse the user data from the response
+                    @Suppress("UNCHECKED_CAST")
                     val userDataList = responseBody.data as? List<Map<String, Any>>
                     android.util.Log.d("AccountActivity", "User data list: $userDataList")
                     
