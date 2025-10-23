@@ -35,6 +35,9 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.res.stringResource
+import com.example.forkit.data.repository.ExerciseLogRepository
+import com.example.forkit.data.local.AppDatabase
+import com.example.forkit.utils.NetworkConnectivityManager
 
 class AddWorkoutActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,6 +70,18 @@ fun AddWorkoutScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    
+    // Initialize repository for offline support
+    val database = remember { AppDatabase.getInstance(context) }
+    val networkManager = remember { NetworkConnectivityManager(context) }
+    val repository = remember {
+        ExerciseLogRepository(
+            apiService = RetrofitClient.api,
+            exerciseLogDao = database.exerciseLogDao(),
+            networkManager = networkManager
+        )
+    }
+    val isOnline = remember { networkManager.isOnline() }
     
     var name by remember { mutableStateOf("") }
     var caloriesBurned by remember { mutableStateOf("") }
@@ -309,33 +324,40 @@ fun AddWorkoutScreen(
                         errorMessage = ""
                         isLoading = true
                         
-                        // Make API call
+                        // Use repository for offline-first logging
                         scope.launch {
                             try {
                                 android.util.Log.d("AddWorkoutActivity", "Adding exercise: $name - $caloriesValue kcal ($selectedType) for user $userId on ${apiDateFormatter.format(selectedDate)}")
                                 
-                                val response = RetrofitClient.api.createExerciseLog(
-                                    CreateExerciseLogRequest(
-                                        userId = userId,
-                                        name = name,
-                                        date = apiDateFormatter.format(selectedDate),
-                                        caloriesBurnt = caloriesValue,
-                                        type = selectedType,
-                                        duration = duration.toDoubleOrNull()
-                                    )
+                                val result = repository.createExerciseLog(
+                                    userId = userId,
+                                    name = name,
+                                    date = apiDateFormatter.format(selectedDate),
+                                    caloriesBurnt = caloriesValue,
+                                    type = selectedType,
+                                    duration = duration.toDoubleOrNull(),
+                                    notes = ""
                                 )
                                 
-                                if (response.isSuccessful) {
-                                    android.util.Log.d("AddWorkoutActivity", "Exercise logged successfully")
+                                result.onSuccess { id ->
+                                    android.util.Log.d("AddWorkoutActivity", "Exercise logged successfully: $id")
+                                    if (!isOnline) {
+                                        Toast.makeText(
+                                            context,
+                                            "📱 Saved offline - will sync when connected!",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    } else {
+                                        Toast.makeText(context, "✅ Exercise logged successfully!", Toast.LENGTH_SHORT).show()
+                                    }
                                     onSuccess()
-                                } else {
-                                    val errorBody = response.errorBody()?.string()
-                                    android.util.Log.e("AddWorkoutActivity", "Failed to log exercise: $errorBody")
-                                    errorMessage = "Failed to log exercise: ${response.code()}"
+                                }.onFailure { e ->
+                                    android.util.Log.e("AddWorkoutActivity", "Failed to log exercise: ${e.message}", e)
+                                    errorMessage = "❌ Couldn't save exercise. Please try again."
                                 }
                             } catch (e: Exception) {
                                 android.util.Log.e("AddWorkoutActivity", "Error logging exercise: ${e.message}", e)
-                                errorMessage = "Error: ${e.localizedMessage}"
+                                errorMessage = "❌ Something went wrong. Please try again."
                             } finally {
                                 isLoading = false
                             }

@@ -43,6 +43,10 @@ import java.util.Locale
 import com.example.forkit.data.models.CreateMealLogRequest
 import com.example.forkit.data.models.Ingredient
 import kotlinx.coroutines.launch
+import com.example.forkit.data.repository.MealLogRepository
+import com.example.forkit.data.local.AppDatabase
+import com.example.forkit.utils.NetworkConnectivityManager
+import com.example.forkit.data.local.entities.MealIngredient as LocalMealIngredient
 
 private const val DEBUG_TAG = "MealsDebug"
 private const val TAG = "MealsDebug"
@@ -136,6 +140,18 @@ class AddFullMealActivity : ComponentActivity() {
     val ingredients = remember { mutableStateListOf<MealIngredient>() }
     ingredientsListState = ingredients
     val scope = rememberCoroutineScope()
+    
+    // Initialize repository for offline support
+    val database = remember { AppDatabase.getInstance(context) }
+    val networkManager = remember { NetworkConnectivityManager(context) }
+    val repository = remember {
+        MealLogRepository(
+            apiService = RetrofitClient.api,
+            mealLogDao = database.mealLogDao(),
+            networkManager = networkManager
+        )
+    }
+    val isOnline = remember { networkManager.isOnline() }
 
 
 
@@ -467,25 +483,53 @@ class AddFullMealActivity : ComponentActivity() {
                                 if (logToToday) {
                                     scope.launch {
                                         try {
-                                            Log.d(DEBUG_TAG, "MealsDebug: 📡 Sending CreateMealLogRequest to API...")
-                                            val response = RetrofitClient.api.createMealLog(request)
-
-                                            if (response.isSuccessful && response.body()?.success == true) {
-                                                Log.d(DEBUG_TAG, "MealsDebug: ✅ Meal created successfully on server.")
-                                                Toast.makeText(context, "Meal logged successfully!", Toast.LENGTH_SHORT).show()
+                                            Log.d(DEBUG_TAG, "MealsDebug: 📡 Creating meal via repository (offline-first)...")
+                                            
+                                            val result = repository.createMealLog(
+                                                userId = userId,
+                                                name = mealName.ifBlank { "Untitled Meal" },
+                                                description = mealDescription.ifBlank { "" },
+                                                ingredients = ingredients.map {
+                                                    LocalMealIngredient(
+                                                        foodName = it.foodName,
+                                                        quantity = it.servingSize,
+                                                        unit = it.measuringUnit,
+                                                        calories = it.calories,
+                                                        carbs = it.carbs,
+                                                        fat = it.fat,
+                                                        protein = it.protein
+                                                    )
+                                                },
+                                                instructions = listOf("No instructions provided"),
+                                                totalCalories = ingredients.sumOf { it.calories },
+                                                totalCarbs = ingredients.sumOf { it.carbs },
+                                                totalFat = ingredients.sumOf { it.fat },
+                                                totalProtein = ingredients.sumOf { it.protein },
+                                                servings = 1.0,
+                                                date = today,
+                                                mealType = null
+                                            )
+                                            
+                                            result.onSuccess { id ->
+                                                Log.d(DEBUG_TAG, "MealsDebug: ✅ Meal created successfully: $id")
+                                                if (!isOnline) {
+                                                    Toast.makeText(context, "📱 Saved offline - will sync when connected!", Toast.LENGTH_LONG).show()
+                                                } else {
+                                                    Toast.makeText(context, "✅ Meal logged successfully!", Toast.LENGTH_SHORT).show()
+                                                }
                                                 onBackPressed() // Go back to main screen
-                                            } else {
-                                                Log.e(DEBUG_TAG, "MealsDebug: ❌ Failed to log meal. Code=${response.code()} | Body=${response.errorBody()?.string()}")
-                                                Toast.makeText(context, "Failed to save meal!", Toast.LENGTH_SHORT).show()
+                                            }.onFailure { e ->
+                                                Log.e(DEBUG_TAG, "MealsDebug: ❌ Failed to log meal: ${e.message}", e)
+                                                Toast.makeText(context, "❌ Couldn't save meal. Please try again.", Toast.LENGTH_SHORT).show()
                                             }
                                         } catch (e: Exception) {
                                             Log.e(DEBUG_TAG, "MealsDebug: 🚨 Error logging meal: ${e.message}", e)
-                                            Toast.makeText(context, "Error saving meal!", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "❌ Something went wrong. Please try again.", Toast.LENGTH_SHORT).show()
                                         }
                                     }
 
                                 } else {
-                                    Log.d(DEBUG_TAG, "$TAG: 💾 Skipping daily log — saved meal locally only.")
+                                    Log.d(DEBUG_TAG, "$TAG: 💾 Skipping daily log — user unchecked 'Log to Today'.")
                                 }
 
                                 Toast.makeText(context, "Meal added successfully!", Toast.LENGTH_SHORT).show()

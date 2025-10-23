@@ -35,6 +35,9 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.res.stringResource
+import com.example.forkit.data.repository.WaterLogRepository
+import com.example.forkit.data.local.AppDatabase
+import com.example.forkit.utils.NetworkConnectivityManager
 
 class AddWaterActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,6 +70,18 @@ fun AddWaterScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    
+    // Initialize repository
+    val database = remember { AppDatabase.getInstance(context) }
+    val networkManager = remember { NetworkConnectivityManager(context) }
+    val repository = remember {
+        WaterLogRepository(
+            apiService = RetrofitClient.api,
+            waterLogDao = database.waterLogDao(),
+            networkManager = networkManager
+        )
+    }
+    val isOnline = remember { networkManager.isOnline() }
     
     var amount by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -258,30 +273,36 @@ fun AddWaterScreen(
                         errorMessage = ""
                         isLoading = true
                         
-                        // Make API call
+                        // Use repository for offline-first logging
                         scope.launch {
                             try {
                                 android.util.Log.d("AddWaterActivity", "Adding water: $amountValue ml for user $userId on ${apiDateFormatter.format(selectedDate)}")
                                 
-                                val response = RetrofitClient.api.createWaterLog(
-                                    CreateWaterLogRequest(
-                                        userId = userId,
-                                        amount = amountValue,
-                                        date = apiDateFormatter.format(selectedDate)
-                                    )
+                                val result = repository.createWaterLog(
+                                    userId = userId,
+                                    amount = amountValue,
+                                    date = apiDateFormatter.format(selectedDate)
                                 )
                                 
-                                if (response.isSuccessful) {
-                                    android.util.Log.d("AddWaterActivity", "Water logged successfully")
+                                result.onSuccess { id ->
+                                    android.util.Log.d("AddWaterActivity", "Water logged successfully: $id")
+                        if (!isOnline) {
+                            Toast.makeText(
+                                context,
+                                "📱 Saved offline - will sync when connected!",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        } else {
+                            Toast.makeText(context, "✅ Water logged successfully!", Toast.LENGTH_SHORT).show()
+                        }
                                     onSuccess()
-                                } else {
-                                    val errorBody = response.errorBody()?.string()
-                                    android.util.Log.e("AddWaterActivity", "Failed to log water: $errorBody")
-                                    errorMessage = "Failed to log water: ${response.code()}"
+                                }.onFailure { e ->
+                                    android.util.Log.e("AddWaterActivity", "Failed to log water: ${e.message}", e)
+                                    errorMessage = "❌ Couldn't save water. Please try again."
                                 }
                             } catch (e: Exception) {
                                 android.util.Log.e("AddWaterActivity", "Error logging water: ${e.message}", e)
-                                errorMessage = "Error: ${e.localizedMessage}"
+                                errorMessage = "❌ Something went wrong. Please try again."
                             } finally {
                                 isLoading = false
                             }

@@ -46,6 +46,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.forkit.data.repository.FoodLogRepository
+import com.example.forkit.data.local.AppDatabase
+import com.example.forkit.utils.NetworkConnectivityManager
 
 class AddMealActivity : ComponentActivity() {
     companion object {
@@ -162,6 +165,19 @@ fun AddMealScreen(
 
     // Store unit category to filter available units
     var unitCategory by remember { mutableStateOf("all") } // "weight", "volume", or "all"
+
+    // Initialize repository for offline support
+    val context = LocalContext.current
+    val database = remember { AppDatabase.getInstance(context) }
+    val networkManager = remember { NetworkConnectivityManager(context) }
+    val repository = remember {
+        FoodLogRepository(
+            apiService = RetrofitClient.api,
+            foodLogDao = database.foodLogDao(),
+            networkManager = networkManager
+        )
+    }
+    val isOnline = remember { networkManager.isOnline() }
 
     // Handle scanned food when it changes
     LaunchedEffect(scannedFood) {
@@ -314,7 +330,9 @@ fun AddMealScreen(
             },
             onSearchFoodSelected = { foodItem ->
                 selectedSearchFood = foodItem
-            }
+            },
+            repository = repository,
+            isOnline = isOnline
         )
         "adjust" -> AdjustServingScreen(
             foodName = foodName,
@@ -409,7 +427,9 @@ fun AddMealScreen(
             measuringUnit = measuringUnit,
             selectedDate = selectedDate,
             mealType = mealType,
-            onSuccess = onSuccess
+            onSuccess = onSuccess,
+            repository = repository,
+            isOnline = isOnline
         )
     }
 }
@@ -423,7 +443,9 @@ fun AddFoodMainScreen(
     onNavigateToAdjustServing: (RecentActivityEntry?) -> Unit,
     onBarcodeScan: () -> Unit,
     onScannedFood: (Food) -> Unit,
-    onSearchFoodSelected: (SearchFoodItem) -> Unit
+    onSearchFoodSelected: (SearchFoodItem) -> Unit,
+    repository: FoodLogRepository,
+    isOnline: Boolean
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -610,6 +632,39 @@ fun AddFoodMainScreen(
                     .padding(horizontal = 24.dp)
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
+                
+                // Show offline message if not online
+                if (!isOnline) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(
+                                text = "🌐",
+                                fontSize = 64.sp
+                            )
+                            Text(
+                                text = "Meals require internet connection",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = "Meal logging features require an internet connection to search for foods and log your meals.",
+                                fontSize = 14.sp,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                } else {
 
                 // Search bar
                 Box(
@@ -719,13 +774,23 @@ fun AddFoodMainScreen(
                     }
                 } else {
                     // My Foods section - only show when not searching
-                    Text(
-                        text = stringResource(R.string.my_foods),
-                        fontSize = 16.sp,
-                        color = colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.my_foods),
+                            fontSize = 16.sp,
+                            color = colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        if (!isOnline) {
+                            Text(
+                                text = "🌐 My Foods requires internet connection",
+                                fontSize = 12.sp,
+                                color = colorScheme.error,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                        }
+                    }
 
                     // Loading, Error, or History items
                     when {
@@ -781,14 +846,16 @@ fun AddFoodMainScreen(
                                                         val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                                                         val todayDate = apiDateFormatter.format(Date())
 
-                                                        // Create food log request with the same details
                                                         // Estimate macronutrients based on calories (rough approximation)
                                                         val totalCalories = item.calories.toDouble()
                                                         val estimatedCarbs = (totalCalories * 0.5) / 4.0 // 50% carbs, 4 cal/g
                                                         val estimatedProtein = (totalCalories * 0.2) / 4.0 // 20% protein, 4 cal/g
                                                         val estimatedFat = (totalCalories * 0.3) / 9.0 // 30% fat, 9 cal/g
 
-                                                        val request = CreateFoodLogRequest(
+                                                        Log.d("AddMealActivity", "Creating food log for My Foods: ${item.foodName}, Calories: $totalCalories")
+                                                        
+                                                        // Use repository for offline-first logging
+                                                        val result = repository.createFoodLog(
                                                             userId = userId,
                                                             foodName = item.foodName,
                                                             servingSize = item.servingSize,
@@ -801,35 +868,36 @@ fun AddFoodMainScreen(
                                                             protein = estimatedProtein,
                                                             foodId = null
                                                         )
-
-                                                        Log.d("AddMealActivity", "Creating food log for My Foods: ${item.foodName}, Calories: $totalCalories")
-                                                        val response = RetrofitClient.api.createFoodLog(request)
-                                                        Log.d("AddMealActivity", "Food log response: ${response.code()}, Success: ${response.body()?.success}")
-
-                                        if (response.isSuccessful && response.body()?.success == true) {
-                                            Toast.makeText(context, context.getString(R.string.added_to_today, item.foodName), Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            Toast.makeText(context, context.getString(R.string.failed_to_add_food), Toast.LENGTH_SHORT).show()
-                                        }
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, context.getString(R.string.error_message, e.message ?: ""), Toast.LENGTH_SHORT).show()
-                                    }
+                                                        
+                                                        result.onSuccess { id ->
+                                                            if (!isOnline) {
+                                                                Toast.makeText(context, "📱 Saved offline - will sync when connected!", Toast.LENGTH_LONG).show()
+                                                            } else {
+                                                                Toast.makeText(context, "✅ ${item.foodName} added to today's meals!", Toast.LENGTH_SHORT).show()
+                                                            }
+                                                        }.onFailure { e ->
+                                                            Toast.makeText(context, "❌ Failed to add food. Please try again.", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        Toast.makeText(context, "❌ Something went wrong. Please try again.", Toast.LENGTH_SHORT).show()
+                                                    }
                                                 }
                                             },
                                             onDelete = {
                                                 scope.launch {
                                                     try {
-                                                        val response = RetrofitClient.api.deleteFoodLog(item.id)
-                                        if (response.isSuccessful && response.body()?.success == true) {
-                                            // Remove from local list
-                                            historyItems = historyItems.filter { it.id != item.id }
-                                            Toast.makeText(context, context.getString(R.string.food_deleted_successfully), Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            Toast.makeText(context, context.getString(R.string.failed_to_delete_food), Toast.LENGTH_SHORT).show()
-                                        }
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, context.getString(R.string.error_message, e.message ?: ""), Toast.LENGTH_SHORT).show()
-                                    }
+                                                        // Use repository for offline-first deletion
+                                                        val result = repository.deleteFoodLog(item.id)
+                                                        result.onSuccess {
+                                                            // Remove from local list
+                                                            historyItems = historyItems.filter { it.id != item.id }
+                                                            Toast.makeText(context, "🗑️ Food removed successfully!", Toast.LENGTH_SHORT).show()
+                                                        }.onFailure { e ->
+                                                            Toast.makeText(context, "❌ Couldn't delete food. Please try again.", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        Toast.makeText(context, "❌ Something went wrong. Please try again.", Toast.LENGTH_SHORT).show()
+                                                    }
                                                 }
                                             }
                                         )
@@ -928,6 +996,7 @@ fun AddFoodMainScreen(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+                } // Close the else block for online content
             }
         }
     }
@@ -1750,7 +1819,9 @@ fun AddDetailsScreen(
     mealType: String,
     onSuccess: () -> Unit,
     onBackPressed: () -> Unit,
-    onAddFood: () -> Unit
+    onAddFood: () -> Unit,
+    repository: FoodLogRepository,
+    isOnline: Boolean
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -1803,8 +1874,8 @@ fun AddDetailsScreen(
                 val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                 val dateString = apiDateFormatter.format(selectedDate)
 
-                // Create food log request
-                val request = CreateFoodLogRequest(
+                // Use repository for offline-first logging
+                val result = repository.createFoodLog(
                     userId = userId,
                     foodName = foodName,
                     servingSize = servingSize.toDouble(),
@@ -1818,16 +1889,23 @@ fun AddDetailsScreen(
                     foodId = null
                 )
 
-                val response = RetrofitClient.api.createFoodLog(request)
-
-                if (response.isSuccessful && response.body()?.success == true) {
+                result.onSuccess { id ->
+                    if (!isOnline) {
+                        Toast.makeText(
+                            context,
+                            "📱 Saved offline - will sync when connected!",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } else {
+                        Toast.makeText(context, "✅ Food logged successfully!", Toast.LENGTH_SHORT).show()
+                    }
                     onSuccess()
-                } else {
-                    errorMessage = response.body()?.message ?: "Failed to save food log"
+                }.onFailure { e ->
+                    errorMessage = "❌ Couldn't save food. Please try again."
                     Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                errorMessage = "Error: ${e.message}"
+                errorMessage = "❌ Something went wrong. Please try again."
                 Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
             } finally {
                 isLoading = false

@@ -65,6 +65,9 @@
     
     <!-- Dashboard -->
     <string name="error">⚠️ Error</string>
+    <string name="offline_mode_banner">Offline Mode - Data will sync when connection is restored</string>
+    <string name="saved_offline">Saved offline, will sync when connected</string>
+    <string name="requires_internet">This feature requires an internet connection</string>
     <string name="water">Water</string>
     <string name="meal">Meal</string>
     <string name="meals">Meals</string>

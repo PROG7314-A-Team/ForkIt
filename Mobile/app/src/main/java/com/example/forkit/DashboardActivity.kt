@@ -91,6 +91,8 @@ import com.example.forkit.ui.screens.HomeScreen
 import com.example.forkit.ui.screens.MealsScreen
 import com.example.forkit.ui.screens.HabitsScreen
 import com.example.forkit.ui.screens.CoachScreen
+import com.example.forkit.utils.NetworkConnectivityManager
+import com.example.forkit.sync.SyncManager
 
 
 
@@ -138,6 +140,44 @@ fun DashboardScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     
     var selectedTab by remember { mutableStateOf(initialSelectedTab) }
+    
+    // Network connectivity monitoring
+    val networkManager = remember { NetworkConnectivityManager(context) }
+    val syncManager = remember { SyncManager(context) }
+    var isOnline by remember { mutableStateOf(networkManager.isOnline()) }
+    
+    // Initialize repositories for offline-first data access
+    val database = remember { com.example.forkit.data.local.AppDatabase.getInstance(context) }
+    val foodLogRepository = remember {
+        com.example.forkit.data.repository.FoodLogRepository(
+            apiService = com.example.forkit.data.RetrofitClient.api,
+            foodLogDao = database.foodLogDao(),
+            networkManager = networkManager
+        )
+    }
+    val mealLogRepository = remember {
+        com.example.forkit.data.repository.MealLogRepository(
+            apiService = com.example.forkit.data.RetrofitClient.api,
+            mealLogDao = database.mealLogDao(),
+            networkManager = networkManager
+        )
+    }
+    val waterLogRepository = remember {
+        com.example.forkit.data.repository.WaterLogRepository(
+            apiService = com.example.forkit.data.RetrofitClient.api,
+            waterLogDao = database.waterLogDao(),
+            networkManager = networkManager
+        )
+    }
+    val exerciseLogRepository = remember {
+        com.example.forkit.data.repository.ExerciseLogRepository(
+            apiService = com.example.forkit.data.RetrofitClient.api,
+            exerciseLogDao = database.exerciseLogDao(),
+            networkManager = networkManager
+        )
+    }
+    
+    // Observe connectivity changes - moved after refreshData definition
     
     // State variables for API data
     var consumed by remember { mutableStateOf(0.0) }
@@ -303,90 +343,57 @@ fun DashboardScreen(
                         }
                     }
                     
-                    val foodSummaryDeferred = async {
-                        try {
-                            com.example.forkit.data.RetrofitClient.api.getDailyCalorieSummary(userId, todayDate)
-                        } catch (e: Exception) {
-                            android.util.Log.e("DashboardActivity", "Error fetching food summary: ${e.message}", e)
-                            null
-                        }
-                    }
-                    
-                    val exerciseDeferred = async {
-                        try {
-                            com.example.forkit.data.RetrofitClient.api.getDailyExerciseTotal(userId, todayDate)
-                        } catch (e: Exception) {
-                            android.util.Log.e("DashboardActivity", "Error fetching exercise: ${e.message}", e)
-                            null
-                        }
-                    }
-                    
-                    val waterDeferred = async {
-                        try {
-                            com.example.forkit.data.RetrofitClient.api.getDailyWaterTotal(userId, todayDate)
-                        } catch (e: Exception) {
-                            android.util.Log.e("DashboardActivity", "Error fetching water: ${e.message}", e)
-                            null
-                        }
-                    }
+                    // NOTE: We now calculate food, exercise, and water totals from local DB
+                    // This enables offline functionality - no need for summary API calls
 
                     // ─────────────────────────────────────────────
-                    // Fetch both food logs and meal logs in parallel
+                    // Fetch from LOCAL DATABASE (includes both synced and unsynced)
+                    // This enables offline functionality
                     // ─────────────────────────────────────────────
                     val foodLogsDeferred = async {
                         try {
-                            com.example.forkit.data.RetrofitClient.api.getFoodLogs(userId, todayDate)
+                            foodLogRepository.getFoodLogsByDate(userId, todayDate)
                         } catch (e: Exception) {
                             android.util.Log.e("DashboardActivity", "Error fetching food logs: ${e.message}", e)
-                            null
+                            emptyList()
                         }
                     }
 
                     val mealLogsDeferred = async {
                         try {
-                            com.example.forkit.data.RetrofitClient.api.getMealLogsByDateRange(
-                                userId = userId,
-                                startDate = todayDate,
-                                endDate = todayDate
-                            )
+                            mealLogRepository.getMealLogsByDateRange(userId, todayDate, todayDate)
                         } catch (e: Exception) {
                             android.util.Log.e("DashboardActivity", "Error fetching meal logs: ${e.message}", e)
-                            null
+                            emptyList()
                         }
                     }
 
                     
                     val exerciseLogsDeferred = async {
                         try {
-                            com.example.forkit.data.RetrofitClient.api.getExerciseLogs(userId, todayDate)
+                            exerciseLogRepository.getExerciseLogsByDate(userId, todayDate)
                         } catch (e: Exception) {
                             android.util.Log.e("DashboardActivity", "Error fetching exercise logs: ${e.message}", e)
-                            null
+                            emptyList()
                         }
                     }
                     
                     val waterLogsDeferred = async {
                         try {
-                            com.example.forkit.data.RetrofitClient.api.getWaterLogs(userId, todayDate)
+                            waterLogRepository.getWaterLogsByDate(userId, todayDate)
                         } catch (e: Exception) {
                             android.util.Log.e("DashboardActivity", "Error fetching water logs: ${e.message}", e)
-                            null
+                            emptyList()
                         }
                     }
                     
-                    // Wait for all API calls to complete in parallel
+                    // Wait for goals API call to complete
                     val goalsResponse = goalsDeferred.await()
-                    val foodSummaryResponse = foodSummaryDeferred.await()
-                    val exerciseResponse = exerciseDeferred.await()
-                    val waterResponse = waterDeferred.await()
-                    //val foodLogsResponse = foodLogsDeferred.await()
-                    val exerciseLogsResponse = exerciseLogsDeferred.await()
-                    val waterLogsResponse = waterLogsDeferred.await()
                     
                     val endTime = System.currentTimeMillis()
                     android.util.Log.d("DashboardActivity", "✅ All API calls completed in ${endTime - startTime}ms")
                     
-                    // Process goals response
+                    // Process goals response (still need this for goals)
                     goalsResponse?.let { response ->
                         if (response.isSuccessful) {
                             val goals = response.body()?.data
@@ -394,143 +401,103 @@ fun DashboardScreen(
                             dailyWaterGoal = goals?.dailyWater ?: 2000
                             dailyStepsGoal = goals?.dailySteps ?: 8000
                             weeklyExercisesGoal = goals?.weeklyExercises ?: 3
-                            android.util.Log.d("DashboardActivity", "Goals loaded: Calories=$dailyGoal, Water=$dailyWaterGoal")
-                        }
-                    }
-                    
-                    // Process food summary response
-                    foodSummaryResponse?.let { response ->
-                        if (response.isSuccessful) {
-                            val foodData = response.body()?.data
-                            consumed = foodData?.totalCalories ?: 0.0
-                            carbsCalories = (foodData?.totalCarbs ?: 0.0) * 4
-                            proteinCalories = (foodData?.totalProtein ?: 0.0) * 4
-                            fatCalories = (foodData?.totalFat ?: 0.0) * 9
-                        }
-                    }
-                    
-                    // Process exercise response
-                    exerciseResponse?.let { response ->
-                        if (response.isSuccessful) {
-                            val exerciseData = response.body()?.data
-                            burned = exerciseData?.totalCaloriesBurnt ?: 0.0
-                        }
-                    }
-                    
-                    // Process water response
-                    waterResponse?.let { response ->
-                        if (response.isSuccessful) {
-                            val waterData = response.body()?.data
-                            waterAmount = waterData?.totalAmount ?: 0.0
-                            waterEntries = waterData?.entries ?: 0
+                            android.util.Log.d("DashboardActivity", "✅ Goals loaded: Calories=$dailyGoal, Water=$dailyWaterGoal ml")
                         }
                     }
 
 // ─────────────────────────────────────────────
-// Combine Food Logs + Meal Logs
+// Process LOCAL DATABASE results (FoodLogEntity, MealLogEntity)
 // ─────────────────────────────────────────────
-                    val foodLogsResponse = foodLogsDeferred.await()
-                    val mealLogsResponse = mealLogsDeferred.await()
+                    val foodLogs = foodLogsDeferred.await()
+                    val mealLogs = mealLogsDeferred.await()
 
                     val combinedList = mutableListOf<com.example.forkit.data.models.RecentActivityEntry>()
 
-// 🥣 Process individual food logs
-                    foodLogsResponse?.let { response ->
-                        if (response.isSuccessful) {
-                            val foodLogs = response.body()?.data ?: emptyList()
-                            combinedList += foodLogs.map { log ->
-                                com.example.forkit.data.models.RecentActivityEntry(
-                                    id = log.id,
-                                    foodName = log.foodName,
-                                    servingSize = log.servingSize,
-                                    measuringUnit = log.measuringUnit,
-                                    calories = log.calories.toInt(),
-                                    mealType = log.mealType ?: "Food",
-                                    date = log.date,
-                                    createdAt = log.createdAt,
-                                    time = log.createdAt.substring(11, 16)
-                                )
-                            }
-                            android.util.Log.d("DashboardActivity", "✅ Added ${foodLogs.size} food logs")
-                        }
+// 🥣 Process individual food logs from local DB
+                    combinedList += foodLogs.map { log ->
+                        com.example.forkit.data.models.RecentActivityEntry(
+                            id = log.serverId ?: log.localId,
+                            foodName = log.foodName,
+                            servingSize = log.servingSize,
+                            measuringUnit = log.measuringUnit,
+                            calories = log.calories.toInt(),
+                            mealType = log.mealType,
+                            date = log.date,
+                            createdAt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault())
+                                .format(java.util.Date(log.createdAt)),
+                            time = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                                .format(java.util.Date(log.createdAt))
+                        )
                     }
+                    android.util.Log.d("DashboardActivity", "✅ Added ${foodLogs.size} food logs from local DB")
 
-                    // 🍱 Process full meal logs
-                    mealLogsResponse?.let { response ->
-                        if (response.isSuccessful) {
-                            val mealLogs = response.body()?.data ?: emptyList()
-                            combinedList += mealLogs.map { meal ->
-                                com.example.forkit.data.models.RecentActivityEntry(
-                                    id = meal.id,
-                                    foodName = meal.name,
-                                    servingSize = meal.ingredients.size.toDouble(),
-                                    measuringUnit = "items",
-                                    calories = meal.totalCalories.toInt(),
-                                    mealType = meal.mealType ?: "Meal",
-                                    date = meal.date,
-                                    createdAt = meal.createdAt,
-                                    time = meal.createdAt.substring(11, 16)
-                                )
-                            }
-                            android.util.Log.d("DashboardActivity", "✅ Added ${mealLogs.size} meal logs")
-                        }
+                    // 🍱 Process full meal logs from local DB
+                    combinedList += mealLogs.map { meal ->
+                        com.example.forkit.data.models.RecentActivityEntry(
+                            id = meal.serverId ?: meal.localId,
+                            foodName = meal.name,
+                            servingSize = meal.ingredients.size.toDouble(),
+                            measuringUnit = "items",
+                            calories = meal.totalCalories.toInt(),
+                            mealType = meal.mealType ?: "Meal",
+                            date = meal.date,
+                            createdAt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault())
+                                .format(java.util.Date(meal.createdAt)),
+                            time = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                                .format(java.util.Date(meal.createdAt))
+                        )
                     }
+                    android.util.Log.d("DashboardActivity", "✅ Added ${mealLogs.size} meal logs from local DB")
 
                     // 🔹 Merge + sort
                     recentMeals = combinedList.sortedByDescending { it.createdAt }
 
                     android.util.Log.d("DashboardActivity", "🍽️ Total combined entries: ${recentMeals.size}")
-                    // 🔹 Recalculate totals for combined data (food + meal logs)
-                    if (combinedList.isNotEmpty()) {
-                        // Sum up all calories from both food and meal logs
-                        consumed = combinedList.sumOf { it.calories.toDouble() }
+                    
+                    // 🔹 Calculate totals from local database entries
+                    consumed = foodLogs.sumOf { it.calories } + mealLogs.sumOf { it.totalCalories }
+                    carbsCalories = (foodLogs.sumOf { it.carbs } + mealLogs.sumOf { it.totalCarbs }) * 4
+                    proteinCalories = (foodLogs.sumOf { it.protein } + mealLogs.sumOf { it.totalProtein }) * 4
+                    fatCalories = (foodLogs.sumOf { it.fat } + mealLogs.sumOf { it.totalFat }) * 9
 
-                        // 🧠 Approximate macro split (optional placeholder)
-                        // These will make your pie chart work again
-                        carbsCalories = consumed * 0.5   // ~50% from carbs
-                        proteinCalories = consumed * 0.3 // ~30% from protein
-                        fatCalories = consumed * 0.2     // ~20% from fat
-
-                        Log.d("DashboardActivity", "🔥 Combined totals recalculated -> Consumed=$consumed kcal")
-                    }
+                    Log.d("DashboardActivity", "🔥 Totals from local DB -> Consumed=$consumed kcal, Carbs=${carbsCalories}, Protein=${proteinCalories}, Fat=${fatCalories}")
 
                     
-                    // Process exercise logs response
-                    exerciseLogsResponse?.let { response ->
-                        if (response.isSuccessful) {
-                            val todayExerciseLogs = response.body()?.data ?: emptyList()
-                            recentWorkouts = todayExerciseLogs.map { log ->
-                                com.example.forkit.data.models.RecentExerciseActivityEntry(
-                                    id = log.id,
-                                    name = log.name,
-                                    type = log.type,
-                                    caloriesBurnt = log.caloriesBurnt.toInt(),
-                                    duration = log.duration?.toInt(),
-                                    date = log.date,
-                                    createdAt = log.createdAt,
-                                    time = log.createdAt.substring(11, 16)
-                                )
-                            }.sortedByDescending { it.createdAt }
-                            android.util.Log.d("DashboardActivity", "Workouts loaded: ${recentWorkouts.size} items")
-                        }
-                    }
+                    // Process exercise logs from local DB
+                    val todayExerciseLogs = exerciseLogsDeferred.await()
+                    burned = todayExerciseLogs.sumOf { it.caloriesBurnt }
+                    recentWorkouts = todayExerciseLogs.map { log ->
+                        com.example.forkit.data.models.RecentExerciseActivityEntry(
+                            id = log.serverId ?: log.localId,
+                            name = log.name,
+                            type = log.type,
+                            caloriesBurnt = log.caloriesBurnt.toInt(),
+                            duration = log.duration?.toInt(),
+                            date = log.date,
+                            createdAt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault())
+                                .format(java.util.Date(log.createdAt)),
+                            time = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                                .format(java.util.Date(log.createdAt))
+                        )
+                    }.sortedByDescending { it.createdAt }
+                    android.util.Log.d("DashboardActivity", "✅ Workouts from local DB: ${recentWorkouts.size} items, burned=$burned kcal")
                     
-                    // Process water logs response
-                    waterLogsResponse?.let { response ->
-                        if (response.isSuccessful) {
-                            val todayWaterLogs = response.body()?.data ?: emptyList()
-                            recentWaterLogs = todayWaterLogs.map { log ->
-                                com.example.forkit.data.models.RecentWaterActivityEntry(
-                                    id = log.id,
-                                    amount = log.amount.toInt(),
-                                    date = log.date,
-                                    createdAt = log.createdAt,
-                                    time = log.createdAt.substring(11, 16)
-                                )
-                            }.sortedByDescending { it.createdAt }
-                            android.util.Log.d("DashboardActivity", "Water logs loaded: ${recentWaterLogs.size} items")
-                        }
-                    }
+                    // Process water logs from local DB
+                    val todayWaterLogs = waterLogsDeferred.await()
+                    waterAmount = todayWaterLogs.sumOf { it.amount }
+                    waterEntries = todayWaterLogs.size
+                    recentWaterLogs = todayWaterLogs.map { log ->
+                        com.example.forkit.data.models.RecentWaterActivityEntry(
+                            id = log.serverId ?: log.localId,
+                            amount = log.amount.toInt(),
+                            date = log.date,
+                            createdAt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault())
+                                .format(java.util.Date(log.createdAt)),
+                            time = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                                .format(java.util.Date(log.createdAt))
+                        )
+                    }.sortedByDescending { it.createdAt }
+                    android.util.Log.d("DashboardActivity", "✅ Water logs from local DB: ${recentWaterLogs.size} items, total=$waterAmount ml")
                     
                 } catch (e: Exception) {
                     android.util.Log.e("DashboardActivity", "Fatal error loading data: ${e.message}", e)
@@ -585,6 +552,58 @@ fun DashboardScreen(
         onRefreshCallbackSet?.invoke(refreshData)
     }
     
+    // Observe connectivity changes
+    LaunchedEffect(Unit) {
+        networkManager.observeConnectivity().collect { online ->
+            val wasOffline = !isOnline
+            isOnline = online
+            
+            // Trigger sync when coming back online
+            if (online && wasOffline) {
+                Log.d("DashboardActivity", "Device came online, triggering sync")
+                syncManager.scheduleSync()
+                // Refresh data after a short delay to get synced data
+                kotlinx.coroutines.delay(2000)
+                refreshData()
+            }
+        }
+    }
+    
+    // Observe database changes for real-time updates (works offline!)
+    LaunchedEffect(userId, todayDate) {
+        if (userId.isNotEmpty()) {
+            // Collect changes from all log types
+            launch {
+                database.foodLogDao().getAllFlow(userId).collect {
+                    // Trigger refresh when food logs change
+                    android.util.Log.d("DashboardActivity", "🔄 Food logs changed, refreshing...")
+                    refreshData()
+                }
+            }
+            launch {
+                database.waterLogDao().getAllFlow(userId).collect {
+                    // Trigger refresh when water logs change
+                    android.util.Log.d("DashboardActivity", "🔄 Water logs changed, refreshing...")
+                    refreshData()
+                }
+            }
+            launch {
+                database.exerciseLogDao().getAllFlow(userId).collect {
+                    // Trigger refresh when exercise logs change
+                    android.util.Log.d("DashboardActivity", "🔄 Exercise logs changed, refreshing...")
+                    refreshData()
+                }
+            }
+            launch {
+                database.mealLogDao().getAllFlow(userId).collect {
+                    // Trigger refresh when meal logs change
+                    android.util.Log.d("DashboardActivity", "🔄 Meal logs changed, refreshing...")
+                    refreshData()
+                }
+            }
+        }
+    }
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -596,6 +615,39 @@ fun DashboardScreen(
                 .pullRefresh(pullRefreshState)
                 .statusBarsPadding()
         ) {
+            // Offline Indicator - Small badge at top
+            if (!isOnline) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.TopEnd
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFFF5252),
+                        tonalElevation = 2.dp
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "📴",
+                                fontSize = 12.sp
+                            )
+                            Text(
+                                text = "Offline",
+                                fontSize = 12.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+            
             // Show error message if there's an error
             if (errorMessage.isNotEmpty()) {
                 Card(
@@ -657,13 +709,50 @@ fun DashboardScreen(
                             animatedProgress = animatedProgress,
                             refreshData = refreshData,
                             onMealDelete = { meal -> 
-                                recentMeals = recentMeals.filter { it.id != meal.id }
+                                scope.launch {
+                                    try {
+                                        // Try to delete using repository (works offline!)
+                                        val result = foodLogRepository.deleteFoodLog(meal.id)
+                                        result.onSuccess {
+                                            recentMeals = recentMeals.filter { it.id != meal.id }
+                                            refreshData()
+                                        }.onFailure { e ->
+                                            Log.e("DashboardActivity", "Failed to delete meal: ${e.message}", e)
+                                        }
+                                    } catch (e: Exception) {
+                                        Log.e("DashboardActivity", "Error deleting meal: ${e.message}", e)
+                                    }
+                                }
                             },
                             onWorkoutDelete = { workout ->
-                                recentWorkouts = recentWorkouts.filter { it.id != workout.id }
+                                scope.launch {
+                                    try {
+                                        val result = exerciseLogRepository.deleteExerciseLog(workout.id)
+                                        result.onSuccess {
+                                            recentWorkouts = recentWorkouts.filter { it.id != workout.id }
+                                            refreshData()
+                                        }.onFailure { e ->
+                                            Log.e("DashboardActivity", "Failed to delete workout: ${e.message}", e)
+                                        }
+                                    } catch (e: Exception) {
+                                        Log.e("DashboardActivity", "Error deleting workout: ${e.message}", e)
+                                    }
+                                }
                             },
                             onWaterLogDelete = { waterLog ->
-                                recentWaterLogs = recentWaterLogs.filter { it.id != waterLog.id }
+                                scope.launch {
+                                    try {
+                                        val result = waterLogRepository.deleteWaterLog(waterLog.id)
+                                        result.onSuccess {
+                                            recentWaterLogs = recentWaterLogs.filter { it.id != waterLog.id }
+                                            refreshData()
+                                        }.onFailure { e ->
+                                            Log.e("DashboardActivity", "Failed to delete water log: ${e.message}", e)
+                                        }
+                                    } catch (e: Exception) {
+                                        Log.e("DashboardActivity", "Error deleting water log: ${e.message}", e)
+                                    }
+                                }
                             }
                         )
                     }

@@ -218,10 +218,10 @@ fun SignInScreen(prefilledEmail: String = "") {
                                     context.startActivity(intent)
                                     (context as? ComponentActivity)?.finish()
                                 } else {
-                                    message = "Login failed: ${response.errorBody()?.string()}"
+                                    message = "❌ Invalid email or password. Please try again."
                                 }
                             } catch (e: Exception) {
-                                message = "Error: ${e.localizedMessage}"
+                                message = "❌ Something went wrong. Please try again."
                             } finally {
                                 isLoading = false
                             }
@@ -365,7 +365,7 @@ private suspend fun signInWithGoogle(context: Context) {
                             .addOnSuccessListener { result ->
                                 val firebaseIdToken = result.token
                                 if (firebaseIdToken == null) {
-                                    Toast.makeText(context, "Failed to get Firebase ID token", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "❌ Authentication failed. Please try again.", Toast.LENGTH_SHORT).show()
                                     return@addOnSuccessListener
                                 }
 
@@ -415,7 +415,7 @@ private suspend fun signInWithGoogle(context: Context) {
                                         Log.e("Auth", "Error logging in with Google", e)
                                         Toast.makeText(
                                             context,
-                                            "Error logging in: ${e.localizedMessage}",
+                                            "❌ Couldn't sign in with Google. Please try again.",
                                             Toast.LENGTH_LONG
                                         ).show()
                                     }
@@ -423,22 +423,22 @@ private suspend fun signInWithGoogle(context: Context) {
                             }
                             .addOnFailureListener { e ->
                                 Log.e("Auth", "Failed to get Firebase ID token", e)
-                                Toast.makeText(context, "Failed to get Firebase ID token", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "❌ Authentication failed. Please try again.", Toast.LENGTH_SHORT).show()
                             }
                     } else {
-                        Toast.makeText(context, "No email found in Google account", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "❌ No email found in Google account", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Toast.makeText(context, "Firebase Google sign-in failed", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "❌ Google sign-in failed. Please try again.", Toast.LENGTH_SHORT).show()
                     Log.e("Auth", "Firebase Google sign-in failed", task.exception)
                 }
             }
 
     } catch (e: GetCredentialException) {
-        Toast.makeText(context, "Google Sign-In failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "❌ Google sign-in failed. Please try again.", Toast.LENGTH_SHORT).show()
         Log.e("Auth", "Google Sign-In failed", e)
     } catch (e: Exception) {
-        Toast.makeText(context, "Unexpected error: ${e.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "❌ Something went wrong. Please try again.", Toast.LENGTH_SHORT).show()
         Log.e("Auth", "Unexpected error during Google sign-in", e)
     }
 }

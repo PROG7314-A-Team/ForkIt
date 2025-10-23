@@ -39,9 +39,9 @@ class NotificationsActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            Toast.makeText(this, "Notification permission granted", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "✅ Notification permission granted", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(this, "Notification permission denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "❌ Notification permission denied - habit reminders won't work", Toast.LENGTH_LONG).show()
         }
     }
     
@@ -198,10 +198,10 @@ fun NotificationsScreen(
                             
                             if (enabled && userId.isNotEmpty()) {
                                 scheduler.scheduleAllNotifications(userId)
-                                Toast.makeText(context, "Habit reminders enabled", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "✅ Habit reminders enabled", Toast.LENGTH_SHORT).show()
                             } else {
                                 scheduler.cancelAllNotifications()
-                                Toast.makeText(context, "Habit reminders disabled", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "🔕 Habit reminders disabled", Toast.LENGTH_SHORT).show()
                             }
                         },
                         colors = SwitchDefaults.colors(

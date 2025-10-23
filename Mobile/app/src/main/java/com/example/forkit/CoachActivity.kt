@@ -35,6 +35,7 @@ import com.example.forkit.data.models.TrendEntry
 import com.example.forkit.ui.theme.ForkItTheme
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
+import com.example.forkit.utils.NetworkConnectivityManager
 
 class CoachActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,6 +58,17 @@ fun CoachScreenWithNav(userId: String) {
     var showFloatingIcons by remember { mutableStateOf(false) }
     var currentScreen by remember { mutableStateOf("main") } // main, calories, water, workouts
     
+    // Network connectivity monitoring
+    val networkManager = remember { NetworkConnectivityManager(context) }
+    var isOnline by remember { mutableStateOf(networkManager.isOnline()) }
+    
+    // Observe connectivity changes
+    LaunchedEffect(Unit) {
+        networkManager.observeConnectivity().collect { online ->
+            isOnline = online
+        }
+    }
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -72,9 +84,10 @@ fun CoachScreenWithNav(userId: String) {
                 "main" -> CoachMainScreen(
                     userId = userId,
                     modifier = Modifier.weight(1f),
-                    onNavigateToCalories = { currentScreen = "calories" },
-                    onNavigateToWater = { currentScreen = "water" },
-                    onNavigateToWorkouts = { currentScreen = "workouts" }
+                    isOnline = isOnline,
+                    onNavigateToCalories = { if (isOnline) currentScreen = "calories" },
+                    onNavigateToWater = { if (isOnline) currentScreen = "water" },
+                    onNavigateToWorkouts = { if (isOnline) currentScreen = "workouts" }
                 )
                 "calories" -> CalorieDetailScreen(
                     userId = userId,
@@ -153,10 +166,45 @@ fun CoachScreenWithNav(userId: String) {
 fun CoachMainScreen(
     userId: String,
     modifier: Modifier = Modifier,
+    isOnline: Boolean = true,
     onNavigateToCalories: () -> Unit,
     onNavigateToWater: () -> Unit,
     onNavigateToWorkouts: () -> Unit
 ) {
+    // Show offline message if not online
+    if (!isOnline) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "🌐",
+                    fontSize = 64.sp
+                )
+                Text(
+                    text = stringResource(R.string.requires_internet),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = "Coach features require an internet connection to display your progress and trends.",
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
+            }
+        }
+        return
+    }
+    
     Column(
         modifier = modifier
             .fillMaxSize()
