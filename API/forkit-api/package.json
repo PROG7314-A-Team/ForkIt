@@ -7,8 +7,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest --coverage --verbose",
-    "azure": "node startup.js",
-    "postinstall": "npm install --production"
+    "build": "echo 'No build step required'",
+    "azure": "node startup.js"
   },
   "keywords": [
     "health",
