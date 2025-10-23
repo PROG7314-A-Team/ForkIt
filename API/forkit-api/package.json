@@ -2,13 +2,10 @@
   "name": "forkit-api",
   "version": "1.0.0",
   "description": "ForkIt Health Tracking API",
-  "main": "src/server.js",
+  "main": "test-server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "test": "echo 'Tests skipped in CI/CD'",
-    "build": "echo 'No build step required'",
-    "azure": "node startup.js"
+    "start": "node test-server.js",
+    "dev": "nodemon test-server.js"
   },
   "keywords": [
     "health",
