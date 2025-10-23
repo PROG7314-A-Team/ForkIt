@@ -1,0 +1,19 @@
+# Azure Environment Variables Template
+# Copy these settings to your Azure App Service Configuration
+
+# Node.js Configuration
+NODE_ENV=production
+PORT=8080
+
+# Firebase Configuration (Required)
+FIREBASE_PROJECT_ID=your-firebase-project-id
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour-Private-Key-Here\n-----END PRIVATE KEY-----\n"
+FIREBASE_CLIENT_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
+
+# Optional: Additional Firebase settings
+FIREBASE_DATABASE_URL=https://your-project-default-rtdb.firebaseio.com/
+FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+
+# Azure-specific settings
+WEBSITE_NODE_DEFAULT_VERSION=18.17.0
+WEBSITE_RUN_FROM_PACKAGE=1
