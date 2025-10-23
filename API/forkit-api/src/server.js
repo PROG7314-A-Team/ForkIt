@@ -14,7 +14,12 @@ const tls = require("tls");
 process.env.NODE_OPTIONS = "--tls-min-v1.0 --tls-max-v1.3";
 
 // Initialize Firebase (this will be done in the config file)
-require("./config/firebase");
+try {
+  require("./config/firebase");
+} catch (error) {
+  console.warn("Firebase initialization failed:", error.message);
+  console.warn("Continuing without Firebase - some features may not work");
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
