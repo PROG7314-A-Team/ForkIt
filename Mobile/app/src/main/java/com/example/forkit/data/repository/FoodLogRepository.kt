@@ -17,7 +17,7 @@ class FoodLogRepository(
     
     /**
      * Create a food log entry. If online, save to API then to local DB.
-     * If offline, save to local DB with isSynced=false.
+     * If offline, save to local DB with 
      */
     suspend fun createFoodLog(
         userId: String,
