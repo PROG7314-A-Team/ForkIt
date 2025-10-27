@@ -39,6 +39,9 @@ class MealDetailActivity : ComponentActivity() {
         val description = intent.getStringExtra("MEAL_DESCRIPTION") ?: "No description available"
         val ingredients = intent.getStringArrayListExtra("INGREDIENTS") ?: arrayListOf()
         val calories = intent.getDoubleExtra("CALORIES", 0.0)
+        val carbs = intent.getDoubleExtra("CARBS", 0.0)
+        val fat = intent.getDoubleExtra("FAT", 0.0)
+        val protein = intent.getDoubleExtra("PROTEIN", 0.0)
         val userId = intent.getStringExtra("USER_ID") ?: ""
 
         setContent {
@@ -48,6 +51,9 @@ class MealDetailActivity : ComponentActivity() {
                     description = description,
                     ingredients = ingredients,
                     calories = calories,
+                    carbs = carbs,
+                    fat = fat,
+                    protein = protein,
                     userId = userId,
                     onBackPressed = { finish() }
                 )
@@ -62,6 +68,9 @@ fun MealDetailScreen(
     description: String,
     ingredients: List<String>,
     calories: Double,
+    carbs: Double,
+    fat: Double,
+    protein: Double,
     userId: String,
     onBackPressed: () -> Unit
 ) {
@@ -111,10 +120,10 @@ fun MealDetailScreen(
                                 name = mealName,
                                 description = description,
                                 totalCalories = calories,
+                                totalCarbs = carbs,
+                                totalFat = fat,
+                                totalProtein = protein,
                                 servings = 1.0,
-                                totalCarbs = 0.0,
-                                totalFat = 0.0,
-                                totalProtein = 0.0,
                                 date = today,
                                 ingredients = ingredients.map {
                                     com.example.forkit.data.models.Ingredient(
@@ -128,7 +137,7 @@ fun MealDetailScreen(
 
                             val response = com.example.forkit.data.RetrofitClient.api.createMealLog(request)
                             if (response.isSuccessful && response.body()?.success == true) {
-                                Toast.makeText(context, "Meal logged successfully", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Meal logged to today successfully", Toast.LENGTH_SHORT).show()
                             } else {
                                 Toast.makeText(context, "Failed to log meal", Toast.LENGTH_SHORT).show()
                             }
@@ -148,7 +157,7 @@ fun MealDetailScreen(
                 enabled = !isLogging
             ) {
                 Text(
-                    text = if (isLogging) "Logging..." else "Log Meal for Today",
+                    text = if (isLogging) "Logging..." else "Log to Today's Meals",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = Color.White
@@ -163,7 +172,7 @@ fun MealDetailScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 18.dp, vertical = 8.dp)
         ) {
-            // 🔹 Calories summary card
+            // 🔹 Nutrition summary card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -190,6 +199,54 @@ fun MealDetailScreen(
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Nutrition breakdown
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${carbs.toInt()}g",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Carbs",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${protein.toInt()}g",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Protein",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${fat.toInt()}g",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Fat",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             }
 
@@ -213,109 +270,12 @@ fun MealDetailScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // 🔹 Ingredients header
-            // 🔹 Ingredients header
             Text(
                 text = "Ingredients",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
-            Spacer(modifier = Modifier.height(10.dp))
-
-            if (ingredients.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(top = 40.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No ingredients listed for this meal.",
-                        fontSize = 15.sp,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                ) {
-                    items(ingredients) { ingredientStr ->
-
-                        // 🧩 Parse combined string or extract structured info
-                        // Expected format example: "Egg (cal: 155 | carbs: 1.1 | fat: 11 | protein: 13)"
-                        val parts = ingredientStr.split("|").map { it.trim() }
-                        val name = parts.getOrNull(0)?.replace("cal:", "")?.trim() ?: ingredientStr
-                        val calories = parts.find { it.contains("cal", true) }?.replace("cal:", "")?.trim() ?: "-"
-                        val carbs = parts.find { it.contains("carb", true) }?.replace("carbs:", "")?.trim() ?: "-"
-                        val fat = parts.find { it.contains("fat", true) }?.replace("fat:", "")?.trim() ?: "-"
-                        val protein = parts.find { it.contains("protein", true) }?.replace("protein:", "")?.trim() ?: "-"
-
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp)),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                                    .fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = name,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                Row(
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(
-                                        text = "Calories: $calories",
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = "Carbs: $carbs g",
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-
-                                Row(
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(
-                                        text = "Fat: $fat g",
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = "Protein: $protein g",
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    item { Spacer(modifier = Modifier.height(80.dp)) }
-                }
-            }
-
             Spacer(modifier = Modifier.height(10.dp))
 
             if (ingredients.isEmpty()) {
@@ -347,12 +307,12 @@ fun MealDetailScreen(
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant
                             ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(

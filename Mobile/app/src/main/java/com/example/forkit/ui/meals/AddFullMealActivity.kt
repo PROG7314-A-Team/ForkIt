@@ -163,7 +163,6 @@ class AddFullMealActivity : ComponentActivity() {
 
 
     // 🔹 Footer checkbox toggle
-    var logToToday by remember { mutableStateOf(false) }
 
     Log.d(DEBUG_TAG, "$TAG: Initialized composable with empty meal data")
 
@@ -428,107 +427,74 @@ class AddFullMealActivity : ComponentActivity() {
                         .padding(16.dp)
                 ) {
                     Column {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Start,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Checkbox(
-                                checked = logToToday,
-                                onCheckedChange = {
-                                    logToToday = it
-                                    Log.d(DEBUG_TAG, "$TAG: Checkbox toggled = $logToToday")
-                                },
-                                colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
-                            )
-                            Text(
-                                text = "Log these foods to today's calories?",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
 
                         Button(
                             onClick = {
-                                Log.d(DEBUG_TAG, "$TAG: Add Meal button clicked | logToToday=$logToToday | totalIngredients=${ingredients.size}")
+                                Log.d(DEBUG_TAG, "$TAG: Add Meal button clicked | totalIngredients=${ingredients.size}")
 
                                 if (ingredients.isEmpty()) {
                                     Toast.makeText(context, "Please add at least one ingredient.", Toast.LENGTH_SHORT).show()
                                     return@Button
                                 }
 
-                                val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-
-                                if (logToToday) {
-                                    scope.launch {
-                                        try {
-                                            Log.d(DEBUG_TAG, "MealsDebug: 📡 Creating meal via MealLogRepository...")
-                                            
-                                            // Calculate total nutrition
-                                            val totalCalories = ingredients.sumOf { it.calories }
-                                            val totalCarbs = ingredients.sumOf { it.carbs }
-                                            val totalFat = ingredients.sumOf { it.fat }
-                                            val totalProtein = ingredients.sumOf { it.protein }
-                                            
-                                            // Convert ingredients to MealIngredient format
-                                            val mealIngredients = ingredients.map { ingredient ->
-                                                com.example.forkit.data.local.entities.MealIngredient(
-                                                    foodName = ingredient.foodName,
-                                                    quantity = ingredient.servingSize,
-                                                    unit = ingredient.measuringUnit,
-                                                    calories = ingredient.calories,
-                                                    carbs = ingredient.carbs,
-                                                    fat = ingredient.fat,
-                                                    protein = ingredient.protein
-                                                )
-                                            }
-                                            
-                                            // Create the meal log
-                                            val result = repository.createMealLog(
-                                                userId = userId,
-                                                name = mealName,
-                                                description = mealDescription,
-                                                ingredients = mealIngredients,
-                                                instructions = emptyList(), // No instructions for now
-                                                totalCalories = totalCalories,
-                                                totalCarbs = totalCarbs,
-                                                totalFat = totalFat,
-                                                totalProtein = totalProtein,
-                                                servings = 1.0,
-                                                date = today,
-                                                mealType = "Meal"
+                                scope.launch {
+                                    try {
+                                        Log.d(DEBUG_TAG, "MealsDebug: 📡 Creating meal via MealLogRepository...")
+                                        
+                                        // Calculate total nutrition
+                                        val totalCalories = ingredients.sumOf { it.calories }
+                                        val totalCarbs = ingredients.sumOf { it.carbs }
+                                        val totalFat = ingredients.sumOf { it.fat }
+                                        val totalProtein = ingredients.sumOf { it.protein }
+                                        
+                                        // Convert ingredients to MealIngredient format
+                                        val mealIngredients = ingredients.map { ingredient ->
+                                            com.example.forkit.data.local.entities.MealIngredient(
+                                                foodName = ingredient.foodName,
+                                                quantity = ingredient.servingSize, // servingSize -> quantity
+                                                unit = ingredient.measuringUnit,
+                                                calories = ingredient.calories,
+                                                carbs = ingredient.carbs,
+                                                fat = ingredient.fat,
+                                                protein = ingredient.protein
                                             )
-                                            
-                                            result.onSuccess { id ->
-                                                Log.d(DEBUG_TAG, "MealsDebug: ✅ Meal created successfully: $mealName - $id")
-                                                if (!isOnline) {
-                                                    Toast.makeText(context, "Meal saved offline - will sync when connected", Toast.LENGTH_LONG).show()
-                                                } else {
-                                                    Toast.makeText(context, "Meal '$mealName' created successfully", Toast.LENGTH_SHORT).show()
-                                                }
-                                                onBackPressed() // Go back to main screen
-                                            }.onFailure { e ->
-                                                Log.e(DEBUG_TAG, "MealsDebug: ❌ Failed to create meal: ${e.message}", e)
-                                                Toast.makeText(context, "Failed to create meal. Please try again", Toast.LENGTH_SHORT).show()
-                                            }
-                                            
-                                        } catch (e: Exception) {
-                                            Log.e(DEBUG_TAG, "MealsDebug: 🚨 Error creating meal: ${e.message}", e)
-                                            Toast.makeText(context, "Something went wrong. Please try again", Toast.LENGTH_SHORT).show()
                                         }
+                                        
+                                        // Create the meal log (without date - will be stored in My Meals only)
+                                        val result = repository.createMealLog(
+                                            userId = userId,
+                                            name = mealName,
+                                            description = mealDescription,
+                                            ingredients = mealIngredients,
+                                            instructions = emptyList(), // No instructions for now
+                                            totalCalories = totalCalories,
+                                            totalCarbs = totalCarbs,
+                                            totalFat = totalFat,
+                                            totalProtein = totalProtein,
+                                            servings = 1.0,
+                                            date = "", // Empty date - meal stored in My Meals but not logged to today
+                                            mealType = "Meal"
+                                        )
+                                        
+                                        result.onSuccess { id ->
+                                            Log.d(DEBUG_TAG, "MealsDebug: ✅ Meal created successfully: $mealName - $id")
+                                            if (!isOnline) {
+                                                Toast.makeText(context, "Meal saved offline - will sync when connected", Toast.LENGTH_LONG).show()
+                                            } else {
+                                                Toast.makeText(context, "Meal '$mealName' created successfully", Toast.LENGTH_SHORT).show()
+                                            }
+                                            onBackPressed() // Go back to main screen
+                                        }.onFailure { e ->
+                                            Log.e(DEBUG_TAG, "MealsDebug: ❌ Failed to create meal: ${e.message}", e)
+                                            Toast.makeText(context, "Failed to create meal. Please try again", Toast.LENGTH_SHORT).show()
+                                        }
+                                        
+                                    } catch (e: Exception) {
+                                        Log.e(DEBUG_TAG, "MealsDebug: 🚨 Error creating meal: ${e.message}", e)
+                                        Toast.makeText(context, "Something went wrong. Please try again", Toast.LENGTH_SHORT).show()
                                     }
-
-                                } else {
-                                    Log.d(DEBUG_TAG, "$TAG: 💾 Skipping meal creation — user unchecked 'Log to Today'.")
                                 }
-
-                                Toast.makeText(context, "Meal created successfully!", Toast.LENGTH_SHORT).show()
-                                mealName = ""
-                                mealDescription = ""
                                 ingredients.clear()
-                                logToToday = false
                             }
                             ,
                             modifier = Modifier

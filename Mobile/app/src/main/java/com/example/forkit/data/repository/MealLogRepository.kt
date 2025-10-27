@@ -115,6 +115,13 @@ class MealLogRepository(
     }
     
     /**
+     * Get meal logs for a specific date
+     */
+    suspend fun getMealLogsByDate(userId: String, date: String): List<MealLogEntity> = withContext(Dispatchers.IO) {
+        mealLogDao.getByDate(userId, date)
+    }
+    
+    /**
      * Get meal logs for a date range
      */
     suspend fun getMealLogsByDateRange(userId: String, startDate: String, endDate: String): List<MealLogEntity> = withContext(Dispatchers.IO) {
@@ -122,11 +129,18 @@ class MealLogRepository(
     }
     
     /**
+     * Get all meal logs for a user
+     */
+    suspend fun getAllMealLogs(userId: String): List<MealLogEntity> = withContext(Dispatchers.IO) {
+        mealLogDao.getByUserId(userId)
+    }
+    
+    /**
      * Delete a meal log
      */
-    suspend fun deleteMealLog(localId: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun deleteMealLog(mealLogId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val mealLog = mealLogDao.getById(localId)
+            val mealLog = mealLogDao.getById(mealLogId)
             
             if (mealLog != null) {
                 // If synced and online, delete from API
@@ -138,8 +152,9 @@ class MealLogRepository(
                     }
                 }
                 
-                // Always delete locally
-                mealLogDao.delete(mealLog)
+                // Delete from local DB
+                mealLogDao.deleteById(mealLogId)
+                Log.d("MealLogRepository", "Meal log deleted successfully")
                 Result.success(Unit)
             } else {
                 Result.failure(Exception("Meal log not found"))
@@ -151,17 +166,16 @@ class MealLogRepository(
     }
     
     /**
-     * Get all unsynced meal logs for syncing
+     * Get unsynced meal logs for sync
      */
     suspend fun getUnsyncedLogs(): List<MealLogEntity> = withContext(Dispatchers.IO) {
         mealLogDao.getUnsyncedLogs()
     }
     
     /**
-     * Mark a meal log as synced
+     * Mark meal log as synced
      */
     suspend fun markAsSynced(localId: String, serverId: String) = withContext(Dispatchers.IO) {
         mealLogDao.markAsSynced(localId, serverId)
     }
 }
-

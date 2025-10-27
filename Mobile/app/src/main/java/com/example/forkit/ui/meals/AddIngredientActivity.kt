@@ -346,6 +346,23 @@ fun AddIngredientScreen(
     }
 
     // -------------------------------------------------------------
+    // 🔄 REACTIVE SECTION — Recalculate nutrition when serving size changes
+    // -------------------------------------------------------------
+    LaunchedEffect(servingSize, measuringUnit) {
+        if (servingSize.isNotBlank() && baseCaloriesPer100g > 0) {
+            val newServingSize = servingSize.toDoubleOrNull() ?: 100.0
+            val scaleFactor = newServingSize / baseServingQuantity
+            
+            calories = (baseCaloriesPer100g * scaleFactor).toInt().toString()
+            carbs = String.format("%.1f", baseCarbsPer100g * scaleFactor)
+            fat = String.format("%.1f", baseFatPer100g * scaleFactor)
+            protein = String.format("%.1f", baseProteinPer100g * scaleFactor)
+            
+            Log.d(TAG, "🧮 [AddIngredientScreen] -> Recalculated nutrition: ${servingSize}${measuringUnit} -> ${calories}kcal")
+        }
+    }
+
+    // -------------------------------------------------------------
     // 🔄 REACTIVE SECTION — Handle search selection
     // -------------------------------------------------------------
     LaunchedEffect(selectedSearchFood) {
@@ -456,7 +473,7 @@ fun AddIngredientScreen(
                         protein = protein.toDoubleOrNull() ?: 0.0
                     )
 
-                    Log.d(TAG, "📦 [AdjustServingScreen] -> Ingredient built: ${ingredient.foodName}")
+                    Log.d(TAG, "📦 [AdjustServingScreen] -> Ingredient built: ${ingredient.foodName} | ${ingredient.calories}kcal | ${ingredient.carbs}g carbs | ${ingredient.fat}g fat | ${ingredient.protein}g protein")
                     onIngredientReady(ingredient)
                 },
                 scannedFood = scannedFood,

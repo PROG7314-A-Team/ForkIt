@@ -37,7 +37,7 @@ import java.util.Locale
 private const val DEBUG_TAG = "MealsDebug"
 
 @Composable
-fun MealsScreen(userId: String, mealLogRepository: MealLogRepository? = null) {
+fun MealsScreen(userId: String, mealLogRepository: MealLogRepository? = null, refreshTrigger: Int = 0) {
     val TAG = "MealsScreen"
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -71,7 +71,8 @@ fun MealsScreen(userId: String, mealLogRepository: MealLogRepository? = null) {
             // Always try local database as well to get the most complete data
             if (mealLogRepository != null) {
                 Log.d("MealsScreen", "Also checking local database for additional meals...")
-                val localMeals = mealLogRepository.getMealLogsByDateRange(userId, "2020-01-01", "2030-12-31")
+                // Get all meals from local database (including those without dates)
+                val localMeals = mealLogRepository.getAllMealLogs(userId)
                 val localMealsConverted = localMeals.map { entity ->
                     MealLog(
                         id = entity.serverId ?: entity.localId,
@@ -218,14 +219,19 @@ fun MealsScreen(userId: String, mealLogRepository: MealLogRepository? = null) {
                             MealCard(meal = meal) {
                                 Log.i(DEBUG_TAG, "$TAG: Clicked meal -> ${meal.name}")
 
-                                // Convert Ingredient objects to names
-                                val ingredientNames = ArrayList(meal.ingredients.map { it.name })
+                                // Convert Ingredient objects to detailed strings with nutrition info
+                                val ingredientDetails = ArrayList(meal.ingredients.map { ingredient ->
+                                    "${ingredient.name} (${ingredient.amount} ${ingredient.unit})"
+                                })
 
                                 val intent = Intent(context, MealDetailActivity::class.java).apply {
                                     putExtra("MEAL_NAME", meal.name)
                                     putExtra("MEAL_DESCRIPTION", meal.description ?: "No description available")
-                                    putStringArrayListExtra("INGREDIENTS", ingredientNames)
+                                    putStringArrayListExtra("INGREDIENTS", ingredientDetails)
                                     putExtra("CALORIES", meal.totalCalories)
+                                    putExtra("CARBS", meal.totalCarbs)
+                                    putExtra("FAT", meal.totalFat)
+                                    putExtra("PROTEIN", meal.totalProtein)
                                     putExtra("USER_ID", userId)
                                 }
 

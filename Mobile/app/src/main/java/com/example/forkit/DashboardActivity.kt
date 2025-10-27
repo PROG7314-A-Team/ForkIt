@@ -129,6 +129,7 @@ fun DashboardScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     
     var selectedTab by remember { mutableStateOf(initialSelectedTab) }
+    var mealsRefreshTrigger by remember { mutableStateOf(0) }
     
     // Network connectivity monitoring
     val networkManager = remember { NetworkConnectivityManager(context) }
@@ -421,8 +422,8 @@ fun DashboardScreen(
                     }
                     android.util.Log.d("DashboardActivity", "✅ Added ${foodLogs.size} food logs from local DB")
 
-                    // 🍱 Process full meal logs from local DB
-                    combinedList += mealLogs.map { meal ->
+                    // 🍱 Process full meal logs from local DB (only meals with dates - logged meals)
+                    combinedList += mealLogs.filter { meal -> meal.date.isNotBlank() }.map { meal ->
                         com.example.forkit.data.models.RecentActivityEntry(
                             id = meal.serverId ?: meal.localId,
                             localId = meal.localId,
@@ -498,6 +499,8 @@ fun DashboardScreen(
                 } finally {
                     isRefreshing = false
                     isLoading = false
+                    // Trigger meals screen refresh
+                    mealsRefreshTrigger++
                 }
             }
         }
@@ -756,7 +759,7 @@ fun DashboardScreen(
                         modifier = Modifier
                             .weight(1f)
                     ) {
-                        com.example.forkit.ui.screens.MealsScreen(userId = userId, mealLogRepository = mealLogRepository)
+                        com.example.forkit.ui.screens.MealsScreen(userId = userId, mealLogRepository = mealLogRepository, refreshTrigger = mealsRefreshTrigger)
                     }
                 }
                 2 -> {
