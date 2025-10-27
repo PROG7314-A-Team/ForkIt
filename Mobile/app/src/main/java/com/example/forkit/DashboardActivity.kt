@@ -68,25 +68,14 @@ import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.forkit.ui.meals.*
-import com.example.forkit.data.models.MealLog
-import kotlinx.coroutines.launch
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-
-import androidx.compose.foundation.layout.*
 import androidx.compose.ui.text.TextStyle
 import com.example.forkit.ui.meals.AddFullMealActivity
 import com.example.forkit.ui.meals.MealDetailActivity
 import android.util.Log
 import kotlinx.coroutines.delay
-import androidx.compose.ui.graphics.graphicsLayer
 import com.example.forkit.ui.screens.HomeScreen
 import com.example.forkit.ui.screens.MealsScreen
 import com.example.forkit.ui.screens.HabitsScreen
@@ -123,7 +112,7 @@ class DashboardActivity : ComponentActivity() {
     
     override fun onResume() {
         super.onResume()
-        // Refresh data when activity resumes (e.g., returning from AddMealActivity)
+        // Refresh data when activity resumes (e.g., returning from AddFullMealActivity)
         refreshCallback?.invoke()
     }
 }
@@ -635,9 +624,11 @@ fun DashboardScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Text(
-                                text = "📴",
-                                fontSize = 12.sp
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Offline",
+                                modifier = Modifier.size(12.dp),
+                                tint = Color.White
                             )
                             Text(
                                 text = "Offline",
@@ -854,7 +845,7 @@ fun DashboardScreen(
                 // Meal Button
                 FloatingActionButton(
                     onClick = {
-                        val intent = Intent(context, AddMealActivity::class.java)
+                        val intent = Intent(context, AddFullMealActivity::class.java)
                         intent.putExtra("USER_ID", userId)
                         context.startActivity(intent)
                         showFloatingIcons = false
@@ -869,11 +860,11 @@ fun DashboardScreen(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_meals),
-                            contentDescription = "Add Food",
+                            contentDescription = "Add Meal",
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
-                            text = stringResource(R.string.add_food),
+                            text = stringResource(R.string.add_meal),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
                         )
@@ -1156,7 +1147,7 @@ fun FloatingIcons(
             // Meal Button
             FloatingActionButton(
                 onClick = {
-                    val intent = Intent(context, AddMealActivity::class.java)
+                    val intent = Intent(context, AddFullMealActivity::class.java)
                     intent.putExtra("USER_ID", userId)
                     context.startActivity(intent)
                     onDismiss()

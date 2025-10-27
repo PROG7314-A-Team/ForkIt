@@ -1,6 +1,5 @@
 package com.example.forkit.ui.screens
 
-import android.content.ContentValues.TAG
 import android.content.Intent
 import android.util.Log
 import android.widget.Toast
@@ -65,7 +64,7 @@ fun HabitsScreen(userId: String) {
                     else -> RetrofitClient.api.getDailyHabits(userId)
                 }
 
-                Log.d(TAG, "Habits response ${response}")
+                Log.d("HabitsScreen", "Habits response ${response}")
                 
                 android.util.Log.d("HabitsScreen", "Response code: ${response.code()}")
                 android.util.Log.d("HabitsScreen", "Response body: ${response.body()}")

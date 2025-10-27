@@ -1,7 +1,6 @@
 package com.example.forkit.ui.meals
 
 import android.app.Activity
-import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -37,6 +36,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -1013,7 +1013,12 @@ fun SearchResultCard(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("📷", fontSize = 20.sp)
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Scan barcode",
+                        modifier = Modifier.size(20.dp),
+                        tint = Color(0xFF1E9ECD)
+                    )
                 }
             } else {
                 Log.d(TAG, "🖼️ [SearchResultCard] -> No image for ${foodItem.name}, using placeholder.")

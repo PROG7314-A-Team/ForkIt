@@ -46,7 +46,6 @@ import kotlinx.coroutines.launch
 import com.example.forkit.data.repository.MealLogRepository
 import com.example.forkit.data.local.AppDatabase
 import com.example.forkit.utils.NetworkConnectivityManager
-import com.example.forkit.data.local.entities.MealIngredient as LocalMealIngredient
 
 private const val DEBUG_TAG = "MealsDebug"
 private const val TAG = "MealsDebug"
@@ -505,19 +504,19 @@ class AddFullMealActivity : ComponentActivity() {
                                             result.onSuccess { id ->
                                                 Log.d(DEBUG_TAG, "MealsDebug: ✅ Meal created successfully: $mealName - $id")
                                                 if (!isOnline) {
-                                                    Toast.makeText(context, "📱 Meal saved offline - will sync when connected!", Toast.LENGTH_LONG).show()
+                                                    Toast.makeText(context, "Meal saved offline - will sync when connected", Toast.LENGTH_LONG).show()
                                                 } else {
-                                                    Toast.makeText(context, "✅ Meal '$mealName' created successfully!", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, "Meal '$mealName' created successfully", Toast.LENGTH_SHORT).show()
                                                 }
                                                 onBackPressed() // Go back to main screen
                                             }.onFailure { e ->
                                                 Log.e(DEBUG_TAG, "MealsDebug: ❌ Failed to create meal: ${e.message}", e)
-                                                Toast.makeText(context, "❌ Failed to create meal. Please try again.", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "Failed to create meal. Please try again", Toast.LENGTH_SHORT).show()
                                             }
                                             
                                         } catch (e: Exception) {
                                             Log.e(DEBUG_TAG, "MealsDebug: 🚨 Error creating meal: ${e.message}", e)
-                                            Toast.makeText(context, "❌ Something went wrong. Please try again.", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "Something went wrong. Please try again", Toast.LENGTH_SHORT).show()
                                         }
                                     }
 

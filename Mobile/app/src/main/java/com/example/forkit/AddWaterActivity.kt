@@ -289,20 +289,18 @@ fun AddWaterScreen(
                         if (!isOnline) {
                             Toast.makeText(
                                 context,
-                                "📱 Saved offline - will sync when connected!",
+                                "Saved offline - will sync when connected",
                                 Toast.LENGTH_LONG
                             ).show()
-                        } else {
-                            Toast.makeText(context, "✅ Water logged successfully!", Toast.LENGTH_SHORT).show()
                         }
                                     onSuccess()
                                 }.onFailure { e ->
                                     android.util.Log.e("AddWaterActivity", "Failed to log water: ${e.message}", e)
-                                    errorMessage = "❌ Couldn't save water. Please try again."
+                                    errorMessage = "Couldn't save water. Please try again"
                                 }
                             } catch (e: Exception) {
                                 android.util.Log.e("AddWaterActivity", "Error logging water: ${e.message}", e)
-                                errorMessage = "❌ Something went wrong. Please try again."
+                                errorMessage = "Something went wrong. Please try again"
                             } finally {
                                 isLoading = false
                             }

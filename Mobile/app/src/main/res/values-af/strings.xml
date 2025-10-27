@@ -64,7 +64,7 @@
     <string name="delete_account_message">Is jy seker jy wil jou rekening verwyder? Hierdie aksie kan nie ongedaan gemaak word nie en sal al jou data verwyder.</string>
     
     <!-- Dashboard -->
-    <string name="error">⚠️ Fout</string>
+    <string name="error">Fout</string>
     <string name="water">Water</string>
     <string name="meal">Maaltyd</string>
     <string name="meals">Maaltye</string>
@@ -141,8 +141,8 @@
     <string name="add_1000ml">+1000ml</string>
     <string name="please_enter_amount">Voer asseblief \'n hoeveelheid in</string>
     <string name="please_enter_valid_amount">Voer asseblief \'n geldige hoeveelheid in</string>
-    <string name="water_logged_success">Water suksesvol aangeteken! 💧</string>
-    <string name="food_logged_success">Kos suksesvol aangeteken! 🍽️</string>
+    <string name="water_logged_success">Water inname suksesvol aangeteken</string>
+    <string name="food_logged_success">Kos item suksesvol aangeteken</string>
     
     <!-- Profile -->
     <string name="your_profile">Profiel</string>
@@ -210,7 +210,7 @@
     <string name="burned">Verbrand</string>
     <string name="todays_calorie_budget">Vandag se kalorie begroting</string>
     <string name="percent_used">%1$d%% gebruik</string>
-    <string name="over_budget">Oor begroting! ⚠️</string>
+    <string name="over_budget">Oor begroting</string>
     <string name="kcal_remaining">%1$d kcal oor</string>
     <string name="no_food_logged_today">Geen kos vandag aangeteken nie</string>
     <string name="start_logging_meals">Begin jou maaltye aanteken om jou voedingsafbraak te sien</string>

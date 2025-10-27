@@ -200,7 +200,7 @@ fun SignInScreen(prefilledEmail: String = "") {
                                 )
                                 if (response.isSuccessful) {
                                     val body: LoginResponse? = response.body()
-                                    message = body?.message ?: "Login successful!"
+                                    message = body?.message ?: "Welcome back! You have successfully signed in"
                                     
                                     // Save login credentials for auto sign-in
                                     val authPreferences = AuthPreferences(context)
@@ -218,10 +218,10 @@ fun SignInScreen(prefilledEmail: String = "") {
                                     context.startActivity(intent)
                                     (context as? ComponentActivity)?.finish()
                                 } else {
-                                    message = "❌ Invalid email or password. Please try again."
+                                    message = "The email or password you entered is incorrect. Please check your credentials and try again"
                                 }
                             } catch (e: Exception) {
-                                message = "❌ Something went wrong. Please try again."
+                                message = "Unable to connect to the server. Please check your internet connection and try again"
                             } finally {
                                 isLoading = false
                             }
@@ -365,7 +365,7 @@ private suspend fun signInWithGoogle(context: Context) {
                             .addOnSuccessListener { result ->
                                 val firebaseIdToken = result.token
                                 if (firebaseIdToken == null) {
-                                    Toast.makeText(context, "❌ Authentication failed. Please try again.", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Google sign-in failed. Please try again or use email sign-in", Toast.LENGTH_SHORT).show()
                                     return@addOnSuccessListener
                                 }
 
@@ -392,7 +392,7 @@ private suspend fun signInWithGoogle(context: Context) {
                                                     }
                                                 }
 
-                                                Toast.makeText(context, "Welcome back!", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "Welcome back! You have successfully signed in with Google", Toast.LENGTH_SHORT).show()
 
                                                 // Navigate to DashboardActivity with userId
                                                 val intent = Intent(context, DashboardActivity::class.java)

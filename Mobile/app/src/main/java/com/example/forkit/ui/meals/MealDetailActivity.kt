@@ -128,9 +128,9 @@ fun MealDetailScreen(
 
                             val response = com.example.forkit.data.RetrofitClient.api.createMealLog(request)
                             if (response.isSuccessful && response.body()?.success == true) {
-                                Toast.makeText(context, "Meal logged successfully ✅", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Meal logged successfully", Toast.LENGTH_SHORT).show()
                             } else {
-                                Toast.makeText(context, "Failed to log meal ❌", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Failed to log meal", Toast.LENGTH_SHORT).show()
                             }
                         } catch (e: Exception) {
                             Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()

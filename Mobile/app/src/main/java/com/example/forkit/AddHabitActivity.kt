@@ -3,7 +3,7 @@ package com.example.forkit
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
- import android.os.Bundle
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -37,6 +37,8 @@ import java.time.format.DateTimeFormatter
 import com.example.forkit.data.repository.HabitRepository
 import com.example.forkit.data.local.AppDatabase
 import com.example.forkit.utils.NetworkConnectivityManager
+import com.example.forkit.services.HabitNotificationScheduler
+import com.example.forkit.services.HabitNotificationHelper
 
 // Extension function to find the activity
 @Composable
@@ -601,21 +603,30 @@ private suspend fun createHabit(
         
         result.onSuccess { id ->
             android.util.Log.d("AddHabitActivity", "Habit created successfully: $id")
+            
+            // Schedule notifications for the new habit
+            val notificationHelper = HabitNotificationHelper(context)
+            if (notificationHelper.areNotificationsEnabled()) {
+                val scheduler = HabitNotificationScheduler(context)
+                scheduler.scheduleAllNotifications(userId)
+                android.util.Log.d("AddHabitActivity", "Notifications scheduled for new habit")
+            }
+            
             if (!isOnline) {
-                Toast.makeText(context, "📱 Habit saved offline - will sync when connected! 🎉", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Habit saved offline - will sync when connected", Toast.LENGTH_LONG).show()
             } else {
-                Toast.makeText(context, "✅ Habit created successfully! 🎉", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Habit created successfully", Toast.LENGTH_SHORT).show()
             }
             onSuccess()
         }.onFailure { e ->
-            val errorMsg = "❌ Couldn't create habit. Please try again."
+            val errorMsg = "Couldn't create habit. Please try again"
             android.util.Log.e("AddHabitActivity", "Failed to create habit: ${e.localizedMessage}", e)
             Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
             errorMessage(errorMsg)
         }
         
     } catch (e: Exception) {
-        val errorMsg = "❌ Something went wrong. Please try again."
+        val errorMsg = "Something went wrong. Please try again"
         Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
         errorMessage(errorMsg)
     } finally {

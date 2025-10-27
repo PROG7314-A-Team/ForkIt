@@ -15,6 +15,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -357,9 +359,11 @@ fun HomeScreen(
                         .padding(32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "🍽️",
-                        fontSize = 48.sp
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "No meals",
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
@@ -426,9 +430,11 @@ fun HomeScreen(
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "💧",
-                        fontSize = 24.sp
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Water",
+                        modifier = Modifier.size(24.dp),
+                        tint = Color(0xFF1E9ECD)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -492,9 +498,11 @@ fun HomeScreen(
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "👟",
-                        fontSize = 24.sp
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Steps",
+                        modifier = Modifier.size(24.dp),
+                        tint = Color.White
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(

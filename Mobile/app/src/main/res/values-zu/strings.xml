@@ -64,7 +64,7 @@
     <string name="delete_account_message">Uqinisekile ukuthi ufuna ukususa i-akhawunti yakho? Lesi senzo asikwazi ukubuyiselwa emuva futhi sizosusa yonke idatha yakho.</string>
     
     <!-- Dashboard -->
-    <string name="error">⚠️ Iphutha</string>
+    <string name="error">Iphutha</string>
     <string name="water">Amanzi</string>
     <string name="meal">Ukudla</string>
     <string name="meals">Ukudla</string>
@@ -141,8 +141,8 @@
     <string name="add_1000ml">+1000ml</string>
     <string name="please_enter_amount">Sicela ufake inani</string>
     <string name="please_enter_valid_amount">Sicela ufake inani elivumelekile</string>
-    <string name="water_logged_success">Amanzi arekhodwe ngempumelelo! 💧</string>
-    <string name="food_logged_success">Ukudla kurekhodwe ngempumelelo! 🍽️</string>
+    <string name="water_logged_success">Ukudla kwamanzi kurekhodwe ngempumelelo</string>
+    <string name="food_logged_success">Into yokudla irekhodwe ngempumelelo</string>
     
     <!-- Profile -->
     <string name="your_profile">Iphrofayili</string>
@@ -210,7 +210,7 @@
     <string name="burned">Kushisiwe</string>
     <string name="todays_calorie_budget">Isabelomali Samakhalori Sanamuhla</string>
     <string name="percent_used">%1$d%% Kusetshenzisiwe</string>
-    <string name="over_budget">Edlule Isabelomali! ⚠️</string>
+    <string name="over_budget">Edlule Isabelomali</string>
     <string name="kcal_remaining">%1$d kcal esele</string>
     <string name="no_food_logged_today">Akukho ukudla okurekhodiwe namuhla</string>
     <string name="start_logging_meals">Qala urekhode ukudla kwakho ukuze ubone ukwahlukaniswa kokondla</string>

@@ -1,6 +1,5 @@
 package com.example.forkit
 
-import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -66,6 +65,16 @@ class HabitsActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         val userId = intent.getStringExtra("USER_ID") ?: ""
+        
+        // Schedule notifications when activity is created
+        if (userId.isNotEmpty()) {
+            val notificationHelper = HabitNotificationHelper(this)
+            if (notificationHelper.areNotificationsEnabled()) {
+                val scheduler = HabitNotificationScheduler(this)
+                scheduler.scheduleAllNotifications(userId)
+                android.util.Log.d("HabitsActivity", "Notifications scheduled on activity creation")
+            }
+        }
         
         setContent {
             ForkItTheme {
@@ -150,6 +159,14 @@ fun HabitsScreen(
                     // Remove from local state
                     habits = habits.filter { it.id != habitId }
                     android.util.Log.d("HabitsActivity", "Successfully deleted habit: $habitId")
+                    
+                    // Reschedule notifications after habit deletion
+                    val notificationHelper = HabitNotificationHelper(context)
+                    if (notificationHelper.areNotificationsEnabled()) {
+                        val scheduler = HabitNotificationScheduler(context)
+                        scheduler.rescheduleNotifications(userId)
+                        android.util.Log.d("HabitsActivity", "Notifications rescheduled after habit deletion")
+                    }
                 }.onFailure { e ->
                     android.util.Log.e("HabitsActivity", "Failed to delete habit: ${e.message}", e)
                 }
@@ -395,6 +412,14 @@ fun HabitsScreen(
                                             } else h
                                         }
                                         android.util.Log.d("HabitsActivity", "Successfully updated habit: $habitId")
+                                        
+                                        // Reschedule notifications after habit update
+                                        val notificationHelper = HabitNotificationHelper(context)
+                                        if (notificationHelper.areNotificationsEnabled()) {
+                                            val scheduler = HabitNotificationScheduler(context)
+                                            scheduler.rescheduleNotifications(userId)
+                                            android.util.Log.d("HabitsActivity", "Notifications rescheduled after habit update")
+                                        }
                                     }.onFailure { e ->
                                         android.util.Log.e("HabitsActivity", "Failed to update habit: ${e.message}")
                                     }
@@ -464,6 +489,14 @@ fun HabitsScreen(
                                                 } else h
                                             }
                                             android.util.Log.d("HabitsActivity", "Successfully updated habit: $habitId")
+                                            
+                                            // Reschedule notifications after habit update
+                                            val notificationHelper = HabitNotificationHelper(context)
+                                            if (notificationHelper.areNotificationsEnabled()) {
+                                                val scheduler = HabitNotificationScheduler(context)
+                                                scheduler.rescheduleNotifications(userId)
+                                                android.util.Log.d("HabitsActivity", "Notifications rescheduled after habit update")
+                                            }
                                         }.onFailure { e ->
                                             android.util.Log.e("HabitsActivity", "Failed to update habit: ${e.message}")
                                         }

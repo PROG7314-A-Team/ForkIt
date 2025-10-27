@@ -1,6 +1,5 @@
 package com.example.forkit
 
-import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -493,10 +492,10 @@ fun AddFoodMainScreen(
     suspend fun performSearchWithRetry(query: String, maxRetries: Int = 2): retrofit2.Response<com.example.forkit.data.models.GetFoodFromNameResponse>? {
         repeat(maxRetries) { attempt ->
             try {
-                Log.d(TAG, "Search attempt ${attempt + 1} for query: $query")
+                Log.d("AddMealActivity", "Search attempt ${attempt + 1} for query: $query")
                 return RetrofitClient.api.getFoodFromName(query)
             } catch (e: Exception) {
-                Log.d(TAG, "Search attempt ${attempt + 1} failed: ${e.message}")
+                Log.d("AddMealActivity", "Search attempt ${attempt + 1} failed: ${e.message}")
                 if (attempt == maxRetries - 1) throw e
                 delay(1000L * (attempt + 1)) // Exponential backoff: 1s, 2s
             }
@@ -517,7 +516,7 @@ fun AddFoodMainScreen(
             try {
                 val response = performSearchWithRetry(query)
                 if (response != null) {
-                    Log.d(TAG, "Food response ${response.body()?.data}")
+                    Log.d("AddMealActivity", "Food response ${response.body()?.data}")
                     if (response.isSuccessful && response.body()?.success == true) {
                         val data = response.body()?.data
                         if (data != null) {
@@ -541,22 +540,22 @@ fun AddFoodMainScreen(
         } catch (e: java.net.SocketTimeoutException) {
             searchResults = emptyList()
             showSearchResults = false
-            Log.d(TAG, "Search timeout: ${e.message}")
+            Log.d("AddMealActivity", "Search timeout: ${e.message}")
             Toast.makeText(context, context.getString(R.string.search_timeout_try_again), Toast.LENGTH_SHORT).show()
         } catch (e: java.net.UnknownHostException) {
             searchResults = emptyList()
             showSearchResults = false
-            Log.d(TAG, "Network error: ${e.message}")
+            Log.d("AddMealActivity", "Network error: ${e.message}")
             Toast.makeText(context, context.getString(R.string.network_error_check_connection), Toast.LENGTH_SHORT).show()
         } catch (e: java.net.ConnectException) {
             searchResults = emptyList()
             showSearchResults = false
-            Log.d(TAG, "Connection error: ${e.message}")
+            Log.d("AddMealActivity", "Connection error: ${e.message}")
             Toast.makeText(context, context.getString(R.string.connection_error_server_unavailable), Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             searchResults = emptyList()
             showSearchResults = false
-            Log.d(TAG, "Search error: ${e.message}")
+            Log.d("AddMealActivity", "Search error: ${e.message}")
             Toast.makeText(context, context.getString(R.string.search_error, e.message ?: ""), Toast.LENGTH_SHORT).show()
         } finally {
                 isSearching = false
@@ -966,15 +965,15 @@ fun AddFoodMainScreen(
                                                         
                                                         result.onSuccess { id ->
                                                             if (!isOnline) {
-                                                                Toast.makeText(context, "📱 Saved offline - will sync when connected!", Toast.LENGTH_LONG).show()
+                                                                Toast.makeText(context, "Saved offline - will sync when connected", Toast.LENGTH_LONG).show()
                                                             } else {
-                                                                Toast.makeText(context, "✅ ${item.foodName} added to today's meals!", Toast.LENGTH_SHORT).show()
+                                                                Toast.makeText(context, "${item.foodName} added to today's meals", Toast.LENGTH_SHORT).show()
                                                             }
                                                         }.onFailure { e ->
-                                                            Toast.makeText(context, "❌ Failed to add food. Please try again.", Toast.LENGTH_SHORT).show()
+                                                            Toast.makeText(context, "Failed to add food. Please try again", Toast.LENGTH_SHORT).show()
                                                         }
                                                     } catch (e: Exception) {
-                                                        Toast.makeText(context, "❌ Something went wrong. Please try again.", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, "Something went wrong. Please try again", Toast.LENGTH_SHORT).show()
                                                     }
                                                 }
                                             },
@@ -988,14 +987,14 @@ fun AddFoodMainScreen(
                                                             Log.d("AddMealActivity", "✅ Successfully deleted food: ${item.foodName}")
                                                             // Remove from local list
                                                             historyItems = historyItems.filter { it.localId != item.localId }
-                                                            Toast.makeText(context, "🗑️ Food removed successfully!", Toast.LENGTH_SHORT).show()
+                                                            Toast.makeText(context, "Food removed successfully", Toast.LENGTH_SHORT).show()
                                                         }.onFailure { e ->
                                                             Log.e("AddMealActivity", "❌ Failed to delete food: ${item.foodName}, error: ${e.message}", e)
-                                                            Toast.makeText(context, "❌ Couldn't delete food. Please try again.", Toast.LENGTH_SHORT).show()
+                                                            Toast.makeText(context, "Couldn't delete food. Please try again", Toast.LENGTH_SHORT).show()
                                                         }
                                                     } catch (e: Exception) {
                                                         Log.e("AddMealActivity", "❌ Exception deleting food: ${item.foodName}, error: ${e.message}", e)
-                                                        Toast.makeText(context, "❌ Something went wrong. Please try again.", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, "Something went wrong. Please try again", Toast.LENGTH_SHORT).show()
                                                     }
                                                 }
                                             }
@@ -1215,24 +1214,6 @@ fun SearchResultCard(
                 }
             }
 
-            if (foodItem.image != null) {
-                // You could add an image here if needed
-                // For now, just show a placeholder
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(
-                            color = colorScheme.secondary.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(8.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "📷",
-                        fontSize = 20.sp
-                    )
-                }
-            }
         }
     }
 }
@@ -2010,11 +1991,9 @@ fun AddDetailsScreen(
                     if (!isOnline) {
                         Toast.makeText(
                             context,
-                            "📱 Food saved offline - will sync when connected!",
+                            "Food saved offline - will sync when connected",
                             Toast.LENGTH_LONG
                         ).show()
-                    } else {
-                        Toast.makeText(context, "✅ Food logged successfully!", Toast.LENGTH_SHORT).show()
                     }
                     // Navigate back to main screen to refresh My Foods
                     onNavigateToMain()
@@ -2024,11 +2003,11 @@ fun AddDetailsScreen(
                         onSuccess()
                     }
                 }.onFailure { e ->
-                    errorMessage = "❌ Couldn't save food. Please try again."
+                    errorMessage = "Couldn't save food. Please try again"
                     Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                errorMessage = "❌ Something went wrong. Please try again."
+                errorMessage = "Something went wrong. Please try again"
                 Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
             } finally {
                 isLoading = false

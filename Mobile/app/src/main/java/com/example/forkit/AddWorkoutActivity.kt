@@ -344,20 +344,18 @@ fun AddWorkoutScreen(
                                     if (!isOnline) {
                                         Toast.makeText(
                                             context,
-                                            "📱 Saved offline - will sync when connected!",
+                                            "Saved offline - will sync when connected",
                                             Toast.LENGTH_LONG
                                         ).show()
-                                    } else {
-                                        Toast.makeText(context, "✅ Exercise logged successfully!", Toast.LENGTH_SHORT).show()
                                     }
                                     onSuccess()
                                 }.onFailure { e ->
                                     android.util.Log.e("AddWorkoutActivity", "Failed to log exercise: ${e.message}", e)
-                                    errorMessage = "❌ Couldn't save exercise. Please try again."
+                                    errorMessage = "Couldn't save exercise. Please try again"
                                 }
                             } catch (e: Exception) {
                                 android.util.Log.e("AddWorkoutActivity", "Error logging exercise: ${e.message}", e)
-                                errorMessage = "❌ Something went wrong. Please try again."
+                                errorMessage = "Something went wrong. Please try again"
                             } finally {
                                 isLoading = false
                             }
