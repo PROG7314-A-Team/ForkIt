@@ -46,8 +46,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import com.example.forkit.data.repository.FoodLogRepository
+import com.example.forkit.data.repository.MealLogRepository
 import com.example.forkit.data.local.AppDatabase
+import com.example.forkit.data.local.entities.MealIngredient
 import com.example.forkit.utils.NetworkConnectivityManager
 
 class AddMealActivity : ComponentActivity() {
@@ -171,9 +172,9 @@ fun AddMealScreen(
     val database = remember { AppDatabase.getInstance(context) }
     val networkManager = remember { NetworkConnectivityManager(context) }
     val repository = remember {
-        FoodLogRepository(
+        MealLogRepository(
             apiService = RetrofitClient.api,
-            foodLogDao = database.foodLogDao(),
+            mealLogDao = database.mealLogDao(),
             networkManager = networkManager
         )
     }
@@ -1845,7 +1846,7 @@ fun AddDetailsScreen(
         }
     }
 
-    // Function to save food log
+    // Function to save meal log
     fun saveFoodLog() {
         // Validate inputs
         if (foodName.isBlank()) {
@@ -1874,34 +1875,46 @@ fun AddDetailsScreen(
                 val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                 val dateString = apiDateFormatter.format(selectedDate)
 
-                // Use repository for offline-first logging
-                val result = repository.createFoodLog(
-                    userId = userId,
+                // Create meal ingredient from the food data
+                val mealIngredient = MealIngredient(
                     foodName = foodName,
-                    servingSize = servingSize.toDouble(),
-                    measuringUnit = measuringUnit,
-                    date = dateString,
-                    mealType = mealType,
+                    quantity = servingSize.toDouble(),
+                    unit = measuringUnit,
                     calories = calories.toDoubleOrNull() ?: 0.0,
                     carbs = carbs.toDoubleOrNull() ?: 0.0,
                     fat = fat.toDoubleOrNull() ?: 0.0,
-                    protein = protein.toDoubleOrNull() ?: 0.0,
-                    foodId = null
+                    protein = protein.toDoubleOrNull() ?: 0.0
+                )
+
+                // Use repository for offline-first meal logging
+                val result = repository.createMealLog(
+                    userId = userId,
+                    name = foodName,
+                    description = "Single food item: $foodName",
+                    ingredients = listOf(mealIngredient),
+                    instructions = emptyList(),
+                    totalCalories = calories.toDoubleOrNull() ?: 0.0,
+                    totalCarbs = carbs.toDoubleOrNull() ?: 0.0,
+                    totalFat = fat.toDoubleOrNull() ?: 0.0,
+                    totalProtein = protein.toDoubleOrNull() ?: 0.0,
+                    servings = 1.0,
+                    date = dateString,
+                    mealType = mealType
                 )
 
                 result.onSuccess { id ->
                     if (!isOnline) {
                         Toast.makeText(
                             context,
-                            "📱 Saved offline - will sync when connected!",
+                            "📱 Meal saved offline - will sync when connected!",
                             Toast.LENGTH_LONG
                         ).show()
                     } else {
-                        Toast.makeText(context, "✅ Food logged successfully!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "✅ Meal logged successfully!", Toast.LENGTH_SHORT).show()
                     }
                     onSuccess()
                 }.onFailure { e ->
-                    errorMessage = "❌ Couldn't save food. Please try again."
+                    errorMessage = "❌ Couldn't save meal. Please try again."
                     Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {

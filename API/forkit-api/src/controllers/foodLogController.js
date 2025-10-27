@@ -10,7 +10,8 @@ const streakService = new StreakService();
 exports.getFoodLogs = async (req, res) => {
   try {
     console.log("Get food logs query", req.query);
-    const { userId, date } = req.query;
+    const { userId } = req.params; // Read userId from path parameters
+    const { date } = req.query;    // Read date from query parameters
     let filters = [];
 
     if (userId) {
