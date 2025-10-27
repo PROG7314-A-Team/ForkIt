@@ -46,6 +46,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.forkit.data.repository.FoodLogRepository
 import com.example.forkit.data.repository.MealLogRepository
 import com.example.forkit.data.local.AppDatabase
 import com.example.forkit.data.local.entities.MealIngredient
@@ -167,14 +168,21 @@ fun AddMealScreen(
     // Store unit category to filter available units
     var unitCategory by remember { mutableStateOf("all") } // "weight", "volume", or "all"
 
-    // Initialize repository for offline support
+    // Initialize repositories for offline support
     val context = LocalContext.current
     val database = remember { AppDatabase.getInstance(context) }
     val networkManager = remember { NetworkConnectivityManager(context) }
-    val repository = remember {
+    val mealLogRepository = remember {
         MealLogRepository(
             apiService = RetrofitClient.api,
             mealLogDao = database.mealLogDao(),
+            networkManager = networkManager
+        )
+    }
+    val foodLogRepository = remember {
+        FoodLogRepository(
+            apiService = RetrofitClient.api,
+            foodLogDao = database.foodLogDao(),
             networkManager = networkManager
         )
     }
@@ -332,7 +340,7 @@ fun AddMealScreen(
             onSearchFoodSelected = { foodItem ->
                 selectedSearchFood = foodItem
             },
-            repository = repository,
+            repository = foodLogRepository,
             isOnline = isOnline
         )
         "adjust" -> AdjustServingScreen(
@@ -429,7 +437,7 @@ fun AddMealScreen(
             selectedDate = selectedDate,
             mealType = mealType,
             onSuccess = onSuccess,
-            repository = repository,
+            repository = mealLogRepository,
             isOnline = isOnline
         )
     }
@@ -1821,7 +1829,7 @@ fun AddDetailsScreen(
     onSuccess: () -> Unit,
     onBackPressed: () -> Unit,
     onAddFood: () -> Unit,
-    repository: FoodLogRepository,
+    repository: MealLogRepository,
     isOnline: Boolean
 ) {
     val context = LocalContext.current
