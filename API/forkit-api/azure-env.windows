@@ -1,0 +1,6 @@
+# Windows-specific environment variables for Azure App Service
+NODE_ENV=production
+PORT=8080
+WEBSITE_NODE_DEFAULT_VERSION=20.11.0
+WEBSITE_RUN_FROM_PACKAGE=1
+WEBSITE_SKIP_CONTENTSHARE_VALIDATION=1

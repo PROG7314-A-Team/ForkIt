@@ -6,7 +6,13 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest --coverage --verbose"
+    "test": "jest --coverage --verbose",
+    "build": "echo 'No build step required for Node.js'",
+    "postinstall": "echo 'Dependencies installed successfully'"
+  },
+  "engines": {
+    "node": "20.x",
+    "npm": "10.x"
   },
   "keywords": [
     "health",

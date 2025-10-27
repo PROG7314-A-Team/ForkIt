@@ -91,7 +91,7 @@ app.use("*", (req, res) => {
 module.exports = app;
 
 if (process.env.NODE_ENV !== "test") {
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 ForkIt API server running on port ${PORT}`);
     console.log(`🔄 Health check: http://localhost:${PORT}/api/health`);
     console.log(`🍽️ Food endpoints: http://localhost:${PORT}/api/food`);
@@ -104,5 +104,8 @@ if (process.env.NODE_ENV !== "test") {
       `🧮 Calorie calculator: http://localhost:${PORT}/api/calorie-calculator`
     );
     console.log(`🏋️  Habits: http://localhost:${PORT}/api/habits`);
+  }).on('error', (err) => {
+    console.error('❌ Server failed to start:', err);
+    process.exit(1);
   });
 }

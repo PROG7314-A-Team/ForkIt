@@ -1,0 +1,66 @@
+# Azure DevOps Pipeline for ForkIt API
+trigger:
+- main
+- develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  nodeVersion: '18.x'
+
+stages:
+- stage: Build
+  displayName: Build stage
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '$(nodeVersion)'
+      displayName: 'Install Node.js'
+
+    - script: |
+        npm install
+      displayName: 'Install dependencies'
+
+    - script: |
+        npm test
+      displayName: 'Run tests'
+
+    - task: ArchiveFiles@2
+      displayName: 'Archive files'
+      inputs:
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+        includeRootFolder: false
+        archiveType: zip
+        archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+        replaceExistingArchive: true
+
+    - upload: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+      artifact: drop
+
+- stage: Deploy
+  displayName: Deploy stage
+  dependsOn: Build
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: Deploy
+    displayName: Deploy
+    environment: 'production'
+    pool:
+      vmImage: 'ubuntu-latest'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Azure Web App Deploy'
+            inputs:
+              azureSubscription: 'Your-Azure-Subscription'
+              appType: 'webApp'
+              appName: 'forkit-api'
+              package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
