@@ -112,30 +112,47 @@ class FoodLogRepository(
     }
     
     /**
+     * Get all food logs for a user from local database
+     */
+    suspend fun getAllFoodLogs(userId: String): List<FoodLogEntity> = withContext(Dispatchers.IO) {
+        // Get all food logs for the user from local database
+        foodLogDao.getByDateRange(userId, "2020-01-01", "2030-12-31")
+    }
+    
+    /**
      * Delete a food log
      */
     suspend fun deleteFoodLog(localId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            Log.d("FoodLogRepository", "🔍 Looking for food log with localId: $localId")
             val foodLog = foodLogDao.getById(localId)
             
             if (foodLog != null) {
+                Log.d("FoodLogRepository", "✅ Found food log: ${foodLog.foodName}, isSynced: ${foodLog.isSynced}, serverId: ${foodLog.serverId}")
                 // If synced and online, delete from API
                 if (foodLog.isSynced && foodLog.serverId != null && networkManager.isOnline()) {
                     try {
+                        Log.d("FoodLogRepository", "🌐 Deleting from API with serverId: ${foodLog.serverId}")
                         apiService.deleteFoodLog(foodLog.serverId)
+                        Log.d("FoodLogRepository", "✅ Successfully deleted from API")
                     } catch (e: Exception) {
-                        Log.w("FoodLogRepository", "Failed to delete from API: ${e.message}")
+                        Log.w("FoodLogRepository", "⚠️ Failed to delete from API: ${e.message}")
                     }
+                } else {
+                    Log.d("FoodLogRepository", "📱 Skipping API deletion - isSynced: ${foodLog.isSynced}, serverId: ${foodLog.serverId}, isOnline: ${networkManager.isOnline()}")
                 }
                 
                 // Always delete locally
+                Log.d("FoodLogRepository", "🗑️ Deleting from local database")
                 foodLogDao.delete(foodLog)
+                Log.d("FoodLogRepository", "✅ Successfully deleted from local database")
                 Result.success(Unit)
             } else {
+                Log.e("FoodLogRepository", "❌ Food log not found with localId: $localId")
                 Result.failure(Exception("Food log not found"))
             }
         } catch (e: Exception) {
-            Log.e("FoodLogRepository", "Error deleting food log: ${e.message}", e)
+            Log.e("FoodLogRepository", "❌ Error deleting food log: ${e.message}", e)
             Result.failure(e)
         }
     }

@@ -29,11 +29,15 @@ import com.example.forkit.ui.meals.AddFullMealActivity
 import com.example.forkit.ui.meals.MealDetailActivity
 import androidx.compose.ui.res.stringResource
 import com.example.forkit.R
+import com.example.forkit.data.repository.MealLogRepository
+import com.example.forkit.data.local.entities.MealLogEntity
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 private const val DEBUG_TAG = "MealsDebug"
 
 @Composable
-fun MealsScreen(userId: String) {
+fun MealsScreen(userId: String, mealLogRepository: MealLogRepository? = null) {
     val TAG = "MealsScreen"
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -49,24 +53,71 @@ fun MealsScreen(userId: String) {
 
     // Function to fetch meals
     val fetchMeals: suspend () -> Unit = {
-        Log.d("MealsScreen", "Fetching real meals from API for userId=$userId")
+        Log.d("MealsScreen", "Fetching meals from API and local database for userId=$userId")
         isLoading = true
         errorMessage = null
         try {
+            // First try to get from API
             val response = RetrofitClient.api.getMealLogs(userId = userId)
+            var allMeals = emptyList<MealLog>()
+
             if (response.isSuccessful && response.body()?.success == true) {
-                val allMeals = response.body()?.data ?: emptyList()
-
-                // Remove duplicates by unique name + calories + date combination
-                meals = allMeals.distinctBy { "${it.name}-${it.totalCalories}-${it.date}" }
-
-                Log.d("MealsScreen", "✅ Meals loaded: ${allMeals.size}, unique after filter: ${meals.size}")
+                allMeals = response.body()?.data ?: emptyList()
+                Log.d("MealsScreen", "Loaded ${allMeals.size} meals from API")
+            } else {
+                Log.w("MealsScreen", "API call failed: ${response.message()}")
             }
-            else {
-                Log.w("MealsScreen", "⚠️ Failed to fetch meals: ${response.message()}")
-                errorMessage = response.message()
-                meals = emptyList()
+
+            // Always try local database as well to get the most complete data
+            if (mealLogRepository != null) {
+                Log.d("MealsScreen", "Also checking local database for additional meals...")
+                val localMeals = mealLogRepository.getMealLogsByDateRange(userId, "2020-01-01", "2030-12-31")
+                val localMealsConverted = localMeals.map { entity ->
+                    MealLog(
+                        id = entity.serverId ?: entity.localId,
+                        userId = entity.userId,
+                        name = entity.name,
+                        description = entity.description,
+                        ingredients = entity.ingredients.map { ingredient ->
+                            com.example.forkit.data.models.Ingredient(
+                                name = ingredient.foodName,
+                                amount = ingredient.quantity,
+                                unit = ingredient.unit
+                            )
+                        },
+                        instructions = entity.instructions,
+                        totalCalories = entity.totalCalories,
+                        totalCarbs = entity.totalCarbs,
+                        totalFat = entity.totalFat,
+                        totalProtein = entity.totalProtein,
+                        servings = entity.servings,
+                        date = entity.date,
+                        mealType = entity.mealType,
+                        createdAt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).format(java.util.Date(entity.createdAt)),
+                        updatedAt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).format(java.util.Date(entity.createdAt))
+                    )
+                }
+                Log.d("MealsScreen", "Loaded ${localMealsConverted.size} meals from local database")
+
+                // Combine API and local data, preferring local data for duplicates
+                val combinedMeals = if (allMeals.isNotEmpty()) {
+                    // Merge API and local data, with local data taking precedence
+                    val apiIds = allMeals.map { it.id }.toSet()
+                    val localOnly = localMealsConverted.filter { it.id !in apiIds }
+                    allMeals + localOnly
+                } else {
+                    localMealsConverted
+                }
+
+                allMeals = combinedMeals
+                Log.d("MealsScreen", "Combined total: ${allMeals.size} meals (API: ${if (response.isSuccessful) (response.body()?.data?.size ?: 0) else 0}, Local: ${localMealsConverted.size})")
             }
+
+            // Remove duplicates by unique name + calories + date combination
+            meals = allMeals.distinctBy { "${it.name}-${it.totalCalories}-${it.date}" }
+
+            Log.d("MealsScreen", "✅ Final meals loaded: ${allMeals.size}, unique after filter: ${meals.size}")
+            errorMessage = null
         } catch (e: Exception) {
             Log.e("MealsScreen", "❌ Error fetching meals", e)
             errorMessage = e.message

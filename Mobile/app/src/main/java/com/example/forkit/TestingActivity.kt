@@ -1203,6 +1203,7 @@ fun CreateFoodLogSection(onTest: (FoodLog) -> Unit) {
                 onClick = { 
                     val foodLog = FoodLog(
                         id = "",
+                        localId = "", // Add localId parameter
                         userId = userId,
                         foodName = foodName,
                         servingSize = servingSize.toDoubleOrNull() ?: 0.0,

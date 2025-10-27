@@ -108,7 +108,7 @@
     <activity
       android:name=".AddMealActivity"
       android:exported="false"
-      android:label="Add Meal"
+      android:label="Add Food"
       android:theme="@style/Theme.ForkIt"
     />
     <activity

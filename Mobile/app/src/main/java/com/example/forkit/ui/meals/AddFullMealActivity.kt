@@ -173,10 +173,17 @@ class AddFullMealActivity : ComponentActivity() {
             TopAppBar(
                 title = {
                     Text(
-                        "New Meal",
-                        fontSize = 24.sp,
+                        "Add Meal",
+                        fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF22B27D)
+                        style = androidx.compose.ui.text.TextStyle(
+                            brush = Brush.horizontalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.secondary
+                                )
+                            )
+                        )
                     )
                 },
                 navigationIcon = {
@@ -187,19 +194,19 @@ class AddFullMealActivity : ComponentActivity() {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.Black
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
         ) {
             // 🔹 Main Content Column
@@ -210,9 +217,9 @@ class AddFullMealActivity : ComponentActivity() {
             ) {
                 // Helper text
                 Text(
-                    text = "Create a custom meal by giving it a name, short description, and adding ingredients below.",
+                    text = "Create a meal by adding multiple foods. The meal will be saved as a collection of ingredients.",
                     fontSize = 15.sp,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Start,
                     modifier = Modifier.padding(bottom = 24.dp)
                 )
@@ -222,7 +229,7 @@ class AddFullMealActivity : ComponentActivity() {
                     text = "Meal Name",
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp,
-                    color = Color(0xFF22B27D)
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -240,7 +247,7 @@ class AddFullMealActivity : ComponentActivity() {
                                 Log.d(DEBUG_TAG, "$TAG: Meal name confirmed = $mealName")
                                 Toast.makeText(context, "Meal name set!", Toast.LENGTH_SHORT).show()
                             }) {
-                                Icon(Icons.Default.Check, contentDescription = "Confirm", tint = Color(0xFF22B27D))
+                                Icon(Icons.Default.Check, contentDescription = "Confirm", tint = MaterialTheme.colorScheme.primary)
                             }
                         }
                     )
@@ -259,10 +266,10 @@ class AddFullMealActivity : ComponentActivity() {
                         Text(
                             text = if (mealName.isBlank()) "Add Meal Name" else mealName,
                             fontSize = 18.sp,
-                            color = if (mealName.isBlank()) Color.Gray else Color.Black,
+                            color = if (mealName.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                             fontWeight = if (mealName.isBlank()) FontWeight.Normal else FontWeight.Medium
                         )
-                        Icon(Icons.Default.Edit, contentDescription = "Edit name", tint = Color(0xFF22B27D))
+                        Icon(Icons.Default.Edit, contentDescription = "Edit name", tint = MaterialTheme.colorScheme.primary)
                     }
                 }
 
@@ -273,7 +280,7 @@ class AddFullMealActivity : ComponentActivity() {
                     text = "Description",
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp,
-                    color = Color(0xFF22B27D)
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -292,7 +299,7 @@ class AddFullMealActivity : ComponentActivity() {
                                 Log.d(DEBUG_TAG, "$TAG: Description confirmed = $mealDescription")
                                 Toast.makeText(context, "Description set!", Toast.LENGTH_SHORT).show()
                             }) {
-                                Icon(Icons.Default.Check, contentDescription = "Confirm", tint = Color(0xFF22B27D))
+                                Icon(Icons.Default.Check, contentDescription = "Confirm", tint = MaterialTheme.colorScheme.primary)
                             }
                         }
                     )
@@ -311,10 +318,10 @@ class AddFullMealActivity : ComponentActivity() {
                         Text(
                             text = if (mealDescription.isBlank()) "Add Description" else mealDescription,
                             fontSize = 16.sp,
-                            color = if (mealDescription.isBlank()) Color.Gray else Color.Black,
+                            color = if (mealDescription.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                             fontWeight = if (mealDescription.isBlank()) FontWeight.Normal else FontWeight.Medium
                         )
-                        Icon(Icons.Default.Edit, contentDescription = "Edit description", tint = Color(0xFF22B27D))
+                        Icon(Icons.Default.Edit, contentDescription = "Edit description", tint = MaterialTheme.colorScheme.primary)
                     }
                 }
 
@@ -325,7 +332,7 @@ class AddFullMealActivity : ComponentActivity() {
                     text = "Ingredients",
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 18.sp,
-                    color = Color(0xFF22B27D)
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -333,7 +340,7 @@ class AddFullMealActivity : ComponentActivity() {
                 AnimatedVisibility(visible = ingredients.isEmpty()) {
                     Text(
                         text = "No ingredients added yet.",
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp,
                         modifier = Modifier.padding(vertical = 12.dp)
                     )
@@ -348,7 +355,7 @@ class AddFullMealActivity : ComponentActivity() {
                     items(ingredients) { ingredient ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -360,7 +367,7 @@ class AddFullMealActivity : ComponentActivity() {
                                 Text(
                                     text = "${ingredient.foodName} - ${ingredient.calories.toInt()} kcal",
                                     fontSize = 16.sp,
-                                    color = Color.Black
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 IconButton(onClick = {
                                     ingredients.remove(ingredient)
@@ -369,7 +376,7 @@ class AddFullMealActivity : ComponentActivity() {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
                                         contentDescription = "Delete",
-                                        tint = Color.Red
+                                        tint = MaterialTheme.colorScheme.error
                                     )
                                 }
                             }
@@ -380,11 +387,9 @@ class AddFullMealActivity : ComponentActivity() {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Add Ingredient button
-                // 🔹 Add Ingredient button (now with gradient background)
-// 🔹 Add Ingredient button (calls parent activity callback)
                 Button(
                     onClick = {
-                        Log.d(DEBUG_TAG, "AddFullMealScreen: 🟢 Add Ingredient button clicked")
+                        Log.d(DEBUG_TAG, "AddFullMealScreen: 🟢 Add Food button clicked")
                         onAddIngredientClick() // <- trigger the launcher in AddFullMealActivity
                     },
                     modifier = Modifier
@@ -392,7 +397,7 @@ class AddFullMealActivity : ComponentActivity() {
                         .height(56.dp)
                         .background(
                             brush = Brush.horizontalGradient(
-                                listOf(Color(0xFF22B27D), Color(0xFF1E9E6D))
+                                listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
                             ),
                             shape = MaterialTheme.shapes.medium
                         ),
@@ -403,7 +408,7 @@ class AddFullMealActivity : ComponentActivity() {
                     Text(
                         text = "Add Ingredient",
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 16.sp
                     )
                 }
@@ -420,7 +425,7 @@ class AddFullMealActivity : ComponentActivity() {
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .background(Color.White.copy(alpha = 0.8f))
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
                         .padding(16.dp)
                 ) {
                     Column {
@@ -435,12 +440,12 @@ class AddFullMealActivity : ComponentActivity() {
                                     logToToday = it
                                     Log.d(DEBUG_TAG, "$TAG: Checkbox toggled = $logToToday")
                                 },
-                                colors = CheckboxDefaults.colors(checkedColor = Color(0xFF22B27D))
+                                colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
                             )
                             Text(
-                                text = "Log this meal to today’s calories?",
+                                text = "Log these foods to today's calories?",
                                 fontSize = 14.sp,
-                                color = Color.Black
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
@@ -457,82 +462,70 @@ class AddFullMealActivity : ComponentActivity() {
 
                                 val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
-                                val request = CreateMealLogRequest(
-                                    userId = userId,
-                                    name = mealName.ifBlank { "Untitled Meal" },
-                                    description = mealDescription.ifBlank { null },
-                                    ingredients = ingredients.map {
-                                        Ingredient(
-                                            name = it.foodName,
-                                            amount = it.servingSize,
-                                            unit = it.measuringUnit
-                                        )
-                                    },
-                                    instructions = listOf("No instructions provided"),
-                                    totalCalories = ingredients.sumOf { it.calories },
-                                    totalCarbs = ingredients.sumOf { it.carbs },
-                                    totalFat = ingredients.sumOf { it.fat },
-                                    totalProtein = ingredients.sumOf { it.protein },
-                                    servings = 1.0,
-                                    date = if (logToToday) today else "",
-                                    mealType = null
-                                )
-
-                                Log.d(DEBUG_TAG, "$TAG: ✅ Final CreateMealLogRequest JSON = ${Gson().toJson(request)}")
-
                                 if (logToToday) {
                                     scope.launch {
                                         try {
-                                            Log.d(DEBUG_TAG, "MealsDebug: 📡 Creating meal via repository (offline-first)...")
+                                            Log.d(DEBUG_TAG, "MealsDebug: 📡 Creating meal via MealLogRepository...")
                                             
+                                            // Calculate total nutrition
+                                            val totalCalories = ingredients.sumOf { it.calories }
+                                            val totalCarbs = ingredients.sumOf { it.carbs }
+                                            val totalFat = ingredients.sumOf { it.fat }
+                                            val totalProtein = ingredients.sumOf { it.protein }
+                                            
+                                            // Convert ingredients to MealIngredient format
+                                            val mealIngredients = ingredients.map { ingredient ->
+                                                com.example.forkit.data.local.entities.MealIngredient(
+                                                    foodName = ingredient.foodName,
+                                                    quantity = ingredient.servingSize,
+                                                    unit = ingredient.measuringUnit,
+                                                    calories = ingredient.calories,
+                                                    carbs = ingredient.carbs,
+                                                    fat = ingredient.fat,
+                                                    protein = ingredient.protein
+                                                )
+                                            }
+                                            
+                                            // Create the meal log
                                             val result = repository.createMealLog(
                                                 userId = userId,
-                                                name = mealName.ifBlank { "Untitled Meal" },
-                                                description = mealDescription.ifBlank { "" },
-                                                ingredients = ingredients.map {
-                                                    LocalMealIngredient(
-                                                        foodName = it.foodName,
-                                                        quantity = it.servingSize,
-                                                        unit = it.measuringUnit,
-                                                        calories = it.calories,
-                                                        carbs = it.carbs,
-                                                        fat = it.fat,
-                                                        protein = it.protein
-                                                    )
-                                                },
-                                                instructions = listOf("No instructions provided"),
-                                                totalCalories = ingredients.sumOf { it.calories },
-                                                totalCarbs = ingredients.sumOf { it.carbs },
-                                                totalFat = ingredients.sumOf { it.fat },
-                                                totalProtein = ingredients.sumOf { it.protein },
+                                                name = mealName,
+                                                description = mealDescription,
+                                                ingredients = mealIngredients,
+                                                instructions = emptyList(), // No instructions for now
+                                                totalCalories = totalCalories,
+                                                totalCarbs = totalCarbs,
+                                                totalFat = totalFat,
+                                                totalProtein = totalProtein,
                                                 servings = 1.0,
                                                 date = today,
-                                                mealType = null
+                                                mealType = "Meal"
                                             )
                                             
                                             result.onSuccess { id ->
-                                                Log.d(DEBUG_TAG, "MealsDebug: ✅ Meal created successfully: $id")
+                                                Log.d(DEBUG_TAG, "MealsDebug: ✅ Meal created successfully: $mealName - $id")
                                                 if (!isOnline) {
-                                                    Toast.makeText(context, "📱 Saved offline - will sync when connected!", Toast.LENGTH_LONG).show()
+                                                    Toast.makeText(context, "📱 Meal saved offline - will sync when connected!", Toast.LENGTH_LONG).show()
                                                 } else {
-                                                    Toast.makeText(context, "✅ Meal logged successfully!", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, "✅ Meal '$mealName' created successfully!", Toast.LENGTH_SHORT).show()
                                                 }
                                                 onBackPressed() // Go back to main screen
                                             }.onFailure { e ->
-                                                Log.e(DEBUG_TAG, "MealsDebug: ❌ Failed to log meal: ${e.message}", e)
-                                                Toast.makeText(context, "❌ Couldn't save meal. Please try again.", Toast.LENGTH_SHORT).show()
+                                                Log.e(DEBUG_TAG, "MealsDebug: ❌ Failed to create meal: ${e.message}", e)
+                                                Toast.makeText(context, "❌ Failed to create meal. Please try again.", Toast.LENGTH_SHORT).show()
                                             }
+                                            
                                         } catch (e: Exception) {
-                                            Log.e(DEBUG_TAG, "MealsDebug: 🚨 Error logging meal: ${e.message}", e)
+                                            Log.e(DEBUG_TAG, "MealsDebug: 🚨 Error creating meal: ${e.message}", e)
                                             Toast.makeText(context, "❌ Something went wrong. Please try again.", Toast.LENGTH_SHORT).show()
                                         }
                                     }
 
                                 } else {
-                                    Log.d(DEBUG_TAG, "$TAG: 💾 Skipping daily log — user unchecked 'Log to Today'.")
+                                    Log.d(DEBUG_TAG, "$TAG: 💾 Skipping meal creation — user unchecked 'Log to Today'.")
                                 }
 
-                                Toast.makeText(context, "Meal added successfully!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Meal created successfully!", Toast.LENGTH_SHORT).show()
                                 mealName = ""
                                 mealDescription = ""
                                 ingredients.clear()
@@ -542,13 +535,13 @@ class AddFullMealActivity : ComponentActivity() {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF22B27D))
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Text(
                                 text = "Add Meal",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }

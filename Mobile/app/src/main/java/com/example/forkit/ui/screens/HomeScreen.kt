@@ -661,21 +661,10 @@ fun HomeScreen(
                             confirmButton = {
                                 TextButton(
                                     onClick = {
-                                        scope.launch {
-                                            try {
-                                                val response = RetrofitClient.api.deleteFoodLog(meal.id)
-                                                if (response.isSuccessful && response.body()?.success == true) {
-                                                    mealToDelete = null
-                                                    onMealDelete(meal)
-                                                    refreshData()
-                                                    Toast.makeText(context, context.getString(R.string.food_deleted_successfully), Toast.LENGTH_SHORT).show()
-                                                } else {
-                                                    Toast.makeText(context, context.getString(R.string.failed_to_delete_food), Toast.LENGTH_SHORT).show()
-                                                }
-                                            } catch (e: Exception) {
-                                                Toast.makeText(context, context.getString(R.string.error_message, e.message ?: ""), Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
+                                        mealToDelete = null
+                                        onMealDelete(meal)
+                                        refreshData()
+                                        Toast.makeText(context, context.getString(R.string.food_deleted_successfully), Toast.LENGTH_SHORT).show()
                                     }
                                 ) {
                                     Text(stringResource(R.string.delete), color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
@@ -791,21 +780,10 @@ fun HomeScreen(
                             confirmButton = {
                                 TextButton(
                                     onClick = {
-                                        scope.launch {
-                                            try {
-                                                val response = RetrofitClient.api.deleteExerciseLog(workout.id)
-                                                if (response.isSuccessful && response.body()?.success == true) {
-                                                    workoutToDelete = null
-                                                    onWorkoutDelete(workout)
-                                                    refreshData()
-                                                    Toast.makeText(context, context.getString(R.string.deleted_successfully), Toast.LENGTH_SHORT).show()
-                                                } else {
-                                                    Toast.makeText(context, context.getString(R.string.failed_to_delete), Toast.LENGTH_SHORT).show()
-                                                }
-                                            } catch (e: Exception) {
-                                                Toast.makeText(context, context.getString(R.string.error_message, e.message ?: ""), Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
+                                        workoutToDelete = null
+                                        onWorkoutDelete(workout)
+                                        refreshData()
+                                        Toast.makeText(context, context.getString(R.string.deleted_successfully), Toast.LENGTH_SHORT).show()
                                     }
                                 ) {
                                     Text(stringResource(R.string.delete), color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
@@ -921,21 +899,10 @@ fun HomeScreen(
                             confirmButton = {
                                 TextButton(
                                     onClick = {
-                                        scope.launch {
-                                            try {
-                                                val response = RetrofitClient.api.deleteWaterLog(waterLog.id)
-                                                if (response.isSuccessful && response.body()?.success == true) {
-                                                    waterLogToDelete = null
-                                                    onWaterLogDelete(waterLog)
-                                                    refreshData()
-                                                    Toast.makeText(context, context.getString(R.string.deleted_successfully), Toast.LENGTH_SHORT).show()
-                                                } else {
-                                                    Toast.makeText(context, context.getString(R.string.failed_to_delete), Toast.LENGTH_SHORT).show()
-                                                }
-                                            } catch (e: Exception) {
-                                                Toast.makeText(context, context.getString(R.string.error_message, e.message ?: ""), Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
+                                        waterLogToDelete = null
+                                        onWaterLogDelete(waterLog)
+                                        refreshData()
+                                        Toast.makeText(context, context.getString(R.string.deleted_successfully), Toast.LENGTH_SHORT).show()
                                     }
                                 ) {
                                     Text("Delete", color = Color(0xFFE53935), fontWeight = FontWeight.Bold)

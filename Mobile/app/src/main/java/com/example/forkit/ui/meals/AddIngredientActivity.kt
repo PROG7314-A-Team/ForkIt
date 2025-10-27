@@ -617,6 +617,7 @@ fun AddFoodMainScreen(
                     .map { log ->
                         RecentActivityEntry(
                             id = log.id,
+                            localId = log.id, // For food logs from API, use the same ID as localId
                             foodName = log.foodName,
                             servingSize = log.servingSize,
                             measuringUnit = log.measuringUnit,

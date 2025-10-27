@@ -417,6 +417,7 @@ fun DashboardScreen(
                     combinedList += foodLogs.map { log ->
                         com.example.forkit.data.models.RecentActivityEntry(
                             id = log.serverId ?: log.localId,
+                            localId = log.localId,
                             foodName = log.foodName,
                             servingSize = log.servingSize,
                             measuringUnit = log.measuringUnit,
@@ -435,6 +436,7 @@ fun DashboardScreen(
                     combinedList += mealLogs.map { meal ->
                         com.example.forkit.data.models.RecentActivityEntry(
                             id = meal.serverId ?: meal.localId,
+                            localId = meal.localId,
                             foodName = meal.name,
                             servingSize = meal.ingredients.size.toDouble(),
                             measuringUnit = "items",
@@ -712,9 +714,9 @@ fun DashboardScreen(
                                 scope.launch {
                                     try {
                                         // Try to delete using repository (works offline!)
-                                        val result = foodLogRepository.deleteFoodLog(meal.id)
+                                        val result = foodLogRepository.deleteFoodLog(meal.localId)
                                         result.onSuccess {
-                                            recentMeals = recentMeals.filter { it.id != meal.id }
+                                            recentMeals = recentMeals.filter { it.localId != meal.localId }
                                             refreshData()
                                         }.onFailure { e ->
                                             Log.e("DashboardActivity", "Failed to delete meal: ${e.message}", e)
@@ -763,7 +765,7 @@ fun DashboardScreen(
                         modifier = Modifier
                             .weight(1f)
                     ) {
-                        com.example.forkit.ui.screens.MealsScreen(userId = userId)
+                        com.example.forkit.ui.screens.MealsScreen(userId = userId, mealLogRepository = mealLogRepository)
                     }
                 }
                 2 -> {
@@ -867,11 +869,11 @@ fun DashboardScreen(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_meals),
-                            contentDescription = "Add Meal",
+                            contentDescription = "Add Food",
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
-                            text = stringResource(R.string.meal),
+                            text = stringResource(R.string.add_food),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
                         )
