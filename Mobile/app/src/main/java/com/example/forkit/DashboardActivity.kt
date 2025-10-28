@@ -351,9 +351,10 @@ fun DashboardScreen(
 
                     val mealLogsDeferred = async {
                         try {
-                            mealLogRepository.getMealLogsByDateRange(userId, todayDate, todayDate)
+                            // Get only logged meals (not templates) for today
+                            mealLogRepository.getLoggedMeals(userId, todayDate)
                         } catch (e: Exception) {
-                            android.util.Log.e("DashboardActivity", "Error fetching meal logs: ${e.message}", e)
+                            android.util.Log.e("DashboardActivity", "Error fetching logged meals: ${e.message}", e)
                             emptyList()
                         }
                     }
@@ -422,8 +423,8 @@ fun DashboardScreen(
                     }
                     android.util.Log.d("DashboardActivity", "✅ Added ${foodLogs.size} food logs from local DB")
 
-                    // 🍱 Process full meal logs from local DB (only meals with dates - logged meals)
-                    combinedList += mealLogs.filter { meal -> meal.date.isNotBlank() }.map { meal ->
+                    // 🍱 Process logged meals from local DB (isTemplate=false)
+                    combinedList += mealLogs.map { meal ->
                         com.example.forkit.data.models.RecentActivityEntry(
                             id = meal.serverId ?: meal.localId,
                             localId = meal.localId,
@@ -439,7 +440,7 @@ fun DashboardScreen(
                                 .format(java.util.Date(meal.createdAt))
                         )
                     }
-                    android.util.Log.d("DashboardActivity", "✅ Added ${mealLogs.size} meal logs from local DB")
+                    android.util.Log.d("DashboardActivity", "✅ Added ${mealLogs.size} logged meals from local DB")
 
                     // 🔹 Merge + sort
                     recentMeals = combinedList.sortedByDescending { it.createdAt }
@@ -707,8 +708,15 @@ fun DashboardScreen(
                             onMealDelete = { meal -> 
                                 scope.launch {
                                     try {
-                                        // Try to delete using repository (works offline!)
-                                        val result = foodLogRepository.deleteFoodLog(meal.localId)
+                                        // Determine if it's a food log or meal log based on mealType
+                                        val result = if (meal.mealType == "Meal") {
+                                            // It's a logged meal, delete from meal log repository
+                                            mealLogRepository.deleteMealLog(meal.localId)
+                                        } else {
+                                            // It's a food log, delete from food log repository
+                                            foodLogRepository.deleteFoodLog(meal.localId)
+                                        }
+                                        
                                         result.onSuccess {
                                             recentMeals = recentMeals.filter { it.localId != meal.localId }
                                             refreshData()
@@ -845,10 +853,10 @@ fun DashboardScreen(
                     }
                 }
                 
-                // Meal Button
+                // Food Button
                 FloatingActionButton(
                     onClick = {
-                        val intent = Intent(context, AddFullMealActivity::class.java)
+                        val intent = Intent(context, AddMealActivity::class.java)
                         intent.putExtra("USER_ID", userId)
                         context.startActivity(intent)
                         showFloatingIcons = false
@@ -863,11 +871,11 @@ fun DashboardScreen(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_meals),
-                            contentDescription = "Add Meal",
+                            contentDescription = "Add Food",
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
-                            text = stringResource(R.string.add_meal),
+                            text = stringResource(R.string.add_food),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
                         )
@@ -929,49 +937,85 @@ fun CalorieWheel(
     )
 
     Box(
-        modifier = Modifier.size(120.dp),
+        modifier = Modifier.size(160.dp),
         contentAlignment = Alignment.Center
     ) {
         if (isLoading) {
             CircularProgressIndicator()
         } else {
-            Canvas(modifier = Modifier.size(120.dp)) {
-                val strokeWidth = 20.dp.toPx()
+            Canvas(modifier = Modifier.size(160.dp)) {
+                val strokeWidth = 16.dp.toPx()
                 val radius = (size.minDimension - strokeWidth) / 2
+                val center = androidx.compose.ui.geometry.Offset(size.width / 2, size.height / 2)
 
+                // Calculate angles based on total calories consumed
                 val carbsAngle = if (totalCalories > 0) (animatedCarbsCalories / totalCalories * 360f) else 0f
                 val proteinAngle = if (totalCalories > 0) (animatedProteinCalories / totalCalories * 360f) else 0f
                 val fatAngle = if (totalCalories > 0) (animatedFatCalories / totalCalories * 360f) else 0f
 
                 var startAngle = -90f
 
-                // Carbs (Green - ForkIt Brand)
+                // Draw background ring (remaining calories) - light grey
                 drawArc(
-                    color = Color(0xFF22B27D),
-                    startAngle = startAngle,
-                    sweepAngle = carbsAngle,
+                    color = Color(0xFFE0E0E0),
+                    startAngle = 0f,
+                    sweepAngle = 360f,
                     useCenter = false,
                     style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                 )
-                startAngle += carbsAngle
 
-                // Protein (Purple)
-                drawArc(
-                    color = Color(0xFF8B5CF6),
-                    startAngle = startAngle,
-                    sweepAngle = proteinAngle,
-                    useCenter = false,
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                // Carbs (ForkIt Blue)
+                if (carbsAngle > 0) {
+                    drawArc(
+                        color = Color(0xFF1E9ECD), // ForkIt Blue
+                        startAngle = startAngle,
+                        sweepAngle = carbsAngle,
+                        useCenter = false,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    )
+                    startAngle += carbsAngle
+                }
+
+                // Protein (ForkIt Green)
+                if (proteinAngle > 0) {
+                    drawArc(
+                        color = Color(0xFF22B27D), // ForkIt Green
+                        startAngle = startAngle,
+                        sweepAngle = proteinAngle,
+                        useCenter = false,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    )
+                    startAngle += proteinAngle
+                }
+
+                // Fat (Darker Purple)
+                if (fatAngle > 0) {
+                    drawArc(
+                        color = Color(0xFF6A1B9A), // Darker Purple
+                        startAngle = startAngle,
+                        sweepAngle = fatAngle,
+                        useCenter = false,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    )
+                }
+            }
+            
+            // Center text
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = totalCalories.toString(),
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF22B27D), // ForkIt Green for the main number
+                    textAlign = TextAlign.Center
                 )
-                startAngle += proteinAngle
-
-                // Fat (Blue - ForkIt Brand)
-                drawArc(
-                    color = Color(0xFF1E9ECD),
-                    startAngle = startAngle,
-                    sweepAngle = fatAngle,
-                    useCenter = false,
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                Text(
+                    text = "Today's Calories",
+                    fontSize = 12.sp,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -986,56 +1030,86 @@ fun MacronutrientBreakdown(
     totalCalories: Int
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Carbs
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .background(Color(0xFF22B27D), CircleShape) // ForkIt Green
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .background(Color(0xFF1E9ECD), CircleShape) // ForkIt Blue
+                )
+                Text(
+                    text = "Carbs",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
             Text(
-                text = stringResource(R.string.carbs_calories, carbsCalories),
+                text = "${carbsCalories}cal (${if (totalCalories > 0) ((carbsCalories * 100) / totalCalories) else 0}%)",
                 fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color.White
             )
         }
 
         // Protein
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .background(Color(0xFF8B5CF6), CircleShape) // Purple
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .background(Color(0xFF22B27D), CircleShape) // ForkIt Green
+                )
+                Text(
+                    text = "Protein",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
             Text(
-                text = stringResource(R.string.protein_calories, proteinCalories),
+                text = "${proteinCalories}cal (${if (totalCalories > 0) ((proteinCalories * 100) / totalCalories) else 0}%)",
                 fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color.White
             )
         }
 
         // Fat
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .background(Color(0xFF1E9ECD), CircleShape) // ForkIt Blue
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .background(Color(0xFF6A1B9A), CircleShape) // Darker Purple
+                )
+                Text(
+                    text = "Fat",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
             Text(
-                text = stringResource(R.string.fat_calories, fatCalories),
+                text = "${fatCalories}cal (${if (totalCalories > 0) ((fatCalories * 100) / totalCalories) else 0}%)",
                 fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color.White
             )
         }
     }
@@ -1147,10 +1221,10 @@ fun FloatingIcons(
                 }
             }
             
-            // Meal Button
+            // Food Button
             FloatingActionButton(
                 onClick = {
-                    val intent = Intent(context, AddFullMealActivity::class.java)
+                    val intent = Intent(context, AddMealActivity::class.java)
                     intent.putExtra("USER_ID", userId)
                     context.startActivity(intent)
                     onDismiss()
@@ -1165,11 +1239,11 @@ fun FloatingIcons(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_meals),
-                        contentDescription = stringResource(R.string.add_meal),
+                        contentDescription = stringResource(R.string.add_food),
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
-                        text = stringResource(R.string.meal),
+                        text = stringResource(R.string.add_food),
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
                     )

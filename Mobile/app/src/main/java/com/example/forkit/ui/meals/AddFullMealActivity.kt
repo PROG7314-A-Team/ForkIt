@@ -36,7 +36,8 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.google.gson.Gson
-import com.example.forkit.data.models.MealIngredient
+import com.example.forkit.data.models.MealIngredient as UIMealIngredient
+import com.example.forkit.data.local.entities.MealIngredient as DBMealIngredient
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -50,7 +51,7 @@ import com.example.forkit.utils.NetworkConnectivityManager
 private const val DEBUG_TAG = "MealsDebug"
 private const val TAG = "MealsDebug"
 // ✅ Shared list reference so launcher can access composable state
-private var ingredientsListState: MutableList<MealIngredient>? = null
+private var ingredientsListState: MutableList<UIMealIngredient>? = null
 
 class AddFullMealActivity : ComponentActivity() {
 
@@ -73,7 +74,7 @@ class AddFullMealActivity : ComponentActivity() {
                 try {
                     // Deserialize the JSON into a MealIngredient object
                     val newIngredient =
-                        Gson().fromJson(ingredientJson, MealIngredient::class.java)
+                        Gson().fromJson(ingredientJson, UIMealIngredient::class.java)
 
                     Log.d(
                         DEBUG_TAG,
@@ -136,7 +137,7 @@ class AddFullMealActivity : ComponentActivity() {
     val context = LocalContext.current
     // 🔹 Ingredient list (temporary mock list)
     // Shared mutable list accessible from ingredientLauncher
-    val ingredients = remember { mutableStateListOf<MealIngredient>() }
+    val ingredients = remember { mutableStateListOf<UIMealIngredient>() }
     ingredientsListState = ingredients
     val scope = rememberCoroutineScope()
     
@@ -447,12 +448,12 @@ class AddFullMealActivity : ComponentActivity() {
                                         val totalFat = ingredients.sumOf { it.fat }
                                         val totalProtein = ingredients.sumOf { it.protein }
                                         
-                                        // Convert ingredients to MealIngredient format
+                                        // Convert UI ingredients to DB format for storage
                                         val mealIngredients = ingredients.map { ingredient ->
-                                            com.example.forkit.data.local.entities.MealIngredient(
+                                            DBMealIngredient(
                                                 foodName = ingredient.foodName,
                                                 quantity = ingredient.servingSize, // servingSize -> quantity
-                                                unit = ingredient.measuringUnit,
+                                                unit = ingredient.measuringUnit,   // measuringUnit -> unit
                                                 calories = ingredient.calories,
                                                 carbs = ingredient.carbs,
                                                 fat = ingredient.fat,

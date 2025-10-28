@@ -8,6 +8,12 @@ router.get("/date-range", mealLogController.getMealLogsByDateRange);
 // GET all meal logs (with optional filters)
 router.get("/user/:userId", mealLogController.getMealLogs);
 
+// GET meal templates (isTemplate = true)
+router.get("/templates/:userId", mealLogController.getMealTemplates);
+
+// GET logged meals (isTemplate = false)
+router.get("/logged/:userId", mealLogController.getLoggedMeals);
+
 // GET meal log by ID
 router.get("/:id", mealLogController.getMealLogById);
 

@@ -146,6 +146,8 @@
     <string name="please_enter_valid_amount">Please enter a valid amount</string>
     <string name="water_logged_success">Water intake recorded successfully</string>
     <string name="food_logged_success">Food item recorded successfully</string>
+    <string name="food_selected_success">Food selected: %1$s</string>
+    <string name="food_added_success">Food added successfully to your log</string>
     
     <!-- Profile -->
     <string name="your_profile">Profile</string>
@@ -188,12 +190,12 @@
     <string name="found_food">Found: %1$s</string>
     <string name="no_food_found_barcode">No food information found for this barcode. Please try searching manually</string>
     <string name="failed_get_food">Failed to get food: %1$s</string>
-    <string name="no_results_found_api">No food items found for your search</string>
-    <string name="search_failed_retries">Unable to search for food items. Please try again</string>
+    <string name="no_results_found_api">No food items found for your search. Try different keywords</string>
+    <string name="search_failed_retries">Unable to search for food items. Please check your connection and try again</string>
     <string name="search_timeout_try_again">Search is taking too long. Please try again</string>
-    <string name="network_error_check_connection">Please check your internet connection and try again</string>
-    <string name="connection_error_server_unavailable">Server is temporarily unavailable. Please try again later</string>
-    <string name="search_error">Search error: %1$s</string>
+    <string name="network_error_check_connection">No internet connection. Please check your network and try again</string>
+    <string name="connection_error_server_unavailable">Unable to connect to server. Please try again later</string>
+    <string name="search_error">Something went wrong while searching. Please try again</string>
     <string name="deleted_successfully">Item removed successfully</string>
     <string name="failed_to_delete">Unable to remove item. Please try again</string>
     <string name="no_ingredient_found_barcode">No ingredient information found for this barcode. Please try searching manually</string>

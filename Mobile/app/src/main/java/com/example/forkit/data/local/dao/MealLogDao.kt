@@ -44,4 +44,14 @@ interface MealLogDao {
     
     @Query("DELETE FROM meal_logs WHERE isSynced = 1 AND createdAt < :timestamp")
     suspend fun deleteOldSyncedLogs(timestamp: Long)
+    
+    // NEW: Template-specific queries
+    @Query("SELECT * FROM meal_logs WHERE userId = :userId AND isTemplate = 1 ORDER BY createdAt DESC")
+    suspend fun getTemplates(userId: String): List<MealLogEntity>
+    
+    @Query("SELECT * FROM meal_logs WHERE userId = :userId AND isTemplate = 0 AND date = :date ORDER BY createdAt DESC")
+    suspend fun getLoggedByDate(userId: String, date: String): List<MealLogEntity>
+    
+    @Query("SELECT * FROM meal_logs WHERE userId = :userId AND isTemplate = 0 ORDER BY createdAt DESC")
+    suspend fun getLoggedMeals(userId: String): List<MealLogEntity>
 }

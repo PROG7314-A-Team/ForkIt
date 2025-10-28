@@ -1994,6 +1994,12 @@ fun AddDetailsScreen(
                             "Food saved offline - will sync when connected",
                             Toast.LENGTH_LONG
                         ).show()
+                    } else {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.food_added_success),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                     // Navigate back to main screen to refresh My Foods
                     onNavigateToMain()
@@ -2003,11 +2009,11 @@ fun AddDetailsScreen(
                         onSuccess()
                     }
                 }.onFailure { e ->
-                    errorMessage = "Couldn't save food. Please try again"
+                    errorMessage = "Unable to save food. Please check your connection and try again"
                     Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                errorMessage = "Something went wrong. Please try again"
+                errorMessage = "Something went wrong while saving. Please try again"
                 Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
             } finally {
                 isLoading = false

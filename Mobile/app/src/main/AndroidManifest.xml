@@ -136,7 +136,17 @@
     <activity
         android:name=".ui.meals.MealDetailActivity"
         android:exported="false"
-        android:label="Add Ingredient"
+        android:label="Meal Details"
+        android:theme="@style/Theme.ForkIt" />
+    <activity
+        android:name=".ui.meals.AddMealActivity"
+        android:exported="false"
+        android:label="Create Meal Template"
+        android:theme="@style/Theme.ForkIt" />
+    <activity
+        android:name=".ui.meals.MealAdjustmentActivity"
+        android:exported="false"
+        android:label="Log Meal"
         android:theme="@style/Theme.ForkIt" />
 
     <activity

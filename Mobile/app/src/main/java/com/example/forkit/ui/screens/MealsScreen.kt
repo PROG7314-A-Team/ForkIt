@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.data.RetrofitClient
 import com.example.forkit.data.models.MealLog
-import com.example.forkit.ui.meals.AddFullMealActivity
+import com.example.forkit.ui.meals.AddMealActivity
 import com.example.forkit.ui.meals.MealDetailActivity
 import androidx.compose.ui.res.stringResource
 import com.example.forkit.R
@@ -70,10 +70,10 @@ fun MealsScreen(userId: String, mealLogRepository: MealLogRepository? = null, re
 
             // Always try local database as well to get the most complete data
             if (mealLogRepository != null) {
-                Log.d("MealsScreen", "Also checking local database for additional meals...")
-                // Get all meals from local database (including those without dates)
-                val localMeals = mealLogRepository.getAllMealLogs(userId)
-                val localMealsConverted = localMeals.map { entity ->
+                Log.d("MealsScreen", "Also checking local database for meal templates...")
+                // Get only meal templates from local database
+                val localTemplates = mealLogRepository.getMealTemplates(userId)
+                val localTemplatesConverted = localTemplates.map { entity ->
                     MealLog(
                         id = entity.serverId ?: entity.localId,
                         userId = entity.userId,
@@ -94,30 +94,34 @@ fun MealsScreen(userId: String, mealLogRepository: MealLogRepository? = null, re
                         servings = entity.servings,
                         date = entity.date,
                         mealType = entity.mealType,
+                        isTemplate = entity.isTemplate,
+                        templateId = entity.templateId,
                         createdAt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).format(java.util.Date(entity.createdAt)),
                         updatedAt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).format(java.util.Date(entity.createdAt))
                     )
                 }
-                Log.d("MealsScreen", "Loaded ${localMealsConverted.size} meals from local database")
+                Log.d("MealsScreen", "Loaded ${localTemplatesConverted.size} meal templates from local database")
 
-                // Combine API and local data, preferring local data for duplicates
-                val combinedMeals = if (allMeals.isNotEmpty()) {
-                    // Merge API and local data, with local data taking precedence
-                    val apiIds = allMeals.map { it.id }.toSet()
-                    val localOnly = localMealsConverted.filter { it.id !in apiIds }
-                    allMeals + localOnly
+                // For templates, we primarily use local data since API might not have isTemplate field yet
+                // Filter API data to only include templates (if API supports it)
+                val apiTemplates = allMeals.filter { it.isTemplate }
+                val combinedTemplates = if (apiTemplates.isNotEmpty()) {
+                    // Merge API and local templates, with local data taking precedence
+                    val localIds = localTemplatesConverted.map { it.id }.toSet()
+                    val apiOnly = apiTemplates.filter { it.id !in localIds }
+                    localTemplatesConverted + apiOnly
                 } else {
-                    localMealsConverted
+                    localTemplatesConverted
                 }
 
-                allMeals = combinedMeals
-                Log.d("MealsScreen", "Combined total: ${allMeals.size} meals (API: ${if (response.isSuccessful) (response.body()?.data?.size ?: 0) else 0}, Local: ${localMealsConverted.size})")
+                allMeals = combinedTemplates
+                Log.d("MealsScreen", "Combined total: ${allMeals.size} meal templates (API: ${apiTemplates.size}, Local: ${localTemplatesConverted.size})")
             }
 
-            // Remove duplicates by unique name + calories + date combination
-            meals = allMeals.distinctBy { "${it.name}-${it.totalCalories}-${it.date}" }
+            // Remove duplicates by unique name + calories combination (templates don't have dates)
+            meals = allMeals.distinctBy { "${it.name}-${it.totalCalories}" }
 
-            Log.d("MealsScreen", "✅ Final meals loaded: ${allMeals.size}, unique after filter: ${meals.size}")
+            Log.d("MealsScreen", "✅ Final meal templates loaded: ${allMeals.size}, unique after filter: ${meals.size}")
             errorMessage = null
         } catch (e: Exception) {
             Log.e("MealsScreen", "❌ Error fetching meals", e)
@@ -200,9 +204,9 @@ fun MealsScreen(userId: String, mealLogRepository: MealLogRepository? = null, re
                 }
 
                 meals.isEmpty() -> {
-                    Log.d(DEBUG_TAG, "$TAG: No meals found for user.")
+                    Log.d(DEBUG_TAG, "$TAG: No meal templates found for user.")
                     Text(
-                        text = stringResource(R.string.no_meals_logged_yet),
+                        text = "No meal templates created yet. Create your first meal template!",
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 24.dp)
@@ -219,20 +223,19 @@ fun MealsScreen(userId: String, mealLogRepository: MealLogRepository? = null, re
                             MealCard(meal = meal) {
                                 Log.i(DEBUG_TAG, "$TAG: Clicked meal -> ${meal.name}")
 
-                                // Convert Ingredient objects to detailed strings with nutrition info
-                                val ingredientDetails = ArrayList(meal.ingredients.map { ingredient ->
-                                    "${ingredient.name} (${ingredient.amount} ${ingredient.unit})"
-                                })
-
+                                // Pass full ingredient objects to MealDetailActivity
                                 val intent = Intent(context, MealDetailActivity::class.java).apply {
+                                    putExtra("MEAL_ID", meal.id)
                                     putExtra("MEAL_NAME", meal.name)
                                     putExtra("MEAL_DESCRIPTION", meal.description ?: "No description available")
-                                    putStringArrayListExtra("INGREDIENTS", ingredientDetails)
+                                    putExtra("INGREDIENTS", meal.ingredients.toTypedArray())
                                     putExtra("CALORIES", meal.totalCalories)
                                     putExtra("CARBS", meal.totalCarbs)
                                     putExtra("FAT", meal.totalFat)
                                     putExtra("PROTEIN", meal.totalProtein)
+                                    putExtra("SERVINGS", meal.servings)
                                     putExtra("USER_ID", userId)
+                                    putExtra("IS_TEMPLATE", meal.isTemplate)
                                 }
 
 
@@ -246,11 +249,11 @@ fun MealsScreen(userId: String, mealLogRepository: MealLogRepository? = null, re
             }
         }
 
-        // Floating Add Meal Button
+        // Floating Add Meal Template Button
         FloatingActionButton(
             onClick = {
-                Log.d(DEBUG_TAG, "$TAG: Add Meal button clicked. Opening AddFullMealActivity.")
-                val intent = Intent(context, AddFullMealActivity::class.java).apply {
+                Log.d(DEBUG_TAG, "$TAG: Add Meal Template button clicked. Opening AddMealActivity.")
+                val intent = Intent(context, AddMealActivity::class.java).apply {
                     putExtra("USER_ID", userId)
                 }
                 context.startActivity(intent)
@@ -261,7 +264,7 @@ fun MealsScreen(userId: String, mealLogRepository: MealLogRepository? = null, re
                 .align(Alignment.BottomEnd)
                 .padding(24.dp)
         ) {
-            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_meal))
+            Icon(Icons.Default.Add, contentDescription = "Create Meal Template")
         }
     }
 }

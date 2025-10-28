@@ -24,6 +24,8 @@ data class MealLogEntity(
     val servings: Double,
     val date: String,
     val mealType: String?,
+    val isTemplate: Boolean = false, // NEW: true for saved meals, false for logged meals
+    val templateId: String? = null,  // NEW: reference to original template if this is a logged meal
     val isSynced: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )

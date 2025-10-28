@@ -10,6 +10,7 @@ import com.example.forkit.data.models.Ingredient
 import com.example.forkit.utils.NetworkConnectivityManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.UUID
 
 class MealLogRepository(
     private val apiService: ApiService,
@@ -33,7 +34,9 @@ class MealLogRepository(
         totalProtein: Double,
         servings: Double,
         date: String,
-        mealType: String?
+        mealType: String?,
+        isTemplate: Boolean = false,
+        templateId: String? = null
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
             val mealLogEntity = MealLogEntity(
@@ -49,6 +52,8 @@ class MealLogRepository(
                 servings = servings,
                 date = date,
                 mealType = mealType,
+                isTemplate = isTemplate,
+                templateId = templateId,
                 isSynced = false
             )
             
@@ -73,7 +78,9 @@ class MealLogRepository(
                         totalProtein = totalProtein,
                         servings = servings,
                         date = date,
-                        mealType = mealType
+                        mealType = mealType,
+                        isTemplate = isTemplate,
+                        templateId = templateId
                     )
                     
                     val response = apiService.createMealLog(request)
@@ -177,5 +184,96 @@ class MealLogRepository(
      */
     suspend fun markAsSynced(localId: String, serverId: String) = withContext(Dispatchers.IO) {
         mealLogDao.markAsSynced(localId, serverId)
+    }
+    
+    /**
+     * Get only meal templates (for Meals tab)
+     */
+    suspend fun getMealTemplates(userId: String): List<MealLogEntity> = withContext(Dispatchers.IO) {
+        mealLogDao.getTemplates(userId)
+    }
+    
+    /**
+     * Get only logged meals (for dashboard recent meals)
+     */
+    suspend fun getLoggedMeals(userId: String, date: String): List<MealLogEntity> = withContext(Dispatchers.IO) {
+        mealLogDao.getLoggedByDate(userId, date)
+    }
+    
+    /**
+     * Get all logged meals for a user (for dashboard)
+     */
+    suspend fun getAllLoggedMeals(userId: String): List<MealLogEntity> = withContext(Dispatchers.IO) {
+        mealLogDao.getLoggedMeals(userId)
+    }
+    
+    /**
+     * Log a template to a specific date (creates new entry)
+     */
+    suspend fun logMealTemplate(
+        templateId: String, 
+        date: String, 
+        userId: String,
+        servingMultiplier: Double = 1.0
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val template = mealLogDao.getById(templateId)
+            if (template == null) {
+                return@withContext Result.failure(Exception("Template not found"))
+            }
+            
+            if (!template.isTemplate) {
+                return@withContext Result.failure(Exception("Not a template"))
+            }
+            
+            // Create logged meal with adjusted values
+            val loggedMeal = template.copy(
+                localId = UUID.randomUUID().toString(),
+                serverId = null,
+                date = date,
+                isTemplate = false,
+                templateId = templateId,
+                isSynced = false,
+                createdAt = System.currentTimeMillis(),
+                // Apply serving multiplier
+                totalCalories = template.totalCalories * servingMultiplier,
+                totalCarbs = template.totalCarbs * servingMultiplier,
+                totalFat = template.totalFat * servingMultiplier,
+                totalProtein = template.totalProtein * servingMultiplier,
+                servings = template.servings * servingMultiplier,
+                ingredients = template.ingredients.map { ingredient ->
+                    ingredient.copy(
+                        quantity = ingredient.quantity * servingMultiplier,
+                        calories = ingredient.calories * servingMultiplier,
+                        carbs = ingredient.carbs * servingMultiplier,
+                        fat = ingredient.fat * servingMultiplier,
+                        protein = ingredient.protein * servingMultiplier
+                    )
+                }
+            )
+            
+            // Save the logged meal
+            val result = createMealLog(
+                userId = loggedMeal.userId,
+                name = loggedMeal.name,
+                description = loggedMeal.description,
+                ingredients = loggedMeal.ingredients,
+                instructions = loggedMeal.instructions,
+                totalCalories = loggedMeal.totalCalories,
+                totalCarbs = loggedMeal.totalCarbs,
+                totalFat = loggedMeal.totalFat,
+                totalProtein = loggedMeal.totalProtein,
+                servings = loggedMeal.servings,
+                date = loggedMeal.date,
+                mealType = loggedMeal.mealType,
+                isTemplate = false,
+                templateId = templateId
+            )
+            
+            result
+        } catch (e: Exception) {
+            Log.e("MealLogRepository", "Error logging meal template: ${e.message}", e)
+            Result.failure(e)
+        }
     }
 }

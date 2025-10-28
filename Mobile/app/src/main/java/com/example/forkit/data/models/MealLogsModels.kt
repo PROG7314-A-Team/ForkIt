@@ -15,7 +15,9 @@ data class CreateMealLogRequest(
     val totalProtein: Double? = null,
     val servings: Double? = null,
     val date: String,
-    val mealType: String? = null
+    val mealType: String? = null,
+    val isTemplate: Boolean = false,
+    val templateId: String? = null
 )
 
 data class UpdateMealLogRequest(
@@ -66,6 +68,8 @@ data class MealLog(
     val servings: Double,
     val date: String,
     val mealType: String?,
+    val isTemplate: Boolean = false,
+    val templateId: String? = null,
     val createdAt: String,
     val updatedAt: String
 )

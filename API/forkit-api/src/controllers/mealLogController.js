@@ -77,14 +77,24 @@ exports.createMealLog = async (req, res) => {
       servings,
       date,
       mealType, // Breakfast, Lunch, Dinner, Snacks
+      isTemplate, // Boolean: true for meal templates, false for logged meals
+      templateId, // String: reference to original template if this is a logged meal
     } = req.body;
 
     // Validation
-    if (!userId || !name || !ingredients || !instructions || !date) {
+    if (!userId || !name || !ingredients || !instructions) {
       return res.status(400).json({
         success: false,
         message:
-          "userId, name, ingredients, instructions, and date are required",
+          "userId, name, ingredients, and instructions are required",
+      });
+    }
+    
+    // For templates, date can be empty. For logged meals, date is required.
+    if (!isTemplate && !date) {
+      return res.status(400).json({
+        success: false,
+        message: "date is required for logged meals",
       });
     }
 
@@ -115,13 +125,18 @@ exports.createMealLog = async (req, res) => {
       totalFat: parseFloat(totalFat) || 0,
       totalProtein: parseFloat(totalProtein) || 0,
       servings: parseFloat(servings) || 1,
-      date,
+      date: date || "", // Empty string for templates
       mealType: mealType || null,
+      isTemplate: Boolean(isTemplate) || false,
+      templateId: templateId || null,
     };
 
     const mealLog = await mealLogService.create(mealLogData);
 
-    await streakService.updateUserStreak(userId, date);
+    // Only update streak for logged meals (not templates)
+    if (!isTemplate && date) {
+      await streakService.updateUserStreak(userId, date);
+    }
 
     res.status(201).json({
       success: true,
@@ -224,6 +239,77 @@ exports.getMealLogsByDateRange = async (req, res) => {
       success: false,
       error: error.message,
       message: "Failed to retrieve meal logs",
+    });
+  }
+};
+
+// Get meal templates (isTemplate = true)
+exports.getMealTemplates = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required",
+      });
+    }
+
+    const filters = [
+      { field: "userId", operator: "==", value: userId },
+      { field: "isTemplate", operator: "==", value: true },
+    ];
+
+    const templates = await mealLogService.query(filters, "createdAt", "desc");
+
+    res.json({
+      success: true,
+      data: templates,
+      message: "Meal templates retrieved successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Failed to retrieve meal templates",
+    });
+  }
+};
+
+// Get logged meals (isTemplate = false) for a specific date
+exports.getLoggedMeals = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { date } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId is required",
+      });
+    }
+
+    const filters = [
+      { field: "userId", operator: "==", value: userId },
+      { field: "isTemplate", operator: "==", value: false },
+    ];
+
+    if (date) {
+      filters.push({ field: "date", operator: "==", value: date });
+    }
+
+    const loggedMeals = await mealLogService.query(filters, "createdAt", "desc");
+
+    res.json({
+      success: true,
+      data: loggedMeals,
+      message: "Logged meals retrieved successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Failed to retrieve logged meals",
     });
   }
 };

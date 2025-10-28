@@ -2,11 +2,12 @@
 
 package com.example.forkit.ui.meals
 
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,39 +15,68 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.forkit.data.RetrofitClient
+import com.example.forkit.data.local.AppDatabase
+import com.example.forkit.data.models.Ingredient
+import com.example.forkit.data.repository.MealLogRepository
 import com.example.forkit.ui.theme.ForkItTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
+
+private const val TAG = "MealDetailActivity"
 
 class MealDetailActivity : ComponentActivity() {
+    
+    private lateinit var mealLogRepository: MealLogRepository
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        
+        // Get data from intent
+        val mealId = intent.getStringExtra("MEAL_ID") ?: ""
         val mealName = intent.getStringExtra("MEAL_NAME") ?: "Meal"
         val description = intent.getStringExtra("MEAL_DESCRIPTION") ?: "No description available"
-        val ingredients = intent.getStringArrayListExtra("INGREDIENTS") ?: arrayListOf()
+        val ingredients = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableArrayExtra("INGREDIENTS", Ingredient::class.java)?.toList() ?: emptyList()
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableArrayExtra("INGREDIENTS")?.map { it as Ingredient } ?: emptyList()
+        }
         val calories = intent.getDoubleExtra("CALORIES", 0.0)
         val carbs = intent.getDoubleExtra("CARBS", 0.0)
         val fat = intent.getDoubleExtra("FAT", 0.0)
         val protein = intent.getDoubleExtra("PROTEIN", 0.0)
+        val servings = intent.getDoubleExtra("SERVINGS", 1.0)
         val userId = intent.getStringExtra("USER_ID") ?: ""
-
+        val isTemplate = intent.getBooleanExtra("IS_TEMPLATE", true)
+        
+        // Initialize repository
+        val database = AppDatabase.getInstance(this)
+        mealLogRepository = MealLogRepository(
+            apiService = RetrofitClient.api,
+            mealLogDao = database.mealLogDao(),
+            networkManager = com.example.forkit.utils.NetworkConnectivityManager(this)
+        )
+        
         setContent {
             ForkItTheme {
                 MealDetailScreen(
+                    mealId = mealId,
                     mealName = mealName,
                     description = description,
                     ingredients = ingredients,
@@ -54,9 +84,40 @@ class MealDetailActivity : ComponentActivity() {
                     carbs = carbs,
                     fat = fat,
                     protein = protein,
+                    servings = servings,
                     userId = userId,
-                    onBackPressed = { finish() }
+                    isTemplate = isTemplate,
+                    onBackPressed = { finish() },
+                    onLogToToday = { 
+                        val intent = Intent(this@MealDetailActivity, MealAdjustmentActivity::class.java).apply {
+                            putExtra("templateId", mealId)
+                        }
+                        startActivity(intent)
+                    },
+                    onEditMeal = {
+                        Toast.makeText(this@MealDetailActivity, "Edit functionality coming soon!", Toast.LENGTH_SHORT).show()
+                    },
+                    onDeleteMeal = {
+                        deleteMealTemplate(mealId)
+                    }
                 )
+            }
+        }
+    }
+    
+    private fun deleteMealTemplate(mealId: String) {
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                val result = mealLogRepository.deleteMealLog(mealId)
+                if (result.isSuccess) {
+                    Toast.makeText(this@MealDetailActivity, "Meal template deleted successfully!", Toast.LENGTH_SHORT).show()
+                    finish()
+                } else {
+                    Toast.makeText(this@MealDetailActivity, "Failed to delete meal template", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error deleting meal template: ${e.message}", e)
+                Toast.makeText(this@MealDetailActivity, "Error deleting meal template", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -64,25 +125,25 @@ class MealDetailActivity : ComponentActivity() {
 
 @Composable
 fun MealDetailScreen(
+    mealId: String,
     mealName: String,
     description: String,
-    ingredients: List<String>,
+    ingredients: List<Ingredient>,
     calories: Double,
     carbs: Double,
     fat: Double,
     protein: Double,
+    servings: Double,
     userId: String,
-    onBackPressed: () -> Unit
+    isTemplate: Boolean,
+    onBackPressed: () -> Unit,
+    onLogToToday: () -> Unit,
+    onEditMeal: () -> Unit,
+    onDeleteMeal: () -> Unit
 ) {
-    val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    var isLogging by remember { mutableStateOf(false) }
-
-    val buttonColor by animateColorAsState(
-        if (isLogging) MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
-        else MaterialTheme.colorScheme.primary
-    )
-
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    
     Scaffold(
         topBar = {
             TopAppBar(
@@ -91,7 +152,7 @@ fun MealDetailScreen(
                         text = mealName,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 },
                 navigationIcon = {
@@ -99,69 +160,73 @@ fun MealDetailScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             )
         },
         bottomBar = {
-            Button(
-                onClick = {
-                    scope.launch {
-                        isLogging = true
-                        try {
-                            val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                            val request = com.example.forkit.data.models.CreateMealLogRequest(
-                                userId = userId,
-                                name = mealName,
-                                description = description,
-                                totalCalories = calories,
-                                totalCarbs = carbs,
-                                totalFat = fat,
-                                totalProtein = protein,
-                                servings = 1.0,
-                                date = today,
-                                ingredients = ingredients.map {
-                                    com.example.forkit.data.models.Ingredient(
-                                        name = it,
-                                        amount = 0.0,
-                                        unit = "g"
-                                    )
-                                },
-                                instructions = listOf("Logged via detail view")
-                            )
-
-                            val response = com.example.forkit.data.RetrofitClient.api.createMealLog(request)
-                            if (response.isSuccessful && response.body()?.success == true) {
-                                Toast.makeText(context, "Meal logged to today successfully", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(context, "Failed to log meal", Toast.LENGTH_SHORT).show()
-                            }
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                        } finally {
-                            isLogging = false
-                        }
+            if (isTemplate) {
+                // Action buttons for meal templates
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Log to Today button
+                    Button(
+                        onClick = onLogToToday,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Log to Today")
                     }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 14.dp)
-                    .height(56.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
-                enabled = !isLogging
-            ) {
-                Text(
-                    text = if (isLogging) "Logging..." else "Log to Today's Meals",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = Color.White
-                )
+                    
+                    // Edit button
+                    OutlinedButton(
+                        onClick = onEditMeal,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Edit")
+                    }
+                    
+                    // Delete button
+                    OutlinedButton(
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Delete")
+                    }
+                }
             }
         }
     ) { innerPadding ->
@@ -172,7 +237,7 @@ fun MealDetailScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 18.dp, vertical = 8.dp)
         ) {
-            // 🔹 Nutrition summary card
+            // Nutrition summary card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -247,12 +312,21 @@ fun MealDetailScreen(
                             )
                         }
                     }
+                    
+                    if (servings != 1.0) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Per ${servings} serving${if (servings != 1.0) "s" else ""}",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 🔹 Description section
+            // Description section
             Text(
                 text = "Description",
                 fontSize = 20.sp,
@@ -269,7 +343,7 @@ fun MealDetailScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 🔹 Ingredients header
+            // Ingredients header
             Text(
                 text = "Ingredients",
                 fontSize = 20.sp,
@@ -300,32 +374,72 @@ fun MealDetailScreen(
                         .weight(1f)
                 ) {
                     items(ingredients) { ingredient ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp)),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "• $ingredient",
-                                    fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
+                        IngredientCard(ingredient = ingredient)
                     }
                     item { Spacer(modifier = Modifier.height(80.dp)) }
                 }
             }
+        }
+    }
+    
+    // Delete confirmation dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Meal Template") },
+            text = { Text("Are you sure you want to delete this meal template? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDeleteMeal()
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun IngredientCard(ingredient: Ingredient) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = ingredient.name,
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "${ingredient.amount} ${ingredient.unit}",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
