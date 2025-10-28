@@ -27,6 +27,8 @@ class HabitRepository(
         title: String,
         description: String?,
         frequency: String,
+        selectedDays: List<Int>? = null,
+        dayOfMonth: Int? = null,
         notificationsEnabled: Boolean,
         notificationTime: String?
     ): Result<String> = withContext(Dispatchers.IO) {
@@ -36,6 +38,8 @@ class HabitRepository(
                 title = title,
                 description = description,
                 frequency = frequency,
+                selectedDays = selectedDays?.joinToString(","),
+                dayOfMonth = dayOfMonth,
                 notificationsEnabled = notificationsEnabled,
                 notificationTime = notificationTime,
                 isSynced = false
@@ -46,7 +50,9 @@ class HabitRepository(
                     val habitRequest = CreateHabitRequest(
                         title = title,
                         description = description,
-                        frequency = frequency
+                        frequency = frequency,
+                        selectedDays = selectedDays,
+                        dayOfMonth = dayOfMonth
                     )
                     
                     val request = CreateHabitApiRequest(

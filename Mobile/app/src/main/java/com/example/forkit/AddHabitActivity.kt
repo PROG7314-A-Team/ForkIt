@@ -597,6 +597,8 @@ private suspend fun createHabit(
             title = habitRequest.title,
             description = habitRequest.description,
             frequency = habitRequest.frequency,
+            selectedDays = habitRequest.selectedDays,
+            dayOfMonth = habitRequest.dayOfMonth,
             notificationsEnabled = false, // Default to false since not in API model
             notificationTime = null // Default to null since not in API model
         )

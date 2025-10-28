@@ -35,6 +35,10 @@ import com.example.forkit.data.models.Habit
 import com.example.forkit.data.models.MockHabits
 import com.example.forkit.data.RetrofitClient
 import com.example.forkit.data.models.UpdateHabitRequest
+import com.example.forkit.data.local.AppDatabase
+import com.example.forkit.data.local.entities.HabitEntity
+import com.example.forkit.data.repository.HabitRepository
+import com.example.forkit.utils.NetworkConnectivityManager
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import com.example.forkit.R
@@ -49,7 +53,39 @@ fun HabitsScreen(userId: String) {
     var habitToDelete by remember { mutableStateOf<Habit?>(null) }
     val scope = rememberCoroutineScope()
     
-    // Function to fetch habits from API
+    // Initialize database and repository
+    val database = remember { AppDatabase.getInstance(context) }
+    val networkManager = remember { NetworkConnectivityManager(context) }
+    val repository = remember { 
+        HabitRepository(
+            apiService = RetrofitClient.api,
+            habitDao = database.habitDao(),
+            networkManager = networkManager
+        )
+    }
+    
+    // Function to filter habits based on current day
+    fun filterHabitsForToday(habits: List<HabitEntity>, filterType: Int): List<HabitEntity> {
+        val today = java.util.Calendar.getInstance()
+        val dayOfWeek = today.get(java.util.Calendar.DAY_OF_WEEK) - 1 // 0 = Sunday, 1 = Monday, etc.
+        val dayOfMonth = today.get(java.util.Calendar.DAY_OF_MONTH)
+        
+        return habits.filter { habit ->
+            when (filterType) {
+                0 -> true // Daily habits always show
+                1 -> { // Weekly habits - check if today is in selected days
+                    val selectedDays = habit.selectedDays?.split(",")?.mapNotNull { it.toIntOrNull() } ?: emptyList()
+                    selectedDays.contains(dayOfWeek)
+                }
+                2 -> { // Monthly habits - check if today matches the day of month
+                    habit.dayOfMonth == dayOfMonth
+                }
+                else -> true
+            }
+        }
+    }
+    
+    // Function to fetch habits from local database with proper filtering
     val fetchHabits: () -> Unit = {
         scope.launch {
             try {
@@ -57,56 +93,36 @@ fun HabitsScreen(userId: String) {
                 errorMessage = null
                 android.util.Log.d("HabitsScreen", "Fetching habits for userId: $userId, filter: $selectedTimeFilter")
                 
-                val response = when (selectedTimeFilter) {
-                    0 -> RetrofitClient.api.getDailyHabits(userId)
-                    1 -> RetrofitClient.api.getWeeklyHabits(userId)
-                    2 -> RetrofitClient.api.getMonthlyHabits(userId)
-                    else -> RetrofitClient.api.getDailyHabits(userId)
-                }
-
-                Log.d("HabitsScreen", "Habits response ${response}")
+                val allHabits = repository.getHabitsByFrequency(userId, when (selectedTimeFilter) {
+                    0 -> "DAILY"
+                    1 -> "WEEKLY" 
+                    2 -> "MONTHLY"
+                    else -> "DAILY"
+                })
                 
-                android.util.Log.d("HabitsScreen", "Response code: ${response.code()}")
-                android.util.Log.d("HabitsScreen", "Response body: ${response.body()}")
+                // Filter habits based on current day
+                val filteredHabits = filterHabitsForToday(allHabits, selectedTimeFilter)
                 
-                if (response.isSuccessful) {
-                    val habitsResponse = response.body()
-                    android.util.Log.d("HabitsScreen", "Habits response: $habitsResponse")
-                    if (habitsResponse?.success == true) {
-                        habits = habitsResponse.data
-                        android.util.Log.d("HabitsScreen", "Successfully loaded ${habits.size} habits")
-                    } else {
-                        errorMessage = habitsResponse?.message ?: "Failed to load habits"
-                        android.util.Log.e("HabitsScreen", "API error: ${habitsResponse?.message}")
-                        // Fallback to mock data
-                        habits = when (selectedTimeFilter) {
-                            0 -> MockHabits.getTodayHabits()
-                            1 -> MockHabits.getWeeklyHabits()
-                            2 -> MockHabits.getMonthlyHabits()
-                            else -> MockHabits.getTodayHabits()
-                        }
-                    }
-                } else {
-                    errorMessage = "Network error: ${response.code()}"
-                    android.util.Log.e("HabitsScreen", "Network error: ${response.code()}")
-                    // Fallback to mock data
-                    habits = when (selectedTimeFilter) {
-                        0 -> MockHabits.getTodayHabits()
-                        1 -> MockHabits.getWeeklyHabits()
-                        2 -> MockHabits.getMonthlyHabits()
-                        else -> MockHabits.getTodayHabits()
-                    }
+                // Convert to Habit model
+                habits = filteredHabits.map { entity ->
+                    Habit(
+                        id = entity.localId,
+                        title = entity.title,
+                        description = entity.description,
+                        category = "GENERAL", // Default category
+                        frequency = entity.frequency,
+                        isCompleted = entity.isCompleted,
+                        completedAt = entity.completedAt,
+                        createdAt = entity.createdAt.toString()
+                    )
                 }
+                
+                android.util.Log.d("HabitsScreen", "Successfully loaded ${habits.size} filtered habits")
+                
             } catch (e: Exception) {
                 errorMessage = "Error: ${e.message}"
                 android.util.Log.e("HabitsScreen", "Exception loading habits: ${e.message}", e)
-                // Fallback to mock data
-                habits = when (selectedTimeFilter) {
-                    0 -> MockHabits.getTodayHabits()
-                    1 -> MockHabits.getWeeklyHabits()
-                    2 -> MockHabits.getMonthlyHabits()
-                    else -> MockHabits.getTodayHabits()
-                }
+                habits = emptyList()
             } finally {
                 isLoading = false
             }
@@ -117,13 +133,12 @@ fun HabitsScreen(userId: String) {
     val deleteHabit: (String) -> Unit = { habitId ->
         scope.launch {
             try {
-                val response = RetrofitClient.api.deleteHabit(habitId)
-                
-                if (response.isSuccessful && response.body()?.success == true) {
+                val result = repository.deleteHabit(habitId)
+                result.onSuccess {
                     habits = habits.filter { it.id != habitId }
                     android.util.Log.d("HabitsScreen", "Successfully deleted habit: $habitId")
-                } else {
-                    android.util.Log.e("HabitsScreen", "Failed to delete habit: ${response.body()?.message}")
+                }.onFailure { e ->
+                    android.util.Log.e("HabitsScreen", "Failed to delete habit: ${e.message}")
                 }
             } catch (e: Exception) {
                 android.util.Log.e("HabitsScreen", "Error deleting habit: ${e.message}", e)
@@ -336,29 +351,33 @@ fun HabitsScreen(userId: String) {
                             try {
                                 val habitToUpdate = habits.find { it.id == habitId }
                                 if (habitToUpdate != null) {
-                                    val updateRequest = UpdateHabitRequest(
-                                        isCompleted = !habitToUpdate.isCompleted
-                                    )
-                                    val response = RetrofitClient.api.updateHabit(habitId, updateRequest)
+                                    val isCompleted = !habitToUpdate.isCompleted
+                                    val completedAt = if (isCompleted) java.time.Instant.now().toString() else null
                                     
-                                    if (response.isSuccessful && response.body()?.success == true) {
+                                    val result = repository.updateHabit(
+                                        localId = habitId,
+                                        isCompleted = isCompleted,
+                                        completedAt = completedAt
+                                    )
+                                    
+                                    result.onSuccess {
                                         habits = habits.map { h ->
                                             if (h.id == habitId) {
                                                 h.copy(
-                                                    isCompleted = !h.isCompleted,
-                                                    completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
+                                                    isCompleted = isCompleted,
+                                                    completedAt = completedAt
                                                 )
                                             } else h
                                         }
                                         android.util.Log.d("HabitsScreen", "Successfully updated habit: $habitId")
-                                    } else {
-                                        android.util.Log.e("HabitsScreen", "Failed to update habit: ${response.body()?.message}")
+                                    }.onFailure { e ->
+                                        android.util.Log.e("HabitsScreen", "Failed to update habit: ${e.message}")
                                         // Still update locally for better UX
                                         habits = habits.map { h ->
                                             if (h.id == habitId) {
                                                 h.copy(
-                                                    isCompleted = !h.isCompleted,
-                                                    completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
+                                                    isCompleted = isCompleted,
+                                                    completedAt = completedAt
                                                 )
                                             } else h
                                         }
@@ -367,13 +386,18 @@ fun HabitsScreen(userId: String) {
                             } catch (e: Exception) {
                                 android.util.Log.e("HabitsScreen", "Error updating habit: ${e.message}", e)
                                 // Still update locally for better UX
-                                habits = habits.map { h ->
-                                    if (h.id == habitId) {
-                                        h.copy(
-                                            isCompleted = !h.isCompleted,
-                                            completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
-                                        )
-                                    } else h
+                                val habitToUpdate = habits.find { it.id == habitId }
+                                if (habitToUpdate != null) {
+                                    val isCompleted = !habitToUpdate.isCompleted
+                                    val completedAt = if (isCompleted) java.time.Instant.now().toString() else null
+                                    habits = habits.map { h ->
+                                        if (h.id == habitId) {
+                                            h.copy(
+                                                isCompleted = isCompleted,
+                                                completedAt = completedAt
+                                            )
+                                        } else h
+                                    }
                                 }
                             }
                         }
@@ -408,29 +432,33 @@ fun HabitsScreen(userId: String) {
                                 try {
                                     val habitToUpdate = habits.find { it.id == habitId }
                                     if (habitToUpdate != null) {
-                                        val updateRequest = UpdateHabitRequest(
-                                            isCompleted = !habitToUpdate.isCompleted
-                                        )
-                                        val response = RetrofitClient.api.updateHabit(habitId, updateRequest)
+                                        val isCompleted = !habitToUpdate.isCompleted
+                                        val completedAt = if (isCompleted) java.time.Instant.now().toString() else null
                                         
-                                        if (response.isSuccessful && response.body()?.success == true) {
+                                        val result = repository.updateHabit(
+                                            localId = habitId,
+                                            isCompleted = isCompleted,
+                                            completedAt = completedAt
+                                        )
+                                        
+                                        result.onSuccess {
                                             habits = habits.map { h ->
                                                 if (h.id == habitId) {
                                                     h.copy(
-                                                        isCompleted = !h.isCompleted,
-                                                        completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
+                                                        isCompleted = isCompleted,
+                                                        completedAt = completedAt
                                                     )
                                                 } else h
                                             }
                                             android.util.Log.d("HabitsScreen", "Successfully updated habit: $habitId")
-                                        } else {
-                                            android.util.Log.e("HabitsScreen", "Failed to update habit: ${response.body()?.message}")
+                                        }.onFailure { e ->
+                                            android.util.Log.e("HabitsScreen", "Failed to update habit: ${e.message}")
                                             // Still update locally for better UX
                                             habits = habits.map { h ->
                                                 if (h.id == habitId) {
                                                     h.copy(
-                                                        isCompleted = !h.isCompleted,
-                                                        completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
+                                                        isCompleted = isCompleted,
+                                                        completedAt = completedAt
                                                     )
                                                 } else h
                                             }
@@ -439,13 +467,18 @@ fun HabitsScreen(userId: String) {
                                 } catch (e: Exception) {
                                     android.util.Log.e("HabitsScreen", "Error updating habit: ${e.message}", e)
                                     // Still update locally for better UX
-                                    habits = habits.map { h ->
-                                        if (h.id == habitId) {
-                                            h.copy(
-                                                isCompleted = !h.isCompleted,
-                                                completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
-                                            )
-                                        } else h
+                                    val habitToUpdate = habits.find { it.id == habitId }
+                                    if (habitToUpdate != null) {
+                                        val isCompleted = !habitToUpdate.isCompleted
+                                        val completedAt = if (isCompleted) java.time.Instant.now().toString() else null
+                                        habits = habits.map { h ->
+                                            if (h.id == habitId) {
+                                                h.copy(
+                                                    isCompleted = isCompleted,
+                                                    completedAt = completedAt
+                                                )
+                                            } else h
+                                        }
                                     }
                                 }
                             }
