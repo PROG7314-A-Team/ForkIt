@@ -437,7 +437,7 @@ fun AddIngredientScreen(
         "main" -> {
             Log.d(TAG, "🟢 [AddIngredientScreen] -> Displaying MAIN screen with shared FoodSearchScreen.")
             FoodSearchScreen(
-                userId = "user123", // TODO: Get from shared preferences or auth
+                userId = "yeY2AwZAiZgEiCn9HByZUP6rsoY2", // TODO: Get from shared preferences or auth
                 screenTitle = stringResource(R.string.add_ingredient),
                 onBackPressed = {
                     Log.d(TAG, "🔙 [MAIN] -> Back pressed. Returning to previous activity.")

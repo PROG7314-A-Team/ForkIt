@@ -98,7 +98,7 @@ class AddMealActivity : ComponentActivity() {
         setContent {
             ForkItTheme {
                 AddMealScreen(
-                    userId = "user123", // TODO: Get from shared preferences or auth
+                    userId = "yeY2AwZAiZgEiCn9HByZUP6rsoY2", // TODO: Get from shared preferences or auth
                     onBackPressed = { finish() },
                     onAddIngredient = { 
                         val intent = Intent(this@AddMealActivity, com.example.forkit.ui.meals.AddIngredientActivity::class.java)
@@ -144,7 +144,7 @@ class AddMealActivity : ComponentActivity() {
                 
                 Log.d(TAG, "🔍 [saveMealTemplate] -> Calling repository.createMealLog with isTemplate=true")
                 val result = mealLogRepository.createMealLog(
-                    userId = "user123",
+                    userId = "yeY2AwZAiZgEiCn9HByZUP6rsoY2",
                     name = name,
                     description = description,
                     ingredients = dbIngredients,
