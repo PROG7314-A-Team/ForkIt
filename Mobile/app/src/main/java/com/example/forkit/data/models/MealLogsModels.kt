@@ -1,5 +1,7 @@
 package com.example.forkit.data.models
 
+import java.io.Serializable
+
 // Meal Logs Models for Meal Logging Controller
 
 // Request Models
@@ -52,7 +54,7 @@ data class Ingredient(
     val name: String,
     val amount: Double,
     val unit: String
-)
+) : Serializable
 
 data class MealLog(
     val id: String,
