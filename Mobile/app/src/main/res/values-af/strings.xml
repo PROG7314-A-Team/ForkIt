@@ -17,6 +17,7 @@
     <string name="continue_btn">Gaan voort</string>
     <string name="finish">Klaar</string>
     <string name="logout">Teken uit</string>
+    <string name="confirm">Bevestig</string>
     
     <!-- Sign Up Screen -->
     <string name="start_tracking">Begin opvolging</string>
@@ -65,6 +66,9 @@
     
     <!-- Dashboard -->
     <string name="error">Fout</string>
+    <string name="offline_mode_banner">Vanlyn modus - Data sal sinkroniseer wanneer die verbinding herstel is</string>
+    <string name="saved_offline">Vanlyn gestoor, sal sinkroniseer wanneer gekoppel</string>
+    <string name="requires_internet">Hierdie funksie vereis 'n internetverbinding</string>
     <string name="water">Water</string>
     <string name="meal">Maaltyd</string>
     <string name="meals">Maaltye</string>
@@ -143,6 +147,8 @@
     <string name="please_enter_valid_amount">Voer asseblief \'n geldige hoeveelheid in</string>
     <string name="water_logged_success">Water inname suksesvol aangeteken</string>
     <string name="food_logged_success">Kos item suksesvol aangeteken</string>
+    <string name="food_selected_success">Kos gekies: %1$s</string>
+    <string name="food_added_success">Kos suksesvol by jou logboek gevoeg</string>
     
     <!-- Profile -->
     <string name="your_profile">Profiel</string>

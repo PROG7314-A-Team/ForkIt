@@ -17,6 +17,7 @@
     <string name="continue_btn">Qhubeka</string>
     <string name="finish">Qedela</string>
     <string name="logout">Phuma</string>
+    <string name="confirm">Qinisekisa</string>
     
     <!-- Sign Up Screen -->
     <string name="start_tracking">Qala Ukulandelela</string>
@@ -65,6 +66,9 @@
     
     <!-- Dashboard -->
     <string name="error">Iphutha</string>
+    <string name="offline_mode_banner">Imodi Engaxhunyiwe - Idatha izovumelaniswa uma ukuxhumeka kubuyiselwa</string>
+    <string name="saved_offline">Kugcinwe kungaxhunyiwe, kuzosethaniswa uma kuxhunyiwe</string>
+    <string name="requires_internet">Lesi sici sidinga ukuxhumeka ku-inthanethi</string>
     <string name="water">Amanzi</string>
     <string name="meal">Ukudla</string>
     <string name="meals">Ukudla</string>
@@ -143,6 +147,8 @@
     <string name="please_enter_valid_amount">Sicela ufake inani elivumelekile</string>
     <string name="water_logged_success">Ukudla kwamanzi kurekhodwe ngempumelelo</string>
     <string name="food_logged_success">Into yokudla irekhodwe ngempumelelo</string>
+    <string name="food_selected_success">Ukudla okukhethiwe: %1$s</string>
+    <string name="food_added_success">Ukudla kufakwe ngempumelelo kurekhodi lakho</string>
     
     <!-- Profile -->
     <string name="your_profile">Iphrofayili</string>
