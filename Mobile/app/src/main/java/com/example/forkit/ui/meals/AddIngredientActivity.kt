@@ -93,12 +93,7 @@ class AddIngredientActivity : ComponentActivity() {
 
     private var scannedFoodState by mutableStateOf<Food?>(null)
 
-    // -------------------------------------------------------------
-    // 🧠 Function: onCreate
-    // 📍 Purpose: Entry point when AddIngredientActivity is launched.
-    // Sets up the Composable UI and defines callback behavior for
-    // returning the selected ingredient back to the calling screen.
-    // -------------------------------------------------------------
+    // onCreate: initialize UI and callbacks for returning selected ingredient
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -111,6 +106,7 @@ class AddIngredientActivity : ComponentActivity() {
             Log.d(TAG, "🎨 [onCreate] -> Setting Compose content for AddIngredientScreen...")
 
             ForkItTheme {
+                val passedUserId = intent.getStringExtra("USER_ID") ?: ""
                 AddIngredientScreen(
                     // 🔙 Handles back button press (activity exit)
                     onBackPressed = {
@@ -157,12 +153,7 @@ class AddIngredientActivity : ComponentActivity() {
         }
     }
 
-    // -------------------------------------------------------------
-    // 🧩 Function: barcodeLauncher
-    // 📍 Purpose: Waits for a result from BarcodeScannerActivity.
-    // If successful, retrieves the barcode value and triggers
-    // handleScannedBarcode() coroutine for API lookup.
-    // -------------------------------------------------------------
+    // barcodeLauncher: handle result from BarcodeScannerActivity and fetch by barcode
     private val barcodeLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -192,12 +183,7 @@ class AddIngredientActivity : ComponentActivity() {
     }
 
 
-    // -------------------------------------------------------------
-    // 🧠 Function: handleScannedBarcode
-    // 📍 Purpose: Takes a scanned barcode string, calls the API to
-    // fetch ingredient details, validates the response, and updates
-    // the scannedFoodState for the Composable to reactively use.
-    // -------------------------------------------------------------
+    // handleScannedBarcode: fetch ingredient by barcode and update screen state
     private suspend fun handleScannedBarcode(barcode: String) {
         Log.d(TAG, "🚀 [handleScannedBarcode] -> Starting ingredient fetch for barcode: $barcode")
 
@@ -246,11 +232,7 @@ class AddIngredientActivity : ComponentActivity() {
         Log.d(TAG, "🏁 [handleScannedBarcode] -> Completed execution for barcode: $barcode")
     }
 
-    // -------------------------------------------------------------
-    // 🧠 Function: startBarcodeScanner
-    // 📍 Purpose: Creates an Intent to launch BarcodeScannerActivity
-    // and starts it using the ActivityResultLauncher.
-    // -------------------------------------------------------------
+    // startBarcodeScanner: launch the barcode scanner activity
     private fun startBarcodeScanner() {
         Log.d(TAG, "🎬 [startBarcodeScanner] -> Preparing to launch BarcodeScannerActivity...")
 
@@ -288,9 +270,7 @@ fun AddIngredientScreen(
     }
     val isOnline = remember { networkManager.isOnline() }
     
-    // -------------------------------------------------------------
-    // 🧠 State Variables — these persist across recompositions
-    // -------------------------------------------------------------
+    // State variables
     Log.d(TAG, "🧩 [AddIngredientScreen] -> Initializing all UI states and reactive variables...")
 
     var searchQuery by remember { mutableStateOf("") }
@@ -316,9 +296,7 @@ fun AddIngredientScreen(
     // Determines unit type for UI filtering (weight/volume)
     var unitCategory by remember { mutableStateOf("all") }
 
-    // -------------------------------------------------------------
-    // 🔄 REACTIVE SECTION — Handle scanned ingredient input
-    // -------------------------------------------------------------
+    // React to scanned ingredient input
     LaunchedEffect(scannedFood) {
         if (scannedFood != null) {
             Log.d(TAG, "📡 [AddIngredientScreen] -> Detected new scanned ingredient: ${scannedFood.name}")
@@ -363,9 +341,7 @@ fun AddIngredientScreen(
         }
     }
 
-    // -------------------------------------------------------------
-    // 🔄 REACTIVE SECTION — Recalculate nutrition when serving size changes
-    // -------------------------------------------------------------
+    // Recalculate nutrition when serving size changes
     LaunchedEffect(servingSize, measuringUnit) {
         if (servingSize.isNotBlank() && baseCaloriesPer100g > 0) {
             val newServingSize = servingSize.toDoubleOrNull() ?: 100.0
@@ -380,9 +356,7 @@ fun AddIngredientScreen(
         }
     }
 
-    // -------------------------------------------------------------
-    // 🔄 REACTIVE SECTION — Handle search selection
-    // -------------------------------------------------------------
+    // React to search selection
     LaunchedEffect(selectedSearchFood) {
         selectedSearchFood?.let { food ->
             Log.d(TAG, "🧭 [AddIngredientScreen] -> Search ingredient selected: ${food.name}")
@@ -425,19 +399,14 @@ fun AddIngredientScreen(
         }
     }
 
-    // -------------------------------------------------------------
-    // 🧭 SCREEN FLOW CONTROLLER
-    // Controls which sub-screen is visible in the ingredient creation process
-    // -------------------------------------------------------------
+    // Screen flow controller: controls which sub-screen is visible during ingredient creation
     when (currentScreen) {
 
-        // ---------------------------------------------------------
-        // 🟦 MAIN SCREEN — Ingredient Search, History, and Scan Entry
-        // ---------------------------------------------------------
+        // Main screen: ingredient search, history, and scan entry
         "main" -> {
             Log.d(TAG, "🟢 [AddIngredientScreen] -> Displaying MAIN screen with shared FoodSearchScreen.")
             FoodSearchScreen(
-                userId = "yeY2AwZAiZgEiCn9HByZUP6rsoY2", // TODO: Get from shared preferences or auth
+                userId = passedUserId,
                 screenTitle = stringResource(R.string.add_ingredient),
                 onBackPressed = {
                     Log.d(TAG, "🔙 [MAIN] -> Back pressed. Returning to previous activity.")
@@ -466,9 +435,7 @@ fun AddIngredientScreen(
             )
         }
 
-        // ---------------------------------------------------------
-        // 🟨 ADJUST SCREEN — Adjust portion size and units
-        // ---------------------------------------------------------
+        // Adjust screen: portion size and units
         "adjust" -> {
             AdjustServingScreen(
                 foodName = foodName,
@@ -495,9 +462,7 @@ fun AddIngredientScreen(
             )
         }
 
-        // ---------------------------------------------------------
-        // 🟩 DETAILS SCREEN — Enter calories and macros (required for custom)
-        // ---------------------------------------------------------
+        // Details screen: enter calories and macros
         "details" -> {
             IngredientDetailsScreen(
                 calories = calories,

@@ -486,9 +486,7 @@ fun AddFoodMainScreen(
     var isSearching by remember { mutableStateOf(false) }
     var showSearchResults by remember { mutableStateOf(false) }
 
-    // -------------------------------------------------------------
-    // 🔄 FUNCTION: performSearchWithRetry
-    // -------------------------------------------------------------
+    // performSearchWithRetry: retry food search on transient failures
     suspend fun performSearchWithRetry(query: String, maxRetries: Int = 2): retrofit2.Response<com.example.forkit.data.models.GetFoodFromNameResponse>? {
         repeat(maxRetries) { attempt ->
             try {

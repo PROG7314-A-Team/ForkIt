@@ -50,17 +50,13 @@ import com.example.forkit.utils.NetworkConnectivityManager
 
 private const val DEBUG_TAG = "MealsDebug"
 private const val TAG = "MealsDebug"
-// ✅ Shared list reference so launcher can access composable state
+// Shared list reference so launcher can access composable state
 private var ingredientsListState: MutableList<UIMealIngredient>? = null
 
 class AddFullMealActivity : ComponentActivity() {
 
-    // ✅ ActivityResultLauncher must be declared inside the class, not outside
-// -------------------------------------------------------------
-// 🧩 Ingredient Launcher
-// 📍 Purpose: Receives the MealIngredient object returned from
-// AddIngredientActivity and appends it to the ingredients list.
-// -------------------------------------------------------------
+    // ActivityResultLauncher declared inside the class
+    // Ingredient launcher: receives MealIngredient from AddIngredientActivity and appends to list
     private val ingredientLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -105,16 +101,16 @@ class AddFullMealActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(DEBUG_TAG, "AddFullMealActivity: ✅ onCreate called — AddFullMealActivity launched.")
+        Log.d(DEBUG_TAG, "AddFullMealActivity: onCreate called — AddFullMealActivity launched.")
 
-        // ✅ Get userId from Intent (passed from Dashboard or previous screen)
+        // Get userId from Intent (passed from Dashboard or previous screen)
         val userId = intent.getStringExtra("USER_ID") ?: ""
 
         setContent {
             ForkItTheme {
                 AddFullMealScreen(
-                    userId = userId, // 👈 pass userId directly to composable
-                    onBackPressed = { finish() }, // ✅ handle back navigation
+                    userId = userId, // pass userId to composable
+                    onBackPressed = { finish() }, // handle back navigation
                     onAddIngredientClick = {
                         Log.d(DEBUG_TAG, "🍴 Launching AddIngredientActivity...")
                         val intent = Intent(this, AddIngredientActivity::class.java)
@@ -135,7 +131,7 @@ class AddFullMealActivity : ComponentActivity() {
         onAddIngredientClick: () -> Unit
     ) {
     val context = LocalContext.current
-    // 🔹 Ingredient list (temporary mock list)
+    // Ingredient list state
     // Shared mutable list accessible from ingredientLauncher
     val ingredients = remember { mutableStateListOf<UIMealIngredient>() }
     ingredientsListState = ingredients
@@ -155,7 +151,7 @@ class AddFullMealActivity : ComponentActivity() {
 
 
 
-    // 🔹 Local states for editable sections
+    // Local states for editable sections
     var mealName by remember { mutableStateOf("") }
     var isEditingName by remember { mutableStateOf(false) }
 
@@ -163,7 +159,7 @@ class AddFullMealActivity : ComponentActivity() {
     var isEditingDescription by remember { mutableStateOf(false) }
 
 
-    // 🔹 Footer checkbox toggle
+    // Footer section toggle
 
     Log.d(DEBUG_TAG, "$TAG: Initialized composable with empty meal data")
 

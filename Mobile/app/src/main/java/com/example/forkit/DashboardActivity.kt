@@ -180,6 +180,7 @@ fun DashboardScreen(
     var recentWaterLogs by remember { mutableStateOf<List<com.example.forkit.data.models.RecentWaterActivityEntry>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var isRefreshing by remember { mutableStateOf(false) }
+    var lastRefreshAt by remember { mutableStateOf(0L) }
     var errorMessage by remember { mutableStateOf("") }
     
     // User goals - fetched from API
@@ -311,6 +312,7 @@ fun DashboardScreen(
             if (userId.isNotEmpty()) {
                 try {
                     isRefreshing = true
+                    lastRefreshAt = System.currentTimeMillis()
                     android.util.Log.d("DashboardActivity", "Refreshing data for userId: $userId on date: $todayDate")
                     
                     // Refresh step count
@@ -504,6 +506,14 @@ fun DashboardScreen(
             }
         }
     }
+
+    // Debounced refresh wrapper to prevent overlapping/rapid triggers
+    val maybeRefresh: () -> Unit = {
+        val now = System.currentTimeMillis()
+        if (!isRefreshing && now - lastRefreshAt >= 1000) {
+            refreshData()
+        }
+    }
     
     // Pull refresh state
     val pullRefreshState = rememberPullRefreshState(
@@ -522,7 +532,7 @@ fun DashboardScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 android.util.Log.d("DashboardActivity", "Activity resumed - refreshing data")
-                refreshData()
+                maybeRefresh()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -536,7 +546,7 @@ fun DashboardScreen(
     LaunchedEffect(selectedTab) {
         if (selectedTab == 0) {
             android.util.Log.d("DashboardActivity", "Switched to home tab - refreshing data")
-            refreshData()
+            maybeRefresh()
         }
     }
     
@@ -557,7 +567,7 @@ fun DashboardScreen(
                 syncManager.scheduleSync()
                 // Refresh data after a short delay to get synced data
                 kotlinx.coroutines.delay(2000)
-                refreshData()
+                maybeRefresh()
             }
         }
     }
@@ -570,28 +580,28 @@ fun DashboardScreen(
                 database.foodLogDao().getAllFlow(userId).collect {
                     // Trigger refresh when food logs change
                     android.util.Log.d("DashboardActivity", "🔄 Food logs changed, refreshing...")
-                    refreshData()
+                    maybeRefresh()
                 }
             }
             launch {
                 database.waterLogDao().getAllFlow(userId).collect {
                     // Trigger refresh when water logs change
                     android.util.Log.d("DashboardActivity", "🔄 Water logs changed, refreshing...")
-                    refreshData()
+                    maybeRefresh()
                 }
             }
             launch {
                 database.exerciseLogDao().getAllFlow(userId).collect {
                     // Trigger refresh when exercise logs change
                     android.util.Log.d("DashboardActivity", "🔄 Exercise logs changed, refreshing...")
-                    refreshData()
+                    maybeRefresh()
                 }
             }
             launch {
                 database.mealLogDao().getAllFlow(userId).collect {
                     // Trigger refresh when meal logs change
                     android.util.Log.d("DashboardActivity", "🔄 Meal logs changed, refreshing...")
-                    refreshData()
+                    maybeRefresh()
                 }
             }
         }
