@@ -16,8 +16,10 @@ class FoodLogRepository(
 ) {
     
     /**
-     * Create a food log entry. If online, save to API then to local DB.
-     * If offline, save to local DB with isSynced=false.
+     * Create a food log entry using an online-first approach:
+     * 1) Always try the API first
+     * 2) On success, save locally as synced
+     * 3) On any failure (network/error), save locally as unsynced
      */
     suspend fun createFoodLog(
         userId: String,
@@ -48,53 +50,49 @@ class FoodLogRepository(
                 isSynced = false
             )
             
-            if (networkManager.isOnline()) {
-                // Try to save to API
-                try {
-                    val request = CreateFoodLogRequest(
-                        userId = userId,
-                        foodName = foodName,
-                        servingSize = servingSize,
-                        measuringUnit = measuringUnit,
-                        date = date,
-                        mealType = mealType,
-                        calories = calories,
-                        carbs = carbs,
-                        fat = fat,
-                        protein = protein,
-                        foodId = foodId
+            // Always try API first (online-first). Connectivity checks can be inaccurate; rely on result.
+            try {
+                val request = CreateFoodLogRequest(
+                    userId = userId,
+                    foodName = foodName,
+                    servingSize = servingSize,
+                    measuringUnit = measuringUnit,
+                    date = date,
+                    mealType = mealType,
+                    calories = calories,
+                    carbs = carbs,
+                    fat = fat,
+                    protein = protein,
+                    foodId = foodId
+                )
+
+                val response = apiService.createFoodLog(request)
+
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val serverId = response.body()?.data?.id
+
+                    // Save to local DB with sync flag
+                    val syncedEntity = foodLogEntity.copy(
+                        serverId = serverId,
+                        isSynced = true
                     )
-                    
-                    val response = apiService.createFoodLog(request)
-                    
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        val serverId = response.body()?.data?.id
-                        
-                        // Save to local DB with sync flag
-                        val syncedEntity = foodLogEntity.copy(
-                            serverId = serverId,
-                            isSynced = true
-                        )
-                        foodLogDao.insert(syncedEntity)
-                        
-                        Log.d("FoodLogRepository", "Food log created online and saved locally")
-                        return@withContext Result.success(serverId ?: "")
-                    } else {
-                        // API call failed, save locally
-                        foodLogDao.insert(foodLogEntity)
-                        Log.w("FoodLogRepository", "API call failed, saved offline")
-                        return@withContext Result.success("offline")
-                    }
-                } catch (e: Exception) {
-                    // Network error, save locally
+                    foodLogDao.insert(syncedEntity)
+
+                    Log.d("FoodLogRepository", "Food log created online and saved locally")
+                    return@withContext Result.success(serverId ?: "")
+                } else {
+                    // API call failed, save locally as unsynced
                     foodLogDao.insert(foodLogEntity)
-                    Log.e("FoodLogRepository", "Network error, saved offline: ${e.message}")
+                    Log.w(
+                        "FoodLogRepository",
+                        "API createFoodLog failed (${response.code()} ${response.message()}), saved offline"
+                    )
                     return@withContext Result.success("offline")
                 }
-            } else {
-                // Offline, save locally
+            } catch (e: Exception) {
+                // Network or serialization error, save locally as unsynced
                 foodLogDao.insert(foodLogEntity)
-                Log.d("FoodLogRepository", "Offline, saved locally")
+                Log.e("FoodLogRepository", "API error, saved offline: ${e.message}", e)
                 return@withContext Result.success("offline")
             }
         } catch (e: Exception) {

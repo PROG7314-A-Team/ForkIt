@@ -16,8 +16,7 @@ class ExerciseLogRepository(
 ) {
     
     /**
-     * Create an exercise log entry. If online, save to API then to local DB.
-     * If offline, save to local DB with isSynced=false.
+     * Create an exercise log entry using an online-first approach.
      */
     suspend fun createExerciseLog(
         userId: String,
@@ -40,49 +39,42 @@ class ExerciseLogRepository(
                 isSynced = false
             )
             
-            if (networkManager.isOnline()) {
-                // Try to save to API
-                try {
-                    val request = CreateExerciseLogRequest(
-                        userId = userId,
-                        name = name,
-                        date = date,
-                        caloriesBurnt = caloriesBurnt,
-                        type = type,
-                        duration = duration,
-                        notes = notes
+            // Online-first
+            try {
+                val request = CreateExerciseLogRequest(
+                    userId = userId,
+                    name = name,
+                    date = date,
+                    caloriesBurnt = caloriesBurnt,
+                    type = type,
+                    duration = duration,
+                    notes = notes
+                )
+
+                val response = apiService.createExerciseLog(request)
+
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val serverId = response.body()?.data?.id
+
+                    val syncedEntity = exerciseLogEntity.copy(
+                        serverId = serverId,
+                        isSynced = true
                     )
-                    
-                    val response = apiService.createExerciseLog(request)
-                    
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        val serverId = response.body()?.data?.id
-                        
-                        // Save to local DB with sync flag
-                        val syncedEntity = exerciseLogEntity.copy(
-                            serverId = serverId,
-                            isSynced = true
-                        )
-                        exerciseLogDao.insert(syncedEntity)
-                        
-                        Log.d("ExerciseLogRepository", "Exercise log created online and saved locally")
-                        return@withContext Result.success(serverId ?: "")
-                    } else {
-                        // API call failed, save locally
-                        exerciseLogDao.insert(exerciseLogEntity)
-                        Log.w("ExerciseLogRepository", "API call failed, saved offline")
-                        return@withContext Result.success("offline")
-                    }
-                } catch (e: Exception) {
-                    // Network error, save locally
+                    exerciseLogDao.insert(syncedEntity)
+
+                    Log.d("ExerciseLogRepository", "Exercise log created online and saved locally")
+                    return@withContext Result.success(serverId ?: "")
+                } else {
                     exerciseLogDao.insert(exerciseLogEntity)
-                    Log.e("ExerciseLogRepository", "Network error, saved offline: ${e.message}")
+                    Log.w(
+                        "ExerciseLogRepository",
+                        "API createExerciseLog failed (${response.code()} ${response.message()}), saved offline"
+                    )
                     return@withContext Result.success("offline")
                 }
-            } else {
-                // Offline, save locally
+            } catch (e: Exception) {
                 exerciseLogDao.insert(exerciseLogEntity)
-                Log.d("ExerciseLogRepository", "Offline, saved locally")
+                Log.e("ExerciseLogRepository", "API error, saved offline: ${e.message}", e)
                 return@withContext Result.success("offline")
             }
         } catch (e: Exception) {

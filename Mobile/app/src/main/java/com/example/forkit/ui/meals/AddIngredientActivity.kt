@@ -484,8 +484,33 @@ fun AddIngredientScreen(
                 onMealTypeChange = { /* ignore for now */ },
                 onBackPressed = onBackPressed,
                 onContinue = {
-                    Log.d(TAG, "✅ [AdjustServingScreen] -> Finalizing ingredient creation...")
+                    Log.d(TAG, "➡️ [AdjustServingScreen] -> Continue clicked. Navigating to details for calories/macros entry.")
+                    currentScreen = "details"
+                },
+                scannedFood = scannedFood,
+                currentCalories = calories,
+                currentCarbs = carbs,
+                currentFat = fat,
+                currentProtein = protein
+            )
+        }
 
+        // ---------------------------------------------------------
+        // 🟩 DETAILS SCREEN — Enter calories and macros (required for custom)
+        // ---------------------------------------------------------
+        "details" -> {
+            IngredientDetailsScreen(
+                calories = calories,
+                carbs = carbs,
+                fat = fat,
+                protein = protein,
+                onCaloriesChange = { calories = it },
+                onCarbsChange = { carbs = it },
+                onFatChange = { fat = it },
+                onProteinChange = { protein = it },
+                onBackPressed = { currentScreen = "adjust" },
+                onConfirm = {
+                    Log.d(TAG, "✅ [IngredientDetailsScreen] -> Finalizing ingredient creation...")
                     val ingredient = MealIngredient(
                         id = UUID.randomUUID().toString(),
                         foodName = foodName,
@@ -496,16 +521,9 @@ fun AddIngredientScreen(
                         fat = fat.toDoubleOrNull() ?: 0.0,
                         protein = protein.toDoubleOrNull() ?: 0.0
                     )
-
-                    Log.d(TAG, "📦 [AdjustServingScreen] -> Ingredient built: ${ingredient.foodName} | ${ingredient.calories}kcal | ${ingredient.carbs}g carbs | ${ingredient.fat}g fat | ${ingredient.protein}g protein")
-                    Log.d(TAG, "📦 [AdjustServingScreen] -> Ingredient JSON: ${Gson().toJson(ingredient)}")
+                    Log.d(TAG, "📦 [IngredientDetailsScreen] -> Ingredient built: ${ingredient.foodName} | ${ingredient.calories}kcal | ${ingredient.carbs}C | ${ingredient.fat}F | ${ingredient.protein}P")
                     onIngredientReady(ingredient)
-                },
-                scannedFood = scannedFood,
-                currentCalories = calories,
-                currentCarbs = carbs,
-                currentFat = fat,
-                currentProtein = protein
+                }
             )
         }
 
@@ -914,4 +932,292 @@ fun AdjustServingScreen(
 }
 
 
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun IngredientDetailsScreen(
+    calories: String,
+    carbs: String,
+    fat: String,
+    protein: String,
+    onCaloriesChange: (String) -> Unit,
+    onCarbsChange: (String) -> Unit,
+    onFatChange: (String) -> Unit,
+    onProteinChange: (String) -> Unit,
+    onBackPressed: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    // Auto-calculate calories when macros change (4/4/9 rule)
+    LaunchedEffect(carbs, fat, protein) {
+        val carbsValue = carbs.toDoubleOrNull() ?: 0.0
+        val fatValue = fat.toDoubleOrNull() ?: 0.0
+        val proteinValue = protein.toDoubleOrNull() ?: 0.0
+        val calculatedCalories = (carbsValue * 4) + (fatValue * 9) + (proteinValue * 4)
+        if (calculatedCalories > 0) {
+            onCaloriesChange(calculatedCalories.toInt().toString())
+        } else if (carbs.isEmpty() && fat.isEmpty() && protein.isEmpty()) {
+            onCaloriesChange("")
+        }
+    }
+
+    val isValid = (calories.toDoubleOrNull() ?: 0.0) > 0.0
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(colorScheme.background)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBackPressed) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = colorScheme.onBackground
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.add_details),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Fields stack
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(26.dp)
+                ) {
+                    // Calories field (styled like Add Food)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(68.dp)
+                            .border(3.dp, colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                            .background(colorScheme.primary.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextField(
+                                value = calories,
+                                onValueChange = onCaloriesChange,
+                                placeholder = { Text(stringResource(R.string.calories_required), color = colorScheme.onSurfaceVariant) },
+                                modifier = Modifier.weight(1f),
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    cursorColor = colorScheme.primary
+                                ),
+                                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, color = colorScheme.onBackground),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                            )
+                            Text(
+                                text = stringResource(R.string.kcal),
+                                fontSize = 18.sp,
+                                color = colorScheme.primary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    // Hint
+                    Text(
+                        text = stringResource(R.string.forkit_can_calculate),
+                        fontSize = 14.sp,
+                        color = colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+
+                    // Carbs
+                    Column {
+                        Text(
+                            text = stringResource(R.string.carbs),
+                            fontSize = 16.sp,
+                            color = colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(bottom = 8.dp, start = 8.dp)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(68.dp)
+                                .border(3.dp, colorScheme.secondary.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                                .background(colorScheme.secondary.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TextField(
+                                    value = carbs,
+                                    onValueChange = onCarbsChange,
+                                    placeholder = { Text(stringResource(R.string.enter_amount), color = colorScheme.onSurfaceVariant) },
+                                    modifier = Modifier.weight(1f),
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent,
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent,
+                                        cursorColor = colorScheme.secondary
+                                    ),
+                                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, color = colorScheme.onBackground),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                                )
+                                Text(
+                                    text = "g",
+                                    fontSize = 18.sp,
+                                    color = colorScheme.secondary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    // Fat
+                    Column {
+                        Text(
+                            text = stringResource(R.string.fat),
+                            fontSize = 16.sp,
+                            color = colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(bottom = 8.dp, start = 8.dp)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(68.dp)
+                                .border(3.dp, colorScheme.secondary.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                                .background(colorScheme.secondary.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TextField(
+                                    value = fat,
+                                    onValueChange = onFatChange,
+                                    placeholder = { Text(stringResource(R.string.enter_amount), color = colorScheme.onSurfaceVariant) },
+                                    modifier = Modifier.weight(1f),
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent,
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent,
+                                        cursorColor = colorScheme.secondary
+                                    ),
+                                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, color = colorScheme.onBackground),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                                )
+                                Text(
+                                    text = "g",
+                                    fontSize = 18.sp,
+                                    color = colorScheme.secondary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    // Protein
+                    Column {
+                        Text(
+                            text = stringResource(R.string.protein),
+                            fontSize = 16.sp,
+                            color = colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(bottom = 8.dp, start = 8.dp)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(68.dp)
+                                .border(3.dp, colorScheme.secondary.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                                .background(colorScheme.secondary.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TextField(
+                                    value = protein,
+                                    onValueChange = onProteinChange,
+                                    placeholder = { Text(stringResource(R.string.enter_amount), color = colorScheme.onSurfaceVariant) },
+                                    modifier = Modifier.weight(1f),
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent,
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent,
+                                        cursorColor = colorScheme.secondary
+                                    ),
+                                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, color = colorScheme.onBackground),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                                )
+                                Text(
+                                    text = "g",
+                                    fontSize = 18.sp,
+                                    color = colorScheme.secondary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(48.dp))
+
+                Button(
+                    onClick = onConfirm,
+                    enabled = isValid,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(72.dp)
+                        .clip(RoundedCornerShape(16.dp)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.horizontalGradient(listOf(colorScheme.primary, colorScheme.secondary)),
+                                shape = RoundedCornerShape(16.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.confirm),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colorScheme.background
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 

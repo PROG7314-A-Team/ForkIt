@@ -19,8 +19,10 @@ class MealLogRepository(
 ) {
     
     /**
-     * Create a full meal log entry. If online, save to API then to local DB.
-     * If offline, save to local DB with isSynced=false.
+     * Create a full meal log entry using an online-first approach:
+     * 1) Try API first
+     * 2) On success, save locally as synced
+     * 3) On failure/exception, save locally as unsynced
      */
     suspend fun createMealLog(
         userId: String,
@@ -57,62 +59,56 @@ class MealLogRepository(
                 isSynced = false
             )
             
-            if (networkManager.isOnline()) {
-                // Try to save to API
-                try {
-                    val request = CreateMealLogRequest(
-                        userId = userId,
-                        name = name,
-                        description = description,
-                        ingredients = ingredients.map {
-                            Ingredient(
-                                name = it.foodName,
-                                amount = it.quantity,
-                                unit = it.unit
-                            )
-                        },
-                        instructions = instructions,
-                        totalCalories = totalCalories,
-                        totalCarbs = totalCarbs,
-                        totalFat = totalFat,
-                        totalProtein = totalProtein,
-                        servings = servings,
-                        date = date,
-                        mealType = mealType,
-                        isTemplate = isTemplate,
-                        templateId = templateId
-                    )
-                    
-                    val response = apiService.createMealLog(request)
-                    
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        val serverId = response.body()?.data?.id
-                        
-                        // Save to local DB with sync flag
-                        val syncedEntity = mealLogEntity.copy(
-                            serverId = serverId,
-                            isSynced = true
+            // Online-first: attempt API regardless of connectivity indicator
+            try {
+                val request = CreateMealLogRequest(
+                    userId = userId,
+                    name = name,
+                    description = description,
+                    ingredients = ingredients.map {
+                        Ingredient(
+                            name = it.foodName,
+                            amount = it.quantity,
+                            unit = it.unit
                         )
-                        mealLogDao.insert(syncedEntity)
-                        
-                        Log.d("MealLogRepository", "Meal log created online and saved locally")
-                        return@withContext Result.success(serverId ?: "")
-                    } else {
-                        // API call failed, save locally
-                        mealLogDao.insert(mealLogEntity)
-                        Log.w("MealLogRepository", "API call failed, saved offline")
-                        return@withContext Result.success("offline")
-                    }
-                } catch (e: Exception) {
-                    // Network error, save locally
+                    },
+                    instructions = instructions,
+                    totalCalories = totalCalories,
+                    totalCarbs = totalCarbs,
+                    totalFat = totalFat,
+                    totalProtein = totalProtein,
+                    servings = servings,
+                    date = date,
+                    mealType = mealType,
+                    isTemplate = isTemplate,
+                    templateId = templateId
+                )
+
+                val response = apiService.createMealLog(request)
+                Log.d("MealLogRepository", "createMealLog response: code=${response.code()} success=${response.isSuccessful}")
+
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val serverId = response.body()?.data?.id
+
+                    val syncedEntity = mealLogEntity.copy(
+                        serverId = serverId,
+                        isSynced = true
+                    )
+                    mealLogDao.insert(syncedEntity)
+
+                    Log.d("MealLogRepository", "Meal log created online and saved locally")
+                    return@withContext Result.success(serverId ?: "")
+                } else {
                     mealLogDao.insert(mealLogEntity)
-                    Log.e("MealLogRepository", "Network error, saved offline: ${e.message}")
+                    Log.w(
+                        "MealLogRepository",
+                        "API createMealLog failed (${response.code()} ${response.message()}), saved offline"
+                    )
                     return@withContext Result.success("offline")
                 }
-            } else {
-                // Offline, save locally
+            } catch (e: Exception) {
                 mealLogDao.insert(mealLogEntity)
-                Log.d("MealLogRepository", "Offline, saved locally")
+                Log.e("MealLogRepository", "API error in createMealLog, saved offline: ${e.message}", e)
                 return@withContext Result.success("offline")
             }
         } catch (e: Exception) {

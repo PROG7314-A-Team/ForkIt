@@ -17,6 +17,7 @@
     <string name="continue_btn">Continue</string>
     <string name="finish">Finish</string>
     <string name="logout">Logout</string>
+    <string name="confirm">Confirm</string>
     
     <!-- Sign Up Screen -->
     <string name="start_tracking">Start Tracking</string>

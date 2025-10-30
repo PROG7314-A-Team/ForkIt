@@ -16,8 +16,7 @@ class WaterLogRepository(
 ) {
     
     /**
-     * Create a water log entry. If online, save to API then to local DB.
-     * If offline, save to local DB with isSynced=false.
+     * Create a water log entry using an online-first approach.
      */
     suspend fun createWaterLog(
         userId: String,
@@ -32,45 +31,38 @@ class WaterLogRepository(
                 isSynced = false
             )
             
-            if (networkManager.isOnline()) {
-                // Try to save to API
-                try {
-                    val request = CreateWaterLogRequest(
-                        userId = userId,
-                        amount = amount,
-                        date = date
+            // Online-first
+            try {
+                val request = CreateWaterLogRequest(
+                    userId = userId,
+                    amount = amount,
+                    date = date
+                )
+
+                val response = apiService.createWaterLog(request)
+
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val serverId = response.body()?.data?.id
+
+                    val syncedEntity = waterLogEntity.copy(
+                        serverId = serverId,
+                        isSynced = true
                     )
-                    
-                    val response = apiService.createWaterLog(request)
-                    
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        val serverId = response.body()?.data?.id
-                        
-                        // Save to local DB with sync flag
-                        val syncedEntity = waterLogEntity.copy(
-                            serverId = serverId,
-                            isSynced = true
-                        )
-                        waterLogDao.insert(syncedEntity)
-                        
-                        Log.d("WaterLogRepository", "Water log created online and saved locally")
-                        return@withContext Result.success(serverId ?: "")
-                    } else {
-                        // API call failed, save locally
-                        waterLogDao.insert(waterLogEntity)
-                        Log.w("WaterLogRepository", "API call failed, saved offline")
-                        return@withContext Result.success("offline")
-                    }
-                } catch (e: Exception) {
-                    // Network error, save locally
+                    waterLogDao.insert(syncedEntity)
+
+                    Log.d("WaterLogRepository", "Water log created online and saved locally")
+                    return@withContext Result.success(serverId ?: "")
+                } else {
                     waterLogDao.insert(waterLogEntity)
-                    Log.e("WaterLogRepository", "Network error, saved offline: ${e.message}")
+                    Log.w(
+                        "WaterLogRepository",
+                        "API createWaterLog failed (${response.code()} ${response.message()}), saved offline"
+                    )
                     return@withContext Result.success("offline")
                 }
-            } else {
-                // Offline, save locally
+            } catch (e: Exception) {
                 waterLogDao.insert(waterLogEntity)
-                Log.d("WaterLogRepository", "Offline, saved locally")
+                Log.e("WaterLogRepository", "API error, saved offline: ${e.message}", e)
                 return@withContext Result.success("offline")
             }
         } catch (e: Exception) {

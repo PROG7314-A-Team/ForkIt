@@ -51,12 +51,13 @@ class MealDetailActivity : ComponentActivity() {
         val mealId = intent.getStringExtra("MEAL_ID") ?: ""
         val mealName = intent.getStringExtra("MEAL_NAME") ?: "Meal"
         val description = intent.getStringExtra("MEAL_DESCRIPTION") ?: "No description available"
-        val ingredients = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableArrayExtra("INGREDIENTS", Ingredient::class.java)?.toList() ?: emptyList()
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableArrayExtra("INGREDIENTS")?.map { it as Ingredient } ?: emptyList()
-        }
+        val ingredients = try {
+            @Suppress("UNCHECKED_CAST")
+            intent.getSerializableExtra("INGREDIENTS") as? Array<Ingredient> ?: emptyArray()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading ingredients from intent: ${e.message}", e)
+            emptyArray()
+        }.toList()
         val calories = intent.getDoubleExtra("CALORIES", 0.0)
         val carbs = intent.getDoubleExtra("CARBS", 0.0)
         val fat = intent.getDoubleExtra("FAT", 0.0)
@@ -91,6 +92,7 @@ class MealDetailActivity : ComponentActivity() {
                     onLogToToday = { 
                         val intent = Intent(this@MealDetailActivity, MealAdjustmentActivity::class.java).apply {
                             putExtra("templateId", mealId)
+                            putExtra("userId", userId)
                         }
                         startActivity(intent)
                     },

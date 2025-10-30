@@ -28,6 +28,10 @@ import com.example.forkit.data.models.MealLog
 import com.example.forkit.ui.meals.AddMealActivity
 import com.example.forkit.ui.meals.MealDetailActivity
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.launch
 import com.example.forkit.R
 import com.example.forkit.data.repository.MealLogRepository
 import com.example.forkit.data.local.entities.MealLogEntity
@@ -135,6 +139,21 @@ fun MealsScreen(userId: String, mealLogRepository: MealLogRepository? = null, re
     // Load meals on initial load or when refresh is triggered
     LaunchedEffect(userId, refreshTrigger) {
         fetchMeals()
+    }
+
+    // Auto-refresh when returning to this screen (e.g., after saving a template)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, userId) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                Log.d(DEBUG_TAG, "$TAG: ON_RESUME detected, auto-refreshing meals")
+                scope.launch { fetchMeals() }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
 

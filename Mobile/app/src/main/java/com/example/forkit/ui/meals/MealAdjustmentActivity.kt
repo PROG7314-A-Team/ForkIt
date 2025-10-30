@@ -46,6 +46,7 @@ class MealAdjustmentActivity : ComponentActivity() {
     
     private lateinit var mealLogRepository: MealLogRepository
     private var mealTemplate: MealLogEntity? = null
+    private var mealTemplateState by mutableStateOf<MealLogEntity?>(null)
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,8 +54,9 @@ class MealAdjustmentActivity : ComponentActivity() {
         
         // Get meal template from intent
         val templateId = intent.getStringExtra("templateId")
-        if (templateId == null) {
-            Toast.makeText(this, "No meal template provided", Toast.LENGTH_SHORT).show()
+        val userId = intent.getStringExtra("userId")
+        if (templateId == null || userId == null) {
+            Toast.makeText(this, "No meal template or user ID provided", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
@@ -67,18 +69,40 @@ class MealAdjustmentActivity : ComponentActivity() {
             networkManager = com.example.forkit.utils.NetworkConnectivityManager(this)
         )
         
-        // Load meal template
+        // Load meal template with robust ID matching (localId or serverId) and detailed logging
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                val template = mealLogRepository.getAllMealLogs("user123").find { it.localId == templateId }
-                if (template == null || !template.isTemplate) {
-                    Toast.makeText(this@MealAdjustmentActivity, "Meal template not found", Toast.LENGTH_SHORT).show()
-                    finish()
-                    return@launch
+                Log.d(TAG, "🔎 Loading meal template. intentId=$templateId userId=$userId")
+                val allLogs = mealLogRepository.getAllMealLogs(userId)
+                Log.d(TAG, "📚 Retrieved ${allLogs.size} meal logs from local DB")
+
+                val matched = allLogs.firstOrNull { it.localId == templateId || it.serverId == templateId }
+                if (matched == null) {
+                    Log.w(TAG, "⚠️ No local match by localId/serverId. Falling back to templates list.")
+                    val templates = mealLogRepository.getMealTemplates(userId)
+                    Log.d(TAG, "📚 Retrieved ${templates.size} templates from local DB")
+                    val fallback = templates.firstOrNull { it.localId == templateId || it.serverId == templateId }
+                    if (fallback == null || !fallback.isTemplate) {
+                        Log.e(TAG, "❌ Meal template not found for id=$templateId")
+                        Toast.makeText(this@MealAdjustmentActivity, "Meal template not found", Toast.LENGTH_SHORT).show()
+                        finish()
+                        return@launch
+                    }
+                    mealTemplate = fallback
+                    mealTemplateState = fallback
+                } else {
+                    if (!matched.isTemplate) {
+                        Log.e(TAG, "❌ Matched entry is not a template. id=$templateId")
+                        Toast.makeText(this@MealAdjustmentActivity, "Selected item is not a template", Toast.LENGTH_SHORT).show()
+                        finish()
+                        return@launch
+                    }
+                    mealTemplate = matched
+                    mealTemplateState = matched
                 }
-                mealTemplate = template
+                Log.d(TAG, "✅ Meal template loaded: name='${mealTemplateState?.name}' localId=${mealTemplateState?.localId} serverId=${mealTemplateState?.serverId}")
             } catch (e: Exception) {
-                Log.e(TAG, "Error loading meal template: ${e.message}", e)
+                Log.e(TAG, "🔥 Error loading meal template: ${e.message}", e)
                 Toast.makeText(this@MealAdjustmentActivity, "Error loading meal template", Toast.LENGTH_SHORT).show()
                 finish()
             }
@@ -86,7 +110,7 @@ class MealAdjustmentActivity : ComponentActivity() {
         
         setContent {
             ForkItTheme {
-                mealTemplate?.let { template ->
+                mealTemplateState?.let { template ->
                     MealAdjustmentScreen(
                         mealTemplate = template,
                         onBackPressed = { finish() },
@@ -111,21 +135,29 @@ class MealAdjustmentActivity : ComponentActivity() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                val userId = intent.getStringExtra("userId") ?: return@launch
+                Log.d(TAG, "📝 Logging template to today. templateLocalId=$templateId userId=$userId date=$today x$servingMultiplier")
                 val result = mealLogRepository.logMealTemplate(
                     templateId = templateId,
                     date = today,
-                    userId = "user123",
+                    userId = userId,
                     servingMultiplier = servingMultiplier
                 )
                 
-                if (result.isSuccess) {
-                    Toast.makeText(this@MealAdjustmentActivity, "Meal logged successfully!", Toast.LENGTH_SHORT).show()
+                result.onSuccess { id ->
+                    Log.d(TAG, "✅ Meal logged result: id=$id")
+                    if (id == "offline") {
+                        Toast.makeText(this@MealAdjustmentActivity, "Meal saved offline - will sync when connected", Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(this@MealAdjustmentActivity, "Meal logged successfully!", Toast.LENGTH_SHORT).show()
+                    }
                     finish()
-                } else {
+                }.onFailure { e ->
+                    Log.e(TAG, "❌ Failed to log meal: ${e.message}", e)
                     Toast.makeText(this@MealAdjustmentActivity, "Failed to log meal", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error logging meal: ${e.message}", e)
+                Log.e(TAG, "🔥 Exception when logging meal: ${e.message}", e)
                 Toast.makeText(this@MealAdjustmentActivity, "Error logging meal", Toast.LENGTH_SHORT).show()
             }
         }

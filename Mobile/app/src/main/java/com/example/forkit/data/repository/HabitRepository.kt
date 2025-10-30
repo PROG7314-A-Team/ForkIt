@@ -19,8 +19,7 @@ class HabitRepository(
 ) {
     
     /**
-     * Create a habit. If online, save to API then to local DB.
-     * If offline, save to local DB with isSynced=false.
+     * Create a habit using an online-first approach.
      */
     suspend fun createHabit(
         userId: String,
@@ -45,47 +44,45 @@ class HabitRepository(
                 isSynced = false
             )
             
-            if (networkManager.isOnline()) {
-                try {
-                    val habitRequest = CreateHabitRequest(
-                        title = title,
-                        description = description,
-                        frequency = frequency,
-                        selectedDays = selectedDays,
-                        dayOfMonth = dayOfMonth
+            // Online-first
+            try {
+                val habitRequest = CreateHabitRequest(
+                    title = title,
+                    description = description,
+                    frequency = frequency,
+                    selectedDays = selectedDays,
+                    dayOfMonth = dayOfMonth
+                )
+
+                val request = CreateHabitApiRequest(
+                    userId = userId,
+                    habit = habitRequest
+                )
+
+                val response = apiService.createHabit(request)
+
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val serverId = response.body()?.data?.id
+
+                    val syncedEntity = habitEntity.copy(
+                        serverId = serverId,
+                        isSynced = true
                     )
-                    
-                    val request = CreateHabitApiRequest(
-                        userId = userId,
-                        habit = habitRequest
-                    )
-                    
-                    val response = apiService.createHabit(request)
-                    
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        val serverId = response.body()?.data?.id
-                        
-                        val syncedEntity = habitEntity.copy(
-                            serverId = serverId,
-                            isSynced = true
-                        )
-                        habitDao.insert(syncedEntity)
-                        
-                        Log.d("HabitRepository", "Habit created online and saved locally")
-                        return@withContext Result.success(serverId ?: "")
-                    } else {
-                        habitDao.insert(habitEntity)
-                        Log.w("HabitRepository", "API call failed, saved offline")
-                        return@withContext Result.success("offline")
-                    }
-                } catch (e: Exception) {
+                    habitDao.insert(syncedEntity)
+
+                    Log.d("HabitRepository", "Habit created online and saved locally")
+                    return@withContext Result.success(serverId ?: "")
+                } else {
                     habitDao.insert(habitEntity)
-                    Log.e("HabitRepository", "Network error, saved offline: ${e.message}")
+                    Log.w(
+                        "HabitRepository",
+                        "API createHabit failed (${response.code()} ${response.message()}), saved offline"
+                    )
                     return@withContext Result.success("offline")
                 }
-            } else {
+            } catch (e: Exception) {
                 habitDao.insert(habitEntity)
-                Log.d("HabitRepository", "Offline, saved locally")
+                Log.e("HabitRepository", "API error, saved offline: ${e.message}", e)
                 return@withContext Result.success("offline")
             }
         } catch (e: Exception) {
