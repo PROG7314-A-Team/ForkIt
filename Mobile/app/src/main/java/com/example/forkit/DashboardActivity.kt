@@ -72,8 +72,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.text.TextStyle
-import com.example.forkit.ui.meals.AddFullMealActivity
-import com.example.forkit.ui.meals.MealDetailActivity
 import android.util.Log
 import kotlinx.coroutines.delay
 import com.example.forkit.ui.screens.HomeScreen

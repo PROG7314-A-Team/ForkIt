@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -217,29 +218,27 @@ fun AddMealScreen(
             .fillMaxSize()
             .background(colorScheme.background)
     ) {
-        // Top App Bar
-        TopAppBar(
-            title = { 
-                Text(
-                    text = "Create Meal Template",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+        // Header with back button and title
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBackPressed) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = colorScheme.onBackground
                 )
-            },
-            navigationIcon = {
-                IconButton(onClick = onBackPressed) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = colorScheme.primary,
-                titleContentColor = Color.White,
-                navigationIconContentColor = Color.White
+            }
+            Text(
+                text = "Create Meal Template",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.primary
             )
-        )
+        }
         
         Column(
             modifier = Modifier
@@ -248,26 +247,92 @@ fun AddMealScreen(
                 .padding(16.dp)
         ) {
             // Meal Name Input
-            OutlinedTextField(
-                value = mealName,
-                onValueChange = { mealName = it },
-                label = { Text("Meal Name") },
-                placeholder = { Text("e.g., Toasted Ham and Cheese") },
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                colors = CardDefaults.cardColors(containerColor = colorScheme.surface)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(colorScheme.surface)
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = "Meal Name",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        TextField(
+                            value = mealName,
+                            onValueChange = { mealName = it },
+                            placeholder = { Text("e.g., Toasted Ham and Cheese", color = colorScheme.onSurfaceVariant) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                cursorColor = colorScheme.primary
+                            ),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                fontSize = 16.sp,
+                                color = colorScheme.onBackground
+                            )
+                        )
+                    }
+                }
+            }
             
             Spacer(modifier = Modifier.height(16.dp))
             
             // Meal Description Input
-            OutlinedTextField(
-                value = mealDescription,
-                onValueChange = { mealDescription = it },
-                label = { Text("Description (Optional)") },
-                placeholder = { Text("Brief description of the meal") },
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                maxLines = 3
-            )
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                colors = CardDefaults.cardColors(containerColor = colorScheme.surface)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(colorScheme.surface)
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = "Description (Optional)",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        TextField(
+                            value = mealDescription,
+                            onValueChange = { mealDescription = it },
+                            placeholder = { Text("Brief description of the meal", color = colorScheme.onSurfaceVariant) },
+                            modifier = Modifier.fillMaxWidth(),
+                            maxLines = 3,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                cursorColor = colorScheme.primary
+                            ),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                fontSize = 16.sp,
+                                color = colorScheme.onBackground
+                            )
+                        )
+                    }
+                }
+            }
             
             Spacer(modifier = Modifier.height(24.dp))
             
@@ -282,20 +347,42 @@ fun AddMealScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             // Add Ingredient Button
-            Button(
-                onClick = onAddIngredient,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colorScheme.secondary
-                )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                colorScheme.primary,
+                                colorScheme.secondary
+                            )
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .clickable { onAddIngredient() }
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Ingredient")
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Add Ingredient",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -304,13 +391,15 @@ fun AddMealScreen(
             if (ingredients.isEmpty()) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = colorScheme.surfaceVariant
-                    )
+                        containerColor = colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Text(
                         text = "No ingredients added yet. Tap 'Add Ingredient' to get started.",
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(20.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -343,32 +432,44 @@ fun AddMealScreen(
             }
             
             // Save Button
-            Button(
-                onClick = {
-                    Log.d(TAG, "🔍 [AddMealScreen] -> Save button clicked. Name: '$mealName', Description: '$mealDescription', Ingredients: ${ingredients.size}")
-                    if (mealName.isBlank()) {
-                        Log.w(TAG, "⚠️ [AddMealScreen] -> Meal name is blank")
-                        Toast.makeText(context, "Please enter a meal name", Toast.LENGTH_SHORT).show()
-                        return@Button
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                colorScheme.primary,
+                                colorScheme.secondary
+                            )
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .clickable(enabled = mealName.isNotBlank() && ingredients.isNotEmpty()) {
+                        Log.d(TAG, "🔍 [AddMealScreen] -> Save button clicked. Name: '$mealName', Description: '$mealDescription', Ingredients: ${ingredients.size}")
+                        if (mealName.isBlank()) {
+                            Log.w(TAG, "⚠️ [AddMealScreen] -> Meal name is blank")
+                            Toast.makeText(context, "Please enter a meal name", Toast.LENGTH_SHORT).show()
+                            return@clickable
+                        }
+                        if (ingredients.isEmpty()) {
+                            Log.w(TAG, "⚠️ [AddMealScreen] -> No ingredients to save")
+                            Toast.makeText(context, "Please add at least one ingredient", Toast.LENGTH_SHORT).show()
+                            return@clickable
+                        }
+                        Log.d(TAG, "✅ [AddMealScreen] -> Calling onSaveMeal with ${ingredients.size} ingredients")
+                        onSaveMeal(mealName, mealDescription, ingredients)
                     }
-                    if (ingredients.isEmpty()) {
-                        Log.w(TAG, "⚠️ [AddMealScreen] -> No ingredients to save")
-                        Toast.makeText(context, "Please add at least one ingredient", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-                    Log.d(TAG, "✅ [AddMealScreen] -> Calling onSaveMeal with ${ingredients.size} ingredients")
-                    onSaveMeal(mealName, mealDescription, ingredients)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = mealName.isNotBlank() && ingredients.isNotEmpty(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colorScheme.primary
-                )
+                    .alpha(if (mealName.isNotBlank() && ingredients.isNotEmpty()) 1f else 0.5f)
             ) {
                 Text(
                     text = "Save Meal Template",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .wrapContentSize(Alignment.Center)
                 )
             }
         }
@@ -382,10 +483,12 @@ fun IngredientCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier
@@ -439,9 +542,12 @@ fun NutritionSummaryCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = colorScheme.primaryContainer
-        )
+            containerColor = colorScheme.primaryContainer.copy(alpha = 0.25f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        border = androidx.compose.foundation.BorderStroke(2.dp, colorScheme.primary)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)

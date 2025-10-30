@@ -20,10 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Build
-//import androidx.compose.material.icons.filled.QuestionAnswer
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -82,7 +79,7 @@ class ProfileActivity : FragmentActivity() {
 }
 
 enum class ProfileOptionType {
-    ACCOUNT, GOALS, NOTIFICATIONS, APP_SETTINGS, ABOUT, DEVELOPER_TOOLS
+    ACCOUNT, GOALS, NOTIFICATIONS, APP_SETTINGS, ABOUT
 }
 
 data class ProfileOption(
@@ -136,12 +133,6 @@ fun ProfileScreen(
             type = ProfileOptionType.ABOUT,
             title = stringResource(R.string.about),
             description = stringResource(R.string.app_info_version)
-        ),
-        ProfileOption(
-            icon = Icons.Default.Build,
-            type = ProfileOptionType.DEVELOPER_TOOLS,
-            title = stringResource(R.string.developer_tools),
-            description = stringResource(R.string.access_dev_features)
         )
     )
 
@@ -259,10 +250,6 @@ fun ProfileScreen(
                             }
                             ProfileOptionType.ABOUT -> {
                                 val intent = Intent(context, AboutActivity::class.java)
-                                context.startActivity(intent)
-                            }
-                            ProfileOptionType.DEVELOPER_TOOLS -> {
-                                val intent = Intent(context, DevelopmentActivity::class.java)
                                 context.startActivity(intent)
                             }
                         }

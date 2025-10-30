@@ -52,8 +52,13 @@ class MealDetailActivity : ComponentActivity() {
         val mealName = intent.getStringExtra("MEAL_NAME") ?: "Meal"
         val description = intent.getStringExtra("MEAL_DESCRIPTION") ?: "No description available"
         val ingredients = try {
-            @Suppress("UNCHECKED_CAST")
-            intent.getSerializableExtra("INGREDIENTS") as? Array<Ingredient> ?: emptyArray()
+            @Suppress("UNCHECKED_CAST", "DEPRECATION")
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                intent.getSerializableExtra("INGREDIENTS", Array<Ingredient>::class.java)
+            } else {
+                @Suppress("UNCHECKED_CAST")
+                intent.getSerializableExtra("INGREDIENTS") as? Array<Ingredient>
+            } ?: emptyArray()
         } catch (e: Exception) {
             Log.e(TAG, "Error reading ingredients from intent: ${e.message}", e)
             emptyArray()
