@@ -68,7 +68,7 @@
     <string name="error">Fout</string>
     <string name="offline_mode_banner">Vanlyn modus - Data sal sinkroniseer wanneer die verbinding herstel is</string>
     <string name="saved_offline">Vanlyn gestoor, sal sinkroniseer wanneer gekoppel</string>
-    <string name="requires_internet">Hierdie funksie vereis 'n internetverbinding</string>
+    <string name="requires_internet">Hierdie funksie vereis \'n internetverbinding</string>
     <string name="water">Water</string>
     <string name="meal">Maaltyd</string>
     <string name="meals">Maaltye</string>

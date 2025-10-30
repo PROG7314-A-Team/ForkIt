@@ -2,7 +2,8 @@ package com.example.forkit
 
 import android.content.Context
 import android.content.res.Configuration
-import android.os.Build
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -57,14 +58,10 @@ object LanguageManager {
      * Set locale for the app
      */
     private fun setLocale(context: Context, languageCode: String) {
-        val locale = Locale.forLanguageTag(languageCode)
-        Locale.setDefault(locale)
-        
-        val config = Configuration(context.resources.configuration)
-        config.setLocale(locale)
-        
-        @Suppress("DEPRECATION")
-        context.resources.updateConfiguration(config, context.resources.displayMetrics)
+        val locales = LocaleListCompat.forLanguageTags(languageCode)
+        AppCompatDelegate.setApplicationLocales(locales)
+        // Keep currentLanguage in sync
+        currentLanguage = Language.values().find { it.code == languageCode } ?: Language.ENGLISH
     }
     
     /**

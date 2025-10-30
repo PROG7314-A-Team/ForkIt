@@ -41,8 +41,13 @@ import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.utils.AuthPreferences
 import androidx.compose.ui.res.stringResource
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import java.util.concurrent.Executor
+import androidx.fragment.app.FragmentActivity
 
-class ProfileActivity : ComponentActivity() {
+class ProfileActivity : FragmentActivity() {
     
     private val appSettingsLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -189,9 +194,55 @@ fun ProfileScreen(
                     onClick = { 
                         when (option.type) {
                             ProfileOptionType.ACCOUNT -> {
-                                val intent = Intent(context, AccountActivity::class.java)
-                                intent.putExtra("USER_ID", userId)
-                                context.startActivity(intent)
+                                // Require biometric authentication before navigating to Account
+                                val activity = (context as? FragmentActivity)
+                                if (activity != null) {
+                                    val biometricManager = BiometricManager.from(activity)
+                                    val canAuth = biometricManager.canAuthenticate(
+                                        BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                                            BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                                    )
+
+                                    if (canAuth == BiometricManager.BIOMETRIC_SUCCESS) {
+                                        val executor: Executor = ContextCompat.getMainExecutor(activity)
+                                        val prompt = BiometricPrompt(
+                                            activity,
+                                            executor,
+                                            object : BiometricPrompt.AuthenticationCallback() {
+                                                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                                                    super.onAuthenticationSucceeded(result)
+                                                    val intent = Intent(activity, AccountActivity::class.java)
+                                                    intent.putExtra("USER_ID", userId)
+                                                    activity.startActivity(intent)
+                                                }
+
+                                                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                                                    super.onAuthenticationError(errorCode, errString)
+                                                    // Do nothing; stay on Profile
+                                                }
+
+                                                override fun onAuthenticationFailed() {
+                                                    super.onAuthenticationFailed()
+                                                    // Do nothing; user can try again
+                                                }
+                                            }
+                                        )
+
+                                        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                                            .setTitle(context.getString(R.string.account))
+                                            .setSubtitle(context.getString(R.string.manage_account_settings))
+                                            .setAllowedAuthenticators(
+                                                BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                                                    BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                                            )
+                                            .build()
+
+                                        prompt.authenticate(promptInfo)
+                                    } else {
+                                        // If device has no biometric/credential setup, block access silently
+                                        // Optionally, you could show a Toast/snackbar here.
+                                    }
+                                }
                             }
                             ProfileOptionType.GOALS -> {
                                 val intent = Intent(context, GoalsActivity::class.java)

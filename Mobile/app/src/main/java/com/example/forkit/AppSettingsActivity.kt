@@ -52,10 +52,9 @@ class AppSettingsActivity : ComponentActivity() {
                 AppSettingsScreen(
                     onBackPressed = { finish() },
                     onLanguageChanged = {
-                        // Set result to notify caller that language changed
+                        // Notify caller and close so it can recreate immediately
                         setResult(RESULT_LANGUAGE_CHANGED)
-                        // Recreate activity to apply new language
-                        recreate()
+                        finish()
                     }
                 )
             }
