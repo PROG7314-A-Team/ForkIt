@@ -89,12 +89,38 @@ class MealDetailActivity : ComponentActivity() {
                     userId = userId,
                     isTemplate = isTemplate,
                     onBackPressed = { finish() },
-                    onLogToToday = { 
-                        val intent = Intent(this@MealDetailActivity, MealAdjustmentActivity::class.java).apply {
-                            putExtra("templateId", mealId)
-                            putExtra("userId", userId)
+                    onLogToToday = {
+                        CoroutineScope(Dispatchers.Main).launch {
+                            try {
+                                // Find template by localId or serverId to get the localId for logging
+                                val all = mealLogRepository.getAllMealLogs(userId)
+                                val match = all.firstOrNull { it.localId == mealId || it.serverId == mealId }
+                                if (match == null || !match.isTemplate) {
+                                    Toast.makeText(this@MealDetailActivity, "Meal template not found", Toast.LENGTH_SHORT).show()
+                                    return@launch
+                                }
+
+                                val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+                                val result = mealLogRepository.logMealTemplate(
+                                    templateId = match.localId,
+                                    date = today,
+                                    userId = userId,
+                                    servingMultiplier = 1.0
+                                )
+
+                                result.onSuccess { id ->
+                                    android.util.Log.d(TAG, "✅ Logged template immediately. id=$id")
+                                    Toast.makeText(this@MealDetailActivity, "Meal logged to today", Toast.LENGTH_SHORT).show()
+                                    finish()
+                                }.onFailure { e ->
+                                    android.util.Log.e(TAG, "❌ Failed immediate log: ${e.message}", e)
+                                    Toast.makeText(this@MealDetailActivity, "Failed to log meal", Toast.LENGTH_SHORT).show()
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e(TAG, "🔥 Exception logging meal: ${e.message}", e)
+                                Toast.makeText(this@MealDetailActivity, "Error logging meal", Toast.LENGTH_SHORT).show()
+                            }
                         }
-                        startActivity(intent)
                     },
                     onEditMeal = {
                         Toast.makeText(this@MealDetailActivity, "Edit functionality coming soon!", Toast.LENGTH_SHORT).show()

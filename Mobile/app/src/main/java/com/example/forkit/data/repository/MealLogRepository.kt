@@ -61,10 +61,11 @@ class MealLogRepository(
             
             // Online-first: attempt API regardless of connectivity indicator
             try {
+                val safeInstructions = if (instructions.isEmpty()) listOf("Logged from template") else instructions
                 val request = CreateMealLogRequest(
                     userId = userId,
                     name = name,
-                    description = description,
+                    description = description ?: "",
                     ingredients = ingredients.map {
                         Ingredient(
                             name = it.foodName,
@@ -72,7 +73,7 @@ class MealLogRepository(
                             unit = it.unit
                         )
                     },
-                    instructions = instructions,
+                    instructions = safeInstructions,
                     totalCalories = totalCalories,
                     totalCarbs = totalCarbs,
                     totalFat = totalFat,
@@ -85,7 +86,8 @@ class MealLogRepository(
                 )
 
                 val response = apiService.createMealLog(request)
-                Log.d("MealLogRepository", "createMealLog response: code=${response.code()} success=${response.isSuccessful}")
+                val errorMsg = try { response.errorBody()?.string() } catch (e: Exception) { null }
+                Log.d("MealLogRepository", "createMealLog response: code=${response.code()} success=${response.isSuccessful} bodyMsg=${response.body()?.message} error=${errorMsg}")
 
                 if (response.isSuccessful && response.body()?.success == true) {
                     val serverId = response.body()?.data?.id
