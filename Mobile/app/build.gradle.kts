@@ -14,7 +14,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.forkit"
-        minSdk = 31
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -95,10 +95,9 @@ dependencies {
     // WorkManager for background sync
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
-    // Firebase BoM and Auth
+    // Firebase BoM and Auth (use BoM-managed versions)
     implementation(platform("com.google.firebase:firebase-bom:33.6.0"))
-    // implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-auth:23.0.0")
+    implementation("com.google.firebase:firebase-auth-ktx")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
     // Credential Manager (AndroidX)
