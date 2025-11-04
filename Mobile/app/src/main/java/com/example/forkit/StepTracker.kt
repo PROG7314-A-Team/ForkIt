@@ -23,9 +23,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
-/**
- * StepTracker - Manages step tracking using Health Connect or fallback to Step Counter sensor
- */
+
 class StepTracker(private val context: Context) {
     
     private val TAG = "StepTracker"
@@ -71,32 +69,24 @@ class StepTracker(private val context: Context) {
         }
     }
     
-    /**
-     * Check if Health Connect is available
-     */
+
     fun isHealthConnectAvailable(): Boolean {
         return healthConnectClient != null
     }
     
-    /**
-     * Check if step sensors are available
-     */
+
     fun isSensorAvailable(): Boolean {
         return stepCounterSensor != null || stepDetectorSensor != null
     }
     
-    /**
-     * Get required Health Connect permissions
-     */
+
     fun getHealthConnectPermissions(): Set<String> {
         return setOf(
             HealthPermission.getReadPermission(StepsRecord::class)
         )
     }
     
-    /**
-     * Check if Health Connect permissions are granted
-     */
+
     suspend fun hasHealthConnectPermissions(): Boolean {
         return try {
             val client = healthConnectClient ?: return false
@@ -108,9 +98,7 @@ class StepTracker(private val context: Context) {
         }
     }
     
-    /**
-     * Fetch today's steps from Health Connect
-     */
+
     suspend fun fetchTodayStepsFromHealthConnect(): Int {
         try {
             val client = healthConnectClient ?: run {
@@ -155,9 +143,7 @@ class StepTracker(private val context: Context) {
         }
     }
     
-    /**
-     * Start listening to step counter sensor (fallback method)
-     */
+
     fun startSensorTracking() {
         val sensor = stepCounterSensor
         if (sensor != null) {
@@ -172,17 +158,12 @@ class StepTracker(private val context: Context) {
         }
     }
     
-    /**
-     * Stop listening to step counter sensor
-     */
+
     fun stopSensorTracking() {
         sensorManager?.unregisterListener(stepSensorListener)
         Log.d(TAG, "Stopped step counter sensor tracking")
     }
-    
-    /**
-     * Sensor event listener for step counter
-     */
+
     private val stepSensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent?) {
             event?.let {
@@ -211,9 +192,7 @@ class StepTracker(private val context: Context) {
         }
     }
     
-    /**
-     * Fetch steps using the best available method
-     */
+
     suspend fun fetchTodaySteps(): Int {
         return try {
             // Try Health Connect first
@@ -238,9 +217,7 @@ class StepTracker(private val context: Context) {
         }
     }
     
-    /**
-     * Save today's step count baseline to SharedPreferences (for sensor-based tracking)
-     */
+
     fun saveTodayBaseline(baselineSteps: Int) {
         val prefs = context.getSharedPreferences("step_tracker", Context.MODE_PRIVATE)
         val today = java.time.LocalDate.now().toString()
@@ -251,18 +228,14 @@ class StepTracker(private val context: Context) {
         }
     }
     
-    /**
-     * Load today's step count baseline from SharedPreferences
-     */
+
     fun loadTodayBaseline(): Int {
         val prefs = context.getSharedPreferences("step_tracker", Context.MODE_PRIVATE)
         val today = java.time.LocalDate.now().toString()
         return prefs.getInt("baseline_$today", 0)
     }
     
-    /**
-     * Cleanup
-     */
+
     fun cleanup() {
         stopSensorTracking()
     }

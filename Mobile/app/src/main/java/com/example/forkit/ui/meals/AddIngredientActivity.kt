@@ -97,59 +97,60 @@ class AddIngredientActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ✅ Enable modern layout rendering (status & nav bar handling)
+        // Enable modern layout rendering (status & nav bar handling)
         enableEdgeToEdge()
-        Log.d(TAG, "🟢 [onCreate] -> AddIngredientActivity started successfully. Edge-to-edge UI enabled.")
+        Log.d(TAG, "[onCreate] -> AddIngredientActivity started successfully. Edge-to-edge UI enabled.")
 
-        // 🧩 Setup the main Compose content for this activity
+        // Setup the main Compose content for this activity
         setContent {
-            Log.d(TAG, "🎨 [onCreate] -> Setting Compose content for AddIngredientScreen...")
+            Log.d(TAG, "[onCreate] -> Setting Compose content for AddIngredientScreen...")
 
             ForkItTheme {
                 val passedUserId = intent.getStringExtra("USER_ID") ?: ""
                 AddIngredientScreen(
-                    // 🔙 Handles back button press (activity exit)
+                    userId = passedUserId,
+                    // Handles back button press (activity exit)
                     onBackPressed = {
-                        Log.d(TAG, "🔙 [onCreate] -> Back pressed. Finishing AddIngredientActivity.")
+                        Log.d(TAG, "[onCreate] -> Back pressed. Finishing AddIngredientActivity.")
                         finish()
                     },
 
-                    // 📷 Launches barcode scanner when user taps scan button
+                    // Launches barcode scanner when user taps scan button
                     onBarcodeScan = {
-                        Log.d(TAG, "🔍 [onCreate] -> Barcode scan initiated from AddIngredientScreen.")
+                        Log.d(TAG, "[onCreate] -> Barcode scan initiated from AddIngredientScreen.")
                         startBarcodeScanner()
                     },
 
-                    // 📦 Observes if any scanned ingredient has been loaded
+                    // Observes if any scanned ingredient has been loaded
                     scannedFood = scannedFoodState,
 
-                    // ♻️ Clears the scanned ingredient once it's processed
+                    // Clears the scanned ingredient once it's processed
                     onScannedFoodProcessed = {
-                        Log.d(TAG, "♻️ [onCreate] -> Scanned ingredient processed. Resetting state to null.")
+                        Log.d(TAG, "[onCreate] -> Scanned ingredient processed. Resetting state to null.")
                         scannedFoodState = null
                     },
 
-                    // ✅ Callback when the ingredient has been finalized and is ready to return
+                    // Callback when the ingredient has been finalized and is ready to return
                     onIngredientReady = { ingredient ->
-                        Log.d(TAG, "✅ [onCreate] -> Ingredient ready to return -> ${ingredient} (${ingredient.calories} kcal)")
+                        Log.d(TAG, "[onCreate] -> Ingredient ready to return -> ${ingredient} (${ingredient.calories} kcal)")
 
-                        // 🧾 Prepare result intent to send data back to parent activity
+                        // Prepare result intent to send data back to parent activity
                         val resultIntent = Intent().apply {
                             putExtra("ingredient", Gson().toJson(ingredient))
                         }
 
-                        // 🎯 Return the ingredient to the calling screen
+                        // Return the ingredient to the calling screen
                         setResult(Activity.RESULT_OK, resultIntent)
-                        Log.d(TAG, "📤 [onCreate] -> Ingredient packaged and returning to previous activity.")
+                        Log.d(TAG, "[onCreate] -> Ingredient packaged and returning to previous activity.")
 
-                        // 🚪 Close the AddIngredientActivity
+                        // Close the AddIngredientActivity
                         finish()
-                        Log.d(TAG, "🏁 [onCreate] -> AddIngredientActivity finished and closed.")
+                        Log.d(TAG, "[onCreate] -> AddIngredientActivity finished and closed.")
                     }
                 )
             }
 
-            Log.d(TAG, "🎬 [onCreate] -> AddIngredientScreen successfully rendered on screen.")
+            Log.d(TAG, "[onCreate] -> AddIngredientScreen successfully rendered on screen.")
         }
     }
 
@@ -157,92 +158,92 @@ class AddIngredientActivity : ComponentActivity() {
     private val barcodeLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        Log.d(TAG, "🎯 [barcodeLauncher] -> Barcode scanning result received with resultCode=${result.resultCode}")
+        Log.d(TAG, "[barcodeLauncher] -> Barcode scanning result received with resultCode=${result.resultCode}")
 
         if (result.resultCode == RESULT_OK) {
-            Log.d(TAG, "✅ [barcodeLauncher] -> Barcode scan successful. Extracting barcode data...")
+            Log.d(TAG, "[barcodeLauncher] -> Barcode scan successful. Extracting barcode data...")
 
-            // 🧾 Retrieve the scanned barcode string from the returning Intent
+            // Retrieve the scanned barcode string from the returning Intent
             val barcodeValue = result.data?.getStringExtra("BARCODE_VALUE")
 
-            // 🔎 If barcodeValue exists, process it
+            // If barcodeValue exists, process it
             barcodeValue?.let { barcode ->
-                Log.d(TAG, "📦 [barcodeLauncher] -> Received barcode value: $barcode")
-                Log.d(TAG, "⚙️ [barcodeLauncher] -> Launching coroutine to handle scanned barcode...")
+                Log.d(TAG, "[barcodeLauncher] -> Received barcode value: $barcode")
+                Log.d(TAG, "[barcodeLauncher] -> Launching coroutine to handle scanned barcode...")
 
-                // 🚀 Launch coroutine on main thread to call Retrofit API
+                // Launch coroutine on main thread to call Retrofit API
                 CoroutineScope(Dispatchers.Main).launch {
                     handleScannedBarcode(barcode)
                 }
             } ?: run {
-                Log.w(TAG, "⚠️ [barcodeLauncher] -> No barcode value returned from scanner Intent.")
+                Log.w(TAG, "[barcodeLauncher] -> No barcode value returned from scanner Intent.")
             }
         } else {
-            Log.w(TAG, "❌ [barcodeLauncher] -> Barcode scan canceled or failed. No action taken.")
+            Log.w(TAG, "[barcodeLauncher] -> Barcode scan canceled or failed. No action taken.")
         }
     }
 
 
     // handleScannedBarcode: fetch ingredient by barcode and update screen state
     private suspend fun handleScannedBarcode(barcode: String) {
-        Log.d(TAG, "🚀 [handleScannedBarcode] -> Starting ingredient fetch for barcode: $barcode")
+        Log.d(TAG, "[handleScannedBarcode] -> Starting ingredient fetch for barcode: $barcode")
 
         try {
-            // 🌐 Step 1: Make the API call via Retrofit
-            Log.d(TAG, "🌍 [handleScannedBarcode] -> Sending request to getIngredientFromBarcode endpoint...")
+            // Step 1: Make the API call via Retrofit
+            Log.d(TAG, "[handleScannedBarcode] -> Sending request to getIngredientFromBarcode endpoint...")
             val response = RetrofitClient.api.getFoodFromBarcode(barcode)
-            Log.d(TAG, "📡 [handleScannedBarcode] -> Response received with HTTP code: ${response.code()}")
+            Log.d(TAG, "[handleScannedBarcode] -> Response received with HTTP code: ${response.code()}")
 
-            // ✅ Step 2: Check if the response succeeded
+            // Step 2: Check if the response succeeded
             if (response.isSuccessful && response.body()?.success == true) {
                 val ingredientData = response.body()?.data
-                Log.d(TAG, "📦 [handleScannedBarcode] -> API call successful. Data object: $ingredientData")
+                Log.d(TAG, "[handleScannedBarcode] -> API call successful. Data object: $ingredientData")
 
-                // 🧠 Step 3: Validate that data exists
+                // Step 3: Validate that data exists
                 if (ingredientData != null) {
-                    Log.d(TAG, "✅ [handleScannedBarcode] -> Ingredient found: ${ingredientData.name}")
+                    Log.d(TAG, "[handleScannedBarcode] -> Ingredient found: ${ingredientData.name}")
 
-                    // 🧩 Step 4: Update scannedFoodState (triggers Composable re-render)
+                    // Step 4: Update scannedFoodState (triggers Composable re-render)
                     scannedFoodState = ingredientData
-                    Log.d(TAG, "🔁 [handleScannedBarcode] -> scannedFoodState updated successfully.")
+                    Log.d(TAG, "[handleScannedBarcode] -> scannedFoodState updated successfully.")
 
-                    // 🎉 Step 5: Provide UI feedback to user
+                    // Step 5: Provide UI feedback to user
                     Toast.makeText(this, getString(com.example.forkit.R.string.found_food, ingredientData.name), Toast.LENGTH_SHORT).show()
-                    Log.d(TAG, "📢 [handleScannedBarcode] -> Toast displayed for ingredient: ${ingredientData.name}")
+                    Log.d(TAG, "[handleScannedBarcode] -> Toast displayed for ingredient: ${ingredientData.name}")
 
                 } else {
-                    // ❌ Case: No ingredient data returned
-                    Log.w(TAG, "⚠️ [handleScannedBarcode] -> API returned success=true but data=null.")
+                    // Case: No ingredient data returned
+                    Log.w(TAG, "[handleScannedBarcode] -> API returned success=true but data=null.")
                     Toast.makeText(this, getString(com.example.forkit.R.string.no_ingredient_found_barcode), Toast.LENGTH_SHORT).show()
                 }
 
             } else {
-                // ❌ Case: API call failed or returned error status
+                // Case: API call failed or returned error status
                 val errorMsg = response.body()?.message ?: "Unknown API error"
-                Log.e(TAG, "❌ [handleScannedBarcode] -> Failed API response. Reason: $errorMsg")
+                Log.e(TAG, "[handleScannedBarcode] -> Failed API response. Reason: $errorMsg")
                 Toast.makeText(this, getString(com.example.forkit.R.string.failed_fetch_ingredient, errorMsg), Toast.LENGTH_SHORT).show()
             }
 
         } catch (e: Exception) {
-            // 💥 Catch-all for any exceptions (network, parsing, etc.)
-            Log.e(TAG, "🔥 [handleScannedBarcode] -> Exception occurred while fetching ingredient.", e)
+            // Catch-all for any exceptions (network, parsing, etc.)
+            Log.e(TAG, "[handleScannedBarcode] -> Exception occurred while fetching ingredient.", e)
             Toast.makeText(this, getString(com.example.forkit.R.string.error_message, e.message ?: ""), Toast.LENGTH_SHORT).show()
         }
 
-        Log.d(TAG, "🏁 [handleScannedBarcode] -> Completed execution for barcode: $barcode")
+        Log.d(TAG, "[handleScannedBarcode] -> Completed execution for barcode: $barcode")
     }
 
     // startBarcodeScanner: launch the barcode scanner activity
     private fun startBarcodeScanner() {
-        Log.d(TAG, "🎬 [startBarcodeScanner] -> Preparing to launch BarcodeScannerActivity...")
+        Log.d(TAG, "[startBarcodeScanner] -> Preparing to launch BarcodeScannerActivity...")
 
-        // 🎯 Step 1: Create explicit Intent for BarcodeScannerActivity
+        // Step 1: Create explicit Intent for BarcodeScannerActivity
         val intent = Intent(this, BarcodeScannerActivity::class.java)
-        Log.d(TAG, "📦 [startBarcodeScanner] -> Intent created for BarcodeScannerActivity.")
+        Log.d(TAG, "[startBarcodeScanner] -> Intent created for BarcodeScannerActivity.")
 
-        // 🚀 Step 2: Launch scanner via ActivityResultLauncher
+        // Step 2: Launch scanner via ActivityResultLauncher
         barcodeLauncher.launch(intent)
-        Log.d(TAG, "📸 [startBarcodeScanner] -> BarcodeScannerActivity launched successfully.")
+        Log.d(TAG, "[startBarcodeScanner] -> BarcodeScannerActivity launched successfully.")
     }
 
 }
@@ -250,6 +251,7 @@ class AddIngredientActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddIngredientScreen(
+    userId: String,
     onBackPressed: () -> Unit,
     onBarcodeScan: () -> Unit,
     scannedFood: Food?,
@@ -271,10 +273,10 @@ fun AddIngredientScreen(
     val isOnline = remember { networkManager.isOnline() }
     
     // State variables
-    Log.d(TAG, "🧩 [AddIngredientScreen] -> Initializing all UI states and reactive variables...")
+    Log.d(TAG, "[AddIngredientScreen] -> Initializing all UI states and reactive variables...")
 
     var searchQuery by remember { mutableStateOf("") }
-    var currentScreen by remember { mutableStateOf("main") } // 👈 Tracks which sub-screen is visible
+    var currentScreen by remember { mutableStateOf("main") } // Tracks which sub-screen is visible
     var selectedSearchFood by remember { mutableStateOf<SearchFoodItem?>(null) }
 
     // Ingredient details captured across screens
@@ -299,9 +301,9 @@ fun AddIngredientScreen(
     // React to scanned ingredient input
     LaunchedEffect(scannedFood) {
         if (scannedFood != null) {
-            Log.d(TAG, "📡 [AddIngredientScreen] -> Detected new scanned ingredient: ${scannedFood.name}")
+            Log.d(TAG, "[AddIngredientScreen] -> Detected new scanned ingredient: ${scannedFood.name}")
 
-            // --- Extract basic ingredient details ---
+            // Extract basic ingredient details
             foodName = scannedFood.name
             val servingData = scannedFood.servingSize
             val qty = servingData?.quantity ?: 100.0
@@ -310,34 +312,34 @@ fun AddIngredientScreen(
             measuringUnit = unit
             baseServingQuantity = qty
 
-            // --- Determine unit category ---
+            // Determine unit category
             unitCategory = when (unit.lowercase()) {
                 "g", "kg" -> "weight"
                 "ml", "l" -> "volume"
                 else -> "all"
             }
 
-            // --- Apply nutrition and macro details ---
+            // Apply nutrition and macro details
             calories = scannedFood.calories.toInt().toString()
             carbs = String.format("%.1f", scannedFood.nutrients.carbs)
             fat = String.format("%.1f", scannedFood.nutrients.fat)
             protein = String.format("%.1f", scannedFood.nutrients.protein)
 
-            // --- Store base values for future scaling ---
+            // Store base values for future scaling
             baseCaloriesPer100g = scannedFood.calories
             baseCarbsPer100g = scannedFood.nutrients.carbs
             baseFatPer100g = scannedFood.nutrients.fat
             baseProteinPer100g = scannedFood.nutrients.protein
 
-            // --- Navigate to Adjust screen ---
+            // Navigate to Adjust screen
             currentScreen = "adjust"
-            Log.d(TAG, "🔁 [AddIngredientScreen] -> Switched screen: main ➜ adjust")
+            Log.d(TAG, "[AddIngredientScreen] -> Switched screen: main -> adjust")
 
-            // --- Clear scanned state to prevent loop ---
+            // Clear scanned state to prevent loop
             onScannedFoodProcessed()
-            Log.d(TAG, "♻️ [AddIngredientScreen] -> Scanned ingredient processed and cleared from state.")
+            Log.d(TAG, "[AddIngredientScreen] -> Scanned ingredient processed and cleared from state.")
         } else {
-            Log.d(TAG, "⚪ [AddIngredientScreen] -> No scanned ingredient detected this frame.")
+            Log.d(TAG, "[AddIngredientScreen] -> No scanned ingredient detected this frame.")
         }
     }
 
@@ -352,16 +354,16 @@ fun AddIngredientScreen(
             fat = String.format("%.1f", baseFatPer100g * scaleFactor)
             protein = String.format("%.1f", baseProteinPer100g * scaleFactor)
             
-            Log.d(TAG, "🧮 [AddIngredientScreen] -> Recalculated nutrition: ${servingSize}${measuringUnit} -> ${calories}kcal")
+            Log.d(TAG, "[AddIngredientScreen] -> Recalculated nutrition: ${servingSize}${measuringUnit} -> ${calories}kcal")
         }
     }
 
     // React to search selection
     LaunchedEffect(selectedSearchFood) {
         selectedSearchFood?.let { food ->
-            Log.d(TAG, "🧭 [AddIngredientScreen] -> Search ingredient selected: ${food.name}")
+            Log.d(TAG, "[AddIngredientScreen] -> Search ingredient selected: ${food.name}")
 
-            // --- Extract data same as scanned ---
+            // Extract data same as scanned
             foodName = food.name
             val servingData = food.servingSize
             val qty = servingData?.quantity ?: 100.0
@@ -386,16 +388,16 @@ fun AddIngredientScreen(
             baseFatPer100g = food.nutrients.fat
             baseProteinPer100g = food.nutrients.protein
 
-            // --- Transition to Adjust screen ---
+            // Transition to Adjust screen
             currentScreen = "adjust"
-            Log.d(TAG, "🔁 [AddIngredientScreen] -> Transitioning to adjust screen after search select.")
+            Log.d(TAG, "[AddIngredientScreen] -> Transitioning to adjust screen after search select.")
 
-            // --- Show success message ---
+            // Show success message
             Toast.makeText(context, context.getString(R.string.food_selected_success, food.name), Toast.LENGTH_SHORT).show()
 
-            // --- Reset selection ---
+            // Reset selection
             selectedSearchFood = null
-            Log.d(TAG, "🧹 [AddIngredientScreen] -> Cleared selectedSearchFood state.")
+            Log.d(TAG, "[AddIngredientScreen] -> Cleared selectedSearchFood state.")
         }
     }
 
@@ -404,29 +406,29 @@ fun AddIngredientScreen(
 
         // Main screen: ingredient search, history, and scan entry
         "main" -> {
-            Log.d(TAG, "🟢 [AddIngredientScreen] -> Displaying MAIN screen with shared FoodSearchScreen.")
+            Log.d(TAG, "[AddIngredientScreen] -> Displaying MAIN screen with shared FoodSearchScreen.")
             FoodSearchScreen(
-                userId = passedUserId,
+                userId = userId,
                 screenTitle = stringResource(R.string.add_ingredient),
                 onBackPressed = {
-                    Log.d(TAG, "🔙 [MAIN] -> Back pressed. Returning to previous activity.")
+                    Log.d(TAG, "[MAIN] -> Back pressed. Returning to previous activity.")
                     onBackPressed()
                 },
                 searchQuery = searchQuery,
                 onSearchQueryChange = { newQuery ->
                     searchQuery = newQuery
-                    Log.d(TAG, "⌨️ [MAIN] -> Search query updated to: $newQuery")
+                    Log.d(TAG, "[MAIN] -> Search query updated to: $newQuery")
                 },
                 onNavigateToAdjustServing = {
-                    Log.d(TAG, "➡️ [MAIN] -> Manually navigating to Adjust screen.")
+                    Log.d(TAG, "[MAIN] -> Manually navigating to Adjust screen.")
                     currentScreen = "adjust"
                 },
                 onBarcodeScan = {
-                    Log.d(TAG, "📸 [MAIN] -> Barcode scan triggered from main screen.")
+                    Log.d(TAG, "[MAIN] -> Barcode scan triggered from main screen.")
                     onBarcodeScan()
                 },
                 onSearchFoodSelected = { selectedFood ->
-                    Log.d(TAG, "🧾 [MAIN] -> Search result tapped: ${selectedFood.name}")
+                    Log.d(TAG, "[MAIN] -> Search result tapped: ${selectedFood.name}")
                     selectedSearchFood = selectedFood
                 },
                 repository = repository,
@@ -451,7 +453,7 @@ fun AddIngredientScreen(
                 onMealTypeChange = { /* ignore for now */ },
                 onBackPressed = onBackPressed,
                 onContinue = {
-                    Log.d(TAG, "➡️ [AdjustServingScreen] -> Continue clicked. Navigating to details for calories/macros entry.")
+                    Log.d(TAG, "[AdjustServingScreen] -> Continue clicked. Navigating to details for calories/macros entry.")
                     currentScreen = "details"
                 },
                 scannedFood = scannedFood,
@@ -475,7 +477,7 @@ fun AddIngredientScreen(
                 onProteinChange = { protein = it },
                 onBackPressed = { currentScreen = "adjust" },
                 onConfirm = {
-                    Log.d(TAG, "✅ [IngredientDetailsScreen] -> Finalizing ingredient creation...")
+                    Log.d(TAG, "[IngredientDetailsScreen] -> Finalizing ingredient creation...")
                     val ingredient = MealIngredient(
                         id = UUID.randomUUID().toString(),
                         foodName = foodName,
@@ -486,7 +488,7 @@ fun AddIngredientScreen(
                         fat = fat.toDoubleOrNull() ?: 0.0,
                         protein = protein.toDoubleOrNull() ?: 0.0
                     )
-                    Log.d(TAG, "📦 [IngredientDetailsScreen] -> Ingredient built: ${ingredient.foodName} | ${ingredient.calories}kcal | ${ingredient.carbs}C | ${ingredient.fat}F | ${ingredient.protein}P")
+                    Log.d(TAG, "[IngredientDetailsScreen] -> Ingredient built: ${ingredient.foodName} | ${ingredient.calories}kcal | ${ingredient.carbs}C | ${ingredient.fat}F | ${ingredient.protein}P")
                     onIngredientReady(ingredient)
                 }
             )
@@ -495,7 +497,7 @@ fun AddIngredientScreen(
 
     }
 
-    Log.d(TAG, "🧩 [AddIngredientScreen] -> Current active screen: $currentScreen")
+    Log.d(TAG, "[AddIngredientScreen] -> Current active screen: $currentScreen")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -521,7 +523,7 @@ fun AdjustServingScreen(
     currentProtein: String = ""
 ) {
     // -------------------------------------------------------------
-    // 🧠 STATE & FORMATTING SETUP
+    // STATE & FORMATTING SETUP
     // -------------------------------------------------------------
     var showDatePicker by remember { mutableStateOf(false) }
     var showMeasuringUnitDialog by remember { mutableStateOf(false) }
@@ -529,7 +531,7 @@ fun AdjustServingScreen(
     val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
     val selectedDateString = remember(selectedDate) { dateFormatter.format(selectedDate) }
 
-    Log.d(TAG, "🧩 [AdjustServingScreen] -> Opened with: $foodName | $servingSize $measuringUnit | Type=$mealType")
+    Log.d(TAG, "[AdjustServingScreen] -> Opened with: $foodName | $servingSize $measuringUnit | Type=$mealType")
 
     // --- Define and filter measuring units ---
     val allMeasuringUnits = mapOf(
@@ -546,10 +548,10 @@ fun AdjustServingScreen(
                 allMeasuringUnits["other"]!!
     }
 
-    Log.d(TAG, "⚙️ [AdjustServingScreen] -> Unit category: $unitCategory | Available units: $measuringUnits")
+    Log.d(TAG, "[AdjustServingScreen] -> Unit category: $unitCategory | Available units: $measuringUnits")
 
     // -------------------------------------------------------------
-    // 🧱 LAYOUT STRUCTURE
+    // LAYOUT STRUCTURE
     // -------------------------------------------------------------
     Box(
         modifier = Modifier
@@ -562,7 +564,7 @@ fun AdjustServingScreen(
                 .statusBarsPadding()
         ) {
             // ---------------------------------------------------------
-            // 🔙 HEADER
+            // HEADER
             // ---------------------------------------------------------
             Row(
                 modifier = Modifier
@@ -571,7 +573,7 @@ fun AdjustServingScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = {
-                    Log.d(TAG, "🔙 [AdjustServingScreen] -> Back pressed.")
+                    Log.d(TAG, "[AdjustServingScreen] -> Back pressed.")
                     onBackPressed()
                 }) {
                     Icon(
@@ -590,7 +592,7 @@ fun AdjustServingScreen(
             }
 
             // ---------------------------------------------------------
-            // 🧾 INPUT FIELDS SECTION
+            // INPUT FIELDS SECTION
             // ---------------------------------------------------------
             Column(
                 modifier = Modifier
@@ -604,7 +606,7 @@ fun AdjustServingScreen(
                     verticalArrangement = Arrangement.spacedBy(26.dp)
                 ) {
                     // -----------------------------
-                    // 🍽️ Food Name Input
+                    // Food Name Input
                     // -----------------------------
                     Box(
                         modifier = Modifier
@@ -616,7 +618,7 @@ fun AdjustServingScreen(
                         TextField(
                             value = foodName,
                             onValueChange = {
-                                Log.d(TAG, "✏️ [AdjustServingScreen] -> Food name updated: $it")
+                                Log.d(TAG, "[AdjustServingScreen] -> Food name updated: $it")
                                 onFoodNameChange(it)
                             },
                             placeholder = { Text(stringResource(R.string.food_name_required), color = colorScheme.onSurfaceVariant) },
@@ -633,7 +635,7 @@ fun AdjustServingScreen(
                     }
 
                     // -----------------------------
-                    // ⚖️ Serving Size Input
+                    // Serving Size Input
                     // -----------------------------
                     Box(
                         modifier = Modifier
@@ -649,7 +651,7 @@ fun AdjustServingScreen(
                             TextField(
                                 value = servingSize,
                                 onValueChange = {
-                                    Log.d(TAG, "📏 [AdjustServingScreen] -> Serving size changed: $it")
+                                    Log.d(TAG, "[AdjustServingScreen] -> Serving size changed: $it")
                                     onServingSizeChange(it)
                                 },
                                 placeholder = { Text(stringResource(R.string.serving_size_required), color = colorScheme.onSurfaceVariant) },
@@ -671,7 +673,7 @@ fun AdjustServingScreen(
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(colorScheme.secondary.copy(alpha = 0.15f))
                                     .clickable {
-                                        Log.d(TAG, "📐 [AdjustServingScreen] -> Measuring unit dropdown opened.")
+                                        Log.d(TAG, "[AdjustServingScreen] -> Measuring unit dropdown opened.")
                                         showMeasuringUnitDialog = true
                                     }
                                     .padding(horizontal = 12.dp, vertical = 4.dp)
@@ -693,7 +695,7 @@ fun AdjustServingScreen(
                     }
 
                     // -----------------------------
-                    // 📅 Date Picker
+                    // Date Picker
                     // -----------------------------
                     Box(
                         modifier = Modifier
@@ -702,7 +704,7 @@ fun AdjustServingScreen(
                             .border(3.dp, colorScheme.secondary.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
                             .background(colorScheme.secondary.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
                             .clickable {
-                                Log.d(TAG, "📅 [AdjustServingScreen] -> Date picker opened.")
+                                Log.d(TAG, "[AdjustServingScreen] -> Date picker opened.")
                                 showDatePicker = true
                             }
                     ) {
@@ -716,11 +718,11 @@ fun AdjustServingScreen(
                 }
 
                 // ---------------------------------------------------------
-                // 🔍 Nutritional Preview
+                // Nutritional Preview
                 // ---------------------------------------------------------
                 Spacer(modifier = Modifier.height(16.dp))
                 if (currentCalories.isNotBlank()) {
-                    Log.d(TAG, "🍎 [AdjustServingScreen] -> Showing nutritional preview: ${currentCalories}kcal | ${currentCarbs}C | ${currentProtein}P | ${currentFat}F")
+                    Log.d(TAG, "[AdjustServingScreen] -> Showing nutritional preview: ${currentCalories}kcal | ${currentCarbs}C | ${currentProtein}P | ${currentFat}F")
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         shape = RoundedCornerShape(12.dp),
@@ -753,14 +755,14 @@ fun AdjustServingScreen(
 
 
                 // ---------------------------------------------------------
-                // ✅ Submit Ingredient Button
+                // Submit Ingredient Button
                 // ---------------------------------------------------------
                 Spacer(modifier = Modifier.height(48.dp))
 
                 Button(
                     onClick = {
-                        Log.d(TAG, "✅ [AdjustServingScreen] -> Add Ingredient clicked.")
-                        onContinue() // ⬅️ will finalize the MealIngredient in parent AddIngredientActivity
+                        Log.d(TAG, "[AdjustServingScreen] -> Add Ingredient clicked.")
+                        onContinue() // Will finalize the MealIngredient in parent AddIngredientActivity
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -793,21 +795,21 @@ fun AdjustServingScreen(
         }
 
         // ---------------------------------------------------------
-        // 📅 Date Picker Dialog
+        // Date Picker Dialog
         // ---------------------------------------------------------
         if (showDatePicker) {
-            Log.d(TAG, "📆 [AdjustServingScreen] -> DatePicker dialog opened.")
+            Log.d(TAG, "[AdjustServingScreen] -> DatePicker dialog opened.")
             val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate.time)
             DatePickerDialog(
                 onDismissRequest = {
                     showDatePicker = false
-                    Log.d(TAG, "❌ [AdjustServingScreen] -> DatePicker dismissed.")
+                    Log.d(TAG, "[AdjustServingScreen] -> DatePicker dismissed.")
                 },
                 confirmButton = {
                     TextButton(onClick = {
                         datePickerState.selectedDateMillis?.let {
                             val newDate = Date(it)
-                            Log.d(TAG, "✅ [AdjustServingScreen] -> Date selected: $newDate")
+                            Log.d(TAG, "[AdjustServingScreen] -> Date selected: $newDate")
                             onDateChange(newDate)
                         }
                         showDatePicker = false
@@ -815,7 +817,7 @@ fun AdjustServingScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = {
-                        Log.d(TAG, "↩️ [AdjustServingScreen] -> Date selection canceled.")
+                        Log.d(TAG, "[AdjustServingScreen] -> Date selection canceled.")
                         showDatePicker = false
                     }) { Text("Cancel") }
                 }
@@ -823,14 +825,14 @@ fun AdjustServingScreen(
         }
 
         // ---------------------------------------------------------
-        // ⚖️ Measuring Unit Dialog
+        // Measuring Unit Dialog
         // ---------------------------------------------------------
         if (showMeasuringUnitDialog) {
-            Log.d(TAG, "📏 [AdjustServingScreen] -> Measuring unit dialog opened.")
+            Log.d(TAG, "[AdjustServingScreen] -> Measuring unit dialog opened.")
             AlertDialog(
                 onDismissRequest = {
                     showMeasuringUnitDialog = false
-                    Log.d(TAG, "❌ [AdjustServingScreen] -> Measuring unit dialog dismissed.")
+                    Log.d(TAG, "[AdjustServingScreen] -> Measuring unit dialog dismissed.")
                 },
                 title = { Text("Select Measuring Unit", fontSize = 20.sp, fontWeight = FontWeight.Bold) },
                 text = {
@@ -845,7 +847,7 @@ fun AdjustServingScreen(
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(if (unit == measuringUnit) colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent)
                                         .clickable {
-                                            Log.d(TAG, "✅ [AdjustServingScreen] -> Measuring unit selected: $unit")
+                                            Log.d(TAG, "[AdjustServingScreen] -> Measuring unit selected: $unit")
                                             onMeasuringUnitChange(unit)
                                             showMeasuringUnitDialog = false
                                         }
@@ -885,7 +887,7 @@ fun AdjustServingScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        Log.d(TAG, "🛑 [AdjustServingScreen] -> Closing measuring unit dialog manually.")
+                        Log.d(TAG, "[AdjustServingScreen] -> Closing measuring unit dialog manually.")
                         showMeasuringUnitDialog = false
                     }) { Text("Close", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
                 }
@@ -893,7 +895,7 @@ fun AdjustServingScreen(
         }
     }
 
-    Log.d(TAG, "🏁 [AdjustServingScreen] -> Render complete. Current: ${servingSize}${measuringUnit}, ${currentCalories} kcal")
+    Log.d(TAG, "[AdjustServingScreen] -> Render complete. Current: ${servingSize}${measuringUnit}, ${currentCalories} kcal")
 }
 
 
