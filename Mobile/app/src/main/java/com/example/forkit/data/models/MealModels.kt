@@ -1,8 +1,6 @@
 package com.example.forkit.data.models
 
-// -------------------------------------------------------------
-// 🧠 Local model for a user-built full meal (not an API log)
-// -------------------------------------------------------------
+// Local model for a user-built full meal (not an API log)
 data class MealIngredient(
     val id: String,
     val foodName: String,
@@ -14,9 +12,7 @@ data class MealIngredient(
     val protein: Double
 )
 
-// -------------------------------------------------------------
-// 🥘 A locally composed full meal with its ingredient list
-// -------------------------------------------------------------
+// Full meal composed locally with its ingredient list
 data class FullMeal(
     val id: String? = null,
     val name: String,

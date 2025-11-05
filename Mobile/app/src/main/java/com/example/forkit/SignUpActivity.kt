@@ -37,7 +37,6 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.NavController
 import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.data.models.RegisterRequest
 import com.example.forkit.data.RetrofitClient
@@ -223,7 +222,7 @@ fun SignUpScreen(/*navController: NavController*/) {
                     )
                     .clickable {
                         if (password != confirmPassword) {
-                            message = "Passwords do not match!"
+                            message = "The passwords you entered do not match. Please make sure both password fields are identical"
                             return@clickable
                         }
 
@@ -237,7 +236,7 @@ fun SignUpScreen(/*navController: NavController*/) {
                                 )
                                 if (response.isSuccessful) {
                                     val body = response.body()
-                                    message = body?.message ?: "Registered successfully"
+                                    message = body?.message ?: "Account created successfully! Welcome to ForkIt"
                                     // Navigate to onboarding flow for new users
                                     val intent = Intent(context, TellUsAboutYourselfActivity::class.java)
                                     intent.putExtra("USER_ID", body?.uid)
@@ -245,10 +244,10 @@ fun SignUpScreen(/*navController: NavController*/) {
                                     context.startActivity(intent)
                                     (context as? ComponentActivity)?.finish()
                                 } else {
-                                    message = "Registration failed: ${response.errorBody()?.string()}"
+                                    message = "Unable to create account. Please check your email format and try again"
                                 }
                             } catch (e: Exception) {
-                                message = "Error: ${e.localizedMessage}"
+                                message = "Unable to connect to the server. Please check your internet connection and try again"
                             } finally {
                                 isLoading = false
                             }
@@ -382,6 +381,7 @@ private suspend fun signInWithGoogle(context: Context) {
             GoogleIdTokenCredential.createFrom(result.credential.data)
         val idToken = googleIdTokenCredential.idToken
 
+        @Suppress("SENSELESS_COMPARISON")
         if (idToken == null) {
             Toast.makeText(context, "Google sign-in failed: No ID token", Toast.LENGTH_SHORT).show()
             Log.e("Auth", "Google sign-in failed: No ID token")
@@ -409,7 +409,7 @@ private suspend fun signInWithGoogle(context: Context) {
                                 if (response.isSuccessful) {
                                     val body = response.body()
                                     val success = body?.success ?: false
-                                    val message = body?.message ?: "Registration successful"
+                                    val message = body?.message ?: "Account created successfully! Welcome to ForkIt"
                                     val uid = body?.uid
 
                                     Log.d(
@@ -457,10 +457,10 @@ private suspend fun signInWithGoogle(context: Context) {
             }
 
     } catch (e: GetCredentialException) {
-        Toast.makeText(context, "Google Sign-In failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Google sign-in failed. Please try again or use email sign-up", Toast.LENGTH_SHORT).show()
         Log.e("Auth", "Google Sign-In failed: ${e.message}", e)
     } catch (e: Exception) {
-        Toast.makeText(context, "Unexpected error: ${e.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "An unexpected error occurred. Please try again", Toast.LENGTH_SHORT).show()
         Log.e("Auth", "Unexpected error during sign-in", e)
     }
 }

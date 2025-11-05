@@ -231,7 +231,7 @@ fun TestingScreen() {
         // Get Food Logs
         GetFoodLogsSection { userId, date ->
             makeApiCall {
-                val response = apiService.getFoodLogs(userId, date)
+                val response = apiService.getFoodLogs(userId ?: "", date)
                 responseText = "Get Food Logs Response:\n${response.body()}"
             }
         }
@@ -316,7 +316,7 @@ fun TestingScreen() {
         // Get Water Logs
         GetWaterLogsSection { userId, date ->
             makeApiCall {
-                val response = apiService.getWaterLogs(userId, date)
+                val response = apiService.getWaterLogs(userId ?: "", date)
                 responseText = "Get Water Logs Response:\n${response.body()}"
             }
         }
@@ -354,7 +354,7 @@ fun TestingScreen() {
         // Get Exercise Logs
         GetExerciseLogsSection { userId, date, type ->
             makeApiCall {
-                val response = apiService.getExerciseLogs(userId, date, type)
+                val response = apiService.getExerciseLogs(userId ?: "", date, type)
                 responseText = "Get Exercise Logs Response:\n${response.body()}"
             }
         }
@@ -1203,6 +1203,7 @@ fun CreateFoodLogSection(onTest: (FoodLog) -> Unit) {
                 onClick = { 
                     val foodLog = FoodLog(
                         id = "",
+                        localId = "", // Add localId parameter
                         userId = userId,
                         foodName = foodName,
                         servingSize = servingSize.toDoubleOrNull() ?: 0.0,

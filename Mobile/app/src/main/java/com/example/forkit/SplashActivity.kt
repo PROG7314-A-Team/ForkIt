@@ -30,11 +30,16 @@ import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.utils.AuthPreferences
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.stringResource
 
 class SplashActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Initialize LanguageManager and apply saved language
+        LanguageManager.initialize(this)
+        LanguageManager.applyLanguage(this)
         
         // Load theme preference before setting content
         ThemeManager.loadThemeMode(this)
@@ -162,7 +167,7 @@ fun SplashScreen(onTimeout: () -> Unit) {
             
             // Tagline
             Text(
-                text = "Track Your Health Journey",
+                text = stringResource(R.string.app_tagline),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color.White.copy(alpha = 0.9f),

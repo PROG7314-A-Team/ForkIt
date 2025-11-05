@@ -1,6 +1,5 @@
 package com.example.forkit
 
-import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -23,7 +22,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
-import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,11 +38,18 @@ import androidx.compose.ui.unit.sp
 import com.example.forkit.data.RetrofitClient
 import com.example.forkit.data.models.*
 import com.example.forkit.ui.theme.ForkItTheme
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.forkit.data.repository.FoodLogRepository
+import com.example.forkit.data.repository.MealLogRepository
+import com.example.forkit.data.local.AppDatabase
+import com.example.forkit.data.local.entities.MealIngredient
+import com.example.forkit.utils.NetworkConnectivityManager
 
 class AddMealActivity : ComponentActivity() {
     companion object {
@@ -66,7 +71,7 @@ class AddMealActivity : ComponentActivity() {
                     userId = userId,
                     onBackPressed = { finish() },
                     onSuccess = {
-                        Toast.makeText(this, "Food logged successfully! 🍽️", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, getString(R.string.food_logged_success), Toast.LENGTH_SHORT).show()
                         finish()
                     },
                     onBarcodeScan = { startBarcodeScanner() },
@@ -105,18 +110,18 @@ class AddMealActivity : ComponentActivity() {
                     Log.d(TAG, "Scanned food: ${foodData.name}, serving: ${foodData.servingSize?.quantity} ${foodData.servingSize?.unit}")
 
                     // Show success message
-                    Toast.makeText(this, "Found: ${foodData.name}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.found_food, foodData.name), Toast.LENGTH_SHORT).show()
 
                 } else {
-                    Toast.makeText(this, "No food data found for this barcode", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, getString(R.string.no_food_found_barcode), Toast.LENGTH_LONG).show()
                 }
             } else {
                 val errorMessage = response.body()?.message ?: "Unknown error"
-                Toast.makeText(this, "Failed to get food: $errorMessage", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, getString(R.string.failed_get_food, errorMessage), Toast.LENGTH_LONG).show()
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error getting food from barcode", e)
-            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.error_message, e.message ?: ""), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -161,6 +166,26 @@ fun AddMealScreen(
 
     // Store unit category to filter available units
     var unitCategory by remember { mutableStateOf("all") } // "weight", "volume", or "all"
+
+    // Initialize repositories for offline support
+    val context = LocalContext.current
+    val database = remember { AppDatabase.getInstance(context) }
+    val networkManager = remember { NetworkConnectivityManager(context) }
+    val mealLogRepository = remember {
+        MealLogRepository(
+            apiService = RetrofitClient.api,
+            mealLogDao = database.mealLogDao(),
+            networkManager = networkManager
+        )
+    }
+    val foodLogRepository = remember {
+        FoodLogRepository(
+            apiService = RetrofitClient.api,
+            foodLogDao = database.foodLogDao(),
+            networkManager = networkManager
+        )
+    }
+    val isOnline = remember { networkManager.isOnline() }
 
     // Handle scanned food when it changes
     LaunchedEffect(scannedFood) {
@@ -292,6 +317,17 @@ fun AddMealScreen(
         }
     }
 
+    // Track when to refresh My Foods
+    var refreshMyFoods by remember { mutableStateOf(0) }
+    
+    // Trigger refresh when returning to main screen
+    LaunchedEffect(currentScreen) {
+        if (currentScreen == "main") {
+            refreshMyFoods++
+            Log.d("AddMealActivity", "Returned to main screen - triggering My Foods refresh")
+        }
+    }
+
     when (currentScreen) {
         "main" -> AddFoodMainScreen(
             userId = userId,
@@ -313,7 +349,10 @@ fun AddMealScreen(
             },
             onSearchFoodSelected = { foodItem ->
                 selectedSearchFood = foodItem
-            }
+            },
+            repository = foodLogRepository,
+            isOnline = isOnline,
+            refreshTrigger = refreshMyFoods
         )
         "adjust" -> AdjustServingScreen(
             foodName = foodName,
@@ -387,7 +426,10 @@ fun AddMealScreen(
             currentCalories = calories,
             currentCarbs = carbs,
             currentFat = fat,
-            currentProtein = protein
+            currentProtein = protein,
+            foodLogRepository = foodLogRepository,
+            userId = userId,
+            isOnline = isOnline
         )
         "details" -> AddDetailsScreen(
             calories = calories,
@@ -408,7 +450,11 @@ fun AddMealScreen(
             measuringUnit = measuringUnit,
             selectedDate = selectedDate,
             mealType = mealType,
-            onSuccess = onSuccess
+            onSuccess = onSuccess,
+            repository = mealLogRepository,
+            foodLogRepository = foodLogRepository,
+            isOnline = isOnline,
+            onNavigateToMain = { currentScreen = "main" }
         )
     }
 }
@@ -422,7 +468,10 @@ fun AddFoodMainScreen(
     onNavigateToAdjustServing: (RecentActivityEntry?) -> Unit,
     onBarcodeScan: () -> Unit,
     onScannedFood: (Food) -> Unit,
-    onSearchFoodSelected: (SearchFoodItem) -> Unit
+    onSearchFoodSelected: (SearchFoodItem) -> Unit,
+    repository: FoodLogRepository,
+    isOnline: Boolean,
+    refreshTrigger: Int
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -437,6 +486,21 @@ fun AddFoodMainScreen(
     var isSearching by remember { mutableStateOf(false) }
     var showSearchResults by remember { mutableStateOf(false) }
 
+    // performSearchWithRetry: retry food search on transient failures
+    suspend fun performSearchWithRetry(query: String, maxRetries: Int = 2): retrofit2.Response<com.example.forkit.data.models.GetFoodFromNameResponse>? {
+        repeat(maxRetries) { attempt ->
+            try {
+                Log.d("AddMealActivity", "Search attempt ${attempt + 1} for query: $query")
+                return RetrofitClient.api.getFoodFromName(query)
+            } catch (e: Exception) {
+                Log.d("AddMealActivity", "Search attempt ${attempt + 1} failed: ${e.message}")
+                if (attempt == maxRetries - 1) throw e
+                delay(1000L * (attempt + 1)) // Exponential backoff: 1s, 2s
+            }
+        }
+        return null
+    }
+
     // Search function
     fun performSearch(query: String) {
         if (query.isBlank()) {
@@ -448,29 +512,50 @@ fun AddFoodMainScreen(
         scope.launch {
             isSearching = true
             try {
-                val response = RetrofitClient.api.getFoodFromName(query)
-                Log.d(TAG, "Food response ${response.body()?.data}")
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val data = response.body()?.data
-                    if (data != null) {
-                        // Convert map to list of SearchFoodItem
-                        searchResults = data.toList()
-                        showSearchResults = true
-                    } else {
-                        searchResults = emptyList()
-                        showSearchResults = false
-                    }
+                val response = performSearchWithRetry(query)
+                if (response != null) {
+                    Log.d("AddMealActivity", "Food response ${response.body()?.data}")
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        val data = response.body()?.data
+                        if (data != null) {
+                            // Convert map to list of SearchFoodItem
+                            searchResults = data.toList()
+                            showSearchResults = true
+                        } else {
+                            searchResults = emptyList()
+                            showSearchResults = false
+                        }
                 } else {
                     searchResults = emptyList()
                     showSearchResults = false
-                    Toast.makeText(context, "No results found", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.no_results_found_api), Toast.LENGTH_SHORT).show()
                 }
-            } catch (e: Exception) {
+            } else {
                 searchResults = emptyList()
                 showSearchResults = false
-                Log.d(TAG, "Fething food error ${e.message}")
-                Toast.makeText(context, "Search error: ${e.message}", Toast.LENGTH_SHORT).show()
-            } finally {
+                Toast.makeText(context, context.getString(R.string.search_failed_retries), Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: java.net.SocketTimeoutException) {
+            searchResults = emptyList()
+            showSearchResults = false
+            Log.d("AddMealActivity", "Search timeout: ${e.message}")
+            Toast.makeText(context, context.getString(R.string.search_timeout_try_again), Toast.LENGTH_SHORT).show()
+        } catch (e: java.net.UnknownHostException) {
+            searchResults = emptyList()
+            showSearchResults = false
+            Log.d("AddMealActivity", "Network error: ${e.message}")
+            Toast.makeText(context, context.getString(R.string.network_error_check_connection), Toast.LENGTH_SHORT).show()
+        } catch (e: java.net.ConnectException) {
+            searchResults = emptyList()
+            showSearchResults = false
+            Log.d("AddMealActivity", "Connection error: ${e.message}")
+            Toast.makeText(context, context.getString(R.string.connection_error_server_unavailable), Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            searchResults = emptyList()
+            showSearchResults = false
+            Log.d("AddMealActivity", "Search error: ${e.message}")
+            Toast.makeText(context, context.getString(R.string.search_error, e.message ?: ""), Toast.LENGTH_SHORT).show()
+        } finally {
                 isSearching = false
             }
         }
@@ -488,48 +573,109 @@ fun AddFoodMainScreen(
         }
     }
 
-    // Fetch all food logs and create unique list when screen loads
-    LaunchedEffect(userId) {
+    // Function to load food history
+    suspend fun loadFoodHistory() {
         isLoading = true
         try {
-            // Get ALL food logs for this user (no date filter)
+            // First try to get from API
             val response = RetrofitClient.api.getFoodLogs(userId = userId)
+            var allFoodLogs = emptyList<FoodLog>()
+            
             if (response.isSuccessful && response.body()?.success == true) {
-                val allFoodLogs = response.body()?.data ?: emptyList()
-
-                // Group by food name (case-insensitive) and take the most recent entry for each unique food
-                historyItems = allFoodLogs
-                    .groupBy { it.foodName.lowercase().trim() }
-                    .map { (_, logs) ->
-                        // Get the most recent log for this food name
-                        logs.maxByOrNull { it.createdAt } ?: logs.first()
-                    }
-                    .map { log ->
-                        // Convert to RecentActivityEntry
-                        RecentActivityEntry(
-                            id = log.id,
-                            foodName = log.foodName,
-                            servingSize = log.servingSize,
-                            measuringUnit = log.measuringUnit,
-                            calories = log.calories.toInt(),
-                            mealType = log.mealType,
-                            date = log.date,
-                            createdAt = log.createdAt,
-                            time = log.createdAt.substring(11, 16)
-                        )
-                    }
-                    .sortedByDescending { it.createdAt } // Most recently logged foods first
-
-                errorMessage = ""
+                val apiFoodLogs = response.body()?.data ?: emptyList()
+                // For API food logs, we need to add localId field (use id as localId for API logs)
+                allFoodLogs = apiFoodLogs.map { log ->
+                    log.copy(localId = log.id) // Use id as localId for API logs
+                }
+                Log.d("AddMealActivity", "Loaded ${allFoodLogs.size} food logs from API")
             } else {
-                errorMessage = "Failed to load food history"
+                Log.w("AddMealActivity", "API call failed: ${response.message()}")
             }
+            
+            // Always try local database as well to get the most complete data
+            Log.d("AddMealActivity", "Also checking local database for additional food logs...")
+            val localFoodLogs = repository.getAllFoodLogs(userId)
+                val localFoodLogsConverted = localFoodLogs.map { entity ->
+                    FoodLog(
+                        id = entity.serverId ?: entity.localId,
+                        localId = entity.localId, // Preserve the original localId
+                        userId = entity.userId,
+                        foodName = entity.foodName,
+                        servingSize = entity.servingSize,
+                        measuringUnit = entity.measuringUnit,
+                        date = entity.date,
+                        mealType = entity.mealType,
+                        calories = entity.calories,
+                        carbs = entity.carbs,
+                        fat = entity.fat,
+                        protein = entity.protein,
+                        foodId = entity.foodId,
+                        createdAt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault()).format(java.util.Date(entity.createdAt)),
+                        updatedAt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault()).format(java.util.Date(entity.createdAt))
+                    )
+                }
+            Log.d("AddMealActivity", "Loaded ${localFoodLogsConverted.size} food logs from local database")
+            
+            // Combine API and local data, preferring local data for duplicates
+            val combinedFoodLogs = if (allFoodLogs.isNotEmpty()) {
+                // Merge API and local data, with local data taking precedence
+                val apiIds = allFoodLogs.map { it.id }.toSet()
+                val localOnly = localFoodLogsConverted.filter { it.id !in apiIds }
+                allFoodLogs + localOnly
+            } else {
+                localFoodLogsConverted
+            }
+            
+            allFoodLogs = combinedFoodLogs
+            Log.d("AddMealActivity", "Combined total: ${allFoodLogs.size} food logs (API: ${if (response.isSuccessful) (response.body()?.data?.size ?: 0) else 0}, Local: ${localFoodLogsConverted.size})")
+
+            // Group by food name (case-insensitive) and take the most recent entry for each unique food
+            historyItems = allFoodLogs
+                .groupBy { it.foodName.lowercase().trim() }
+                .map { (_, logs) ->
+                    // Get the most recent log for this food name
+                    logs.maxByOrNull { it.createdAt } ?: logs.first()
+                }
+                .map { log ->
+                    // Convert to RecentActivityEntry
+                    RecentActivityEntry(
+                        id = log.id,
+                        localId = log.localId, // Use the preserved localId
+                        foodName = log.foodName,
+                        servingSize = log.servingSize,
+                        measuringUnit = log.measuringUnit,
+                        calories = log.calories.toInt(),
+                        mealType = log.mealType,
+                        date = log.date,
+                        createdAt = log.createdAt,
+                        time = log.createdAt.substring(11, 16)
+                    )
+                }
+                .sortedByDescending { it.createdAt } // Most recently logged foods first
+
+            errorMessage = ""
+            Log.d("AddMealActivity", "Loaded My Foods: ${historyItems.size} unique foods")
         } catch (e: Exception) {
+            Log.e("AddMealActivity", "Error loading food history", e)
             errorMessage = "Error: ${e.message}"
         } finally {
             isLoading = false
         }
     }
+
+    // Load food history when screen first loads
+    LaunchedEffect(userId) {
+        loadFoodHistory()
+    }
+
+    // Refresh food history when refresh trigger changes
+    LaunchedEffect(refreshTrigger) {
+        if (refreshTrigger > 0) {
+            Log.d("AddMealActivity", "Refreshing My Foods due to trigger: $refreshTrigger")
+            loadFoodHistory()
+        }
+    }
+
 
     Box(
         modifier = Modifier
@@ -551,15 +697,22 @@ fun AddFoodMainScreen(
                 IconButton(onClick = onBackPressed) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = colorScheme.onBackground
+                        contentDescription = stringResource(R.string.back),
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
                 Text(
-                    text = "Add Food",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = colorScheme.primary,
+                    text = stringResource(R.string.add_food),
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    style = androidx.compose.ui.text.TextStyle(
+                        brush = Brush.horizontalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.secondary
+                            )
+                        )
+                    ),
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
@@ -571,6 +724,39 @@ fun AddFoodMainScreen(
                     .padding(horizontal = 24.dp)
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
+                
+                // Show offline message if not online
+                if (!isOnline) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(
+                                text = "🌐",
+                                fontSize = 64.sp
+                            )
+                            Text(
+                                text = "Meals require internet connection",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = "Meal logging features require an internet connection to search for foods and log your meals.",
+                                fontSize = 14.sp,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                } else {
 
                 // Search bar
                 Box(
@@ -578,48 +764,48 @@ fun AddFoodMainScreen(
                         .fillMaxWidth()
                         .height(68.dp)
                         .border(
-                            width = 3.dp,
-                            color = colorScheme.secondary.copy(alpha = 0.3f),
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f),
                             shape = RoundedCornerShape(16.dp)
                         )
                         .background(
-                            color = colorScheme.secondary.copy(alpha = 0.05f),
+                            color = MaterialTheme.colorScheme.surface,
                             shape = RoundedCornerShape(16.dp)
                         )
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 24.dp),
+                            .padding(horizontal = 20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = colorScheme.secondary,
+                            contentDescription = stringResource(R.string.search_food),
+                            tint = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.padding(end = 12.dp)
                         )
                         TextField(
                             value = searchQuery,
                             onValueChange = onSearchQueryChange,
-                            placeholder = { Text("Search food", color = colorScheme.onSurfaceVariant) },
+                            placeholder = { Text(stringResource(R.string.search_food), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                             modifier = Modifier.weight(1f),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
                                 unfocusedContainerColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
-                                cursorColor = colorScheme.secondary
+                                cursorColor = MaterialTheme.colorScheme.secondary
                             ),
                             textStyle = androidx.compose.ui.text.TextStyle(
-                                fontSize = 18.sp,
-                                color = colorScheme.onBackground
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         )
                         if (isSearching) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
-                                color = colorScheme.secondary,
+                                color = MaterialTheme.colorScheme.secondary,
                                 strokeWidth = 2.dp
                             )
                         }
@@ -633,7 +819,7 @@ fun AddFoodMainScreen(
                     // Search Results section
                     if (showSearchResults && searchResults.isNotEmpty()) {
                         Text(
-                            text = "Search Results",
+                            text = stringResource(R.string.search_results),
                             fontSize = 16.sp,
                             color = colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium,
@@ -672,7 +858,7 @@ fun AddFoodMainScreen(
                         }
                     } else {
                         Text(
-                            text = "No results found for \"$searchQuery\"",
+                            text = stringResource(R.string.no_results_found, searchQuery),
                             fontSize = 14.sp,
                             color = colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 16.dp)
@@ -680,13 +866,23 @@ fun AddFoodMainScreen(
                     }
                 } else {
                     // My Foods section - only show when not searching
-                    Text(
-                        text = "My Foods",
-                        fontSize = 16.sp,
-                        color = colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.my_foods),
+                            fontSize = 24.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        if (!isOnline) {
+                            Text(
+                                text = "🌐 My Foods requires internet connection",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                        }
+                    }
 
                     // Loading, Error, or History items
                     when {
@@ -708,7 +904,7 @@ fun AddFoodMainScreen(
                         }
                         historyItems.isEmpty() -> {
                             Text(
-                                text = "No foods logged yet. Start by adding your first meal!",
+                                text = stringResource(R.string.no_foods_logged),
                                 fontSize = 14.sp,
                                 color = colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(vertical = 16.dp)
@@ -742,14 +938,16 @@ fun AddFoodMainScreen(
                                                         val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                                                         val todayDate = apiDateFormatter.format(Date())
 
-                                                        // Create food log request with the same details
                                                         // Estimate macronutrients based on calories (rough approximation)
                                                         val totalCalories = item.calories.toDouble()
                                                         val estimatedCarbs = (totalCalories * 0.5) / 4.0 // 50% carbs, 4 cal/g
                                                         val estimatedProtein = (totalCalories * 0.2) / 4.0 // 20% protein, 4 cal/g
                                                         val estimatedFat = (totalCalories * 0.3) / 9.0 // 30% fat, 9 cal/g
 
-                                                        val request = CreateFoodLogRequest(
+                                                        Log.d("AddMealActivity", "Creating food log for My Foods: ${item.foodName}, Calories: $totalCalories")
+                                                        
+                                                        // Use repository for offline-first logging
+                                                        val result = repository.createFoodLog(
                                                             userId = userId,
                                                             foodName = item.foodName,
                                                             servingSize = item.servingSize,
@@ -762,34 +960,39 @@ fun AddFoodMainScreen(
                                                             protein = estimatedProtein,
                                                             foodId = null
                                                         )
-
-                                                        Log.d("AddMealActivity", "Creating food log for My Foods: ${item.foodName}, Calories: $totalCalories")
-                                                        val response = RetrofitClient.api.createFoodLog(request)
-                                                        Log.d("AddMealActivity", "Food log response: ${response.code()}, Success: ${response.body()?.success}")
-
-                                                        if (response.isSuccessful && response.body()?.success == true) {
-                                                            Toast.makeText(context, "✓ ${item.foodName} added to today!", Toast.LENGTH_SHORT).show()
-                                                        } else {
-                                                            Toast.makeText(context, "Failed to add food", Toast.LENGTH_SHORT).show()
+                                                        
+                                                        result.onSuccess { id ->
+                                                            if (!isOnline) {
+                                                                Toast.makeText(context, "Saved offline - will sync when connected", Toast.LENGTH_LONG).show()
+                                                            } else {
+                                                                Toast.makeText(context, "${item.foodName} added to today's meals", Toast.LENGTH_SHORT).show()
+                                                            }
+                                                        }.onFailure { e ->
+                                                            Toast.makeText(context, "Failed to add food. Please try again", Toast.LENGTH_SHORT).show()
                                                         }
                                                     } catch (e: Exception) {
-                                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, "Something went wrong. Please try again", Toast.LENGTH_SHORT).show()
                                                     }
                                                 }
                                             },
                                             onDelete = {
                                                 scope.launch {
                                                     try {
-                                                        val response = RetrofitClient.api.deleteFoodLog(item.id)
-                                                        if (response.isSuccessful && response.body()?.success == true) {
+                                                        Log.d("AddMealActivity", "🗑️ Attempting to delete food: ${item.foodName}, localId: ${item.localId}, id: ${item.id}")
+                                                        // Use repository for offline-first deletion
+                                                        val result = repository.deleteFoodLog(item.localId)
+                                                        result.onSuccess {
+                                                            Log.d("AddMealActivity", "✅ Successfully deleted food: ${item.foodName}")
                                                             // Remove from local list
-                                                            historyItems = historyItems.filter { it.id != item.id }
-                                                            Toast.makeText(context, "Food deleted successfully", Toast.LENGTH_SHORT).show()
-                                                        } else {
-                                                            Toast.makeText(context, "Failed to delete food", Toast.LENGTH_SHORT).show()
+                                                            historyItems = historyItems.filter { it.localId != item.localId }
+                                                            Toast.makeText(context, "Food removed successfully", Toast.LENGTH_SHORT).show()
+                                                        }.onFailure { e ->
+                                                            Log.e("AddMealActivity", "❌ Failed to delete food: ${item.foodName}, error: ${e.message}", e)
+                                                            Toast.makeText(context, "Couldn't delete food. Please try again", Toast.LENGTH_SHORT).show()
                                                         }
                                                     } catch (e: Exception) {
-                                                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                        Log.e("AddMealActivity", "❌ Exception deleting food: ${item.foodName}, error: ${e.message}", e)
+                                                        Toast.makeText(context, "Something went wrong. Please try again", Toast.LENGTH_SHORT).show()
                                                     }
                                                 }
                                             }
@@ -828,8 +1031,8 @@ fun AddFoodMainScreen(
                                 .background(
                                     brush = Brush.horizontalGradient(
                                         colors = listOf(
-                                            colorScheme.primary,
-                                            colorScheme.secondary
+                                            MaterialTheme.colorScheme.primary,
+                                            MaterialTheme.colorScheme.secondary
                                         )
                                     ),
                                     shape = RoundedCornerShape(16.dp)
@@ -837,10 +1040,10 @@ fun AddFoodMainScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Scan Barcode",
+                                text = stringResource(R.string.scan_barcode),
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = colorScheme.background
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
@@ -878,7 +1081,7 @@ fun AddFoodMainScreen(
                                 )
                             } else {
                                 Text(
-                                    text = "Add Food",
+                                    text = stringResource(R.string.add_food),
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = colorScheme.background
@@ -889,6 +1092,7 @@ fun AddFoodMainScreen(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+                } // Close the else block for online content
             }
         }
     }
@@ -1008,24 +1212,6 @@ fun SearchResultCard(
                 }
             }
 
-            if (foodItem.image != null) {
-                // You could add an image here if needed
-                // For now, just show a placeholder
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(
-                            color = colorScheme.secondary.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(8.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "📷",
-                        fontSize = 20.sp
-                    )
-                }
-            }
         }
     }
 }
@@ -1132,12 +1318,12 @@ fun FoodHistoryCard(
             onDismissRequest = { showDeleteDialog = false },
             title = {
                 Text(
-                    "Delete Food Log?",
+                    stringResource(R.string.delete_food_log_title),
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
-                Text("Are you sure you want to delete \"$foodName\" from your log?")
+                Text(stringResource(R.string.delete_food_log_message, foodName))
             },
             confirmButton = {
                 TextButton(
@@ -1146,12 +1332,12 @@ fun FoodHistoryCard(
                         onDelete()
                     }
                 ) {
-                    Text("Delete", color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.delete), color = Color(0xFFE53935), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -1178,7 +1364,10 @@ fun AdjustServingScreen(
     currentCalories: String = "",
     currentCarbs: String = "",
     currentFat: String = "",
-    currentProtein: String = ""
+    currentProtein: String = "",
+    foodLogRepository: FoodLogRepository,
+    userId: String,
+    isOnline: Boolean
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
     var showMeasuringUnitDialog by remember { mutableStateOf(false) }
@@ -1223,12 +1412,12 @@ fun AdjustServingScreen(
                 IconButton(onClick = onBackPressed) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.back),
                         tint = colorScheme.onBackground
                     )
                 }
                 Text(
-                    text = "Adjust Serving",
+                    text = stringResource(R.string.adjust_serving),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
                     color = colorScheme.primary,
@@ -1267,7 +1456,7 @@ fun AdjustServingScreen(
                         TextField(
                             value = foodName,
                             onValueChange = onFoodNameChange,
-                            placeholder = { Text("Food name*", color = colorScheme.onSurfaceVariant) },
+                            placeholder = { Text(stringResource(R.string.food_name_required), color = colorScheme.onSurfaceVariant) },
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 24.dp),
@@ -1309,7 +1498,7 @@ fun AdjustServingScreen(
                             TextField(
                                 value = servingSize,
                                 onValueChange = onServingSizeChange,
-                                placeholder = { Text("Serving size*", color = colorScheme.onSurfaceVariant) },
+                                placeholder = { Text(stringResource(R.string.serving_size_required), color = colorScheme.onSurfaceVariant) },
                                 modifier = Modifier.weight(1f),
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent,
@@ -1478,7 +1667,7 @@ fun AdjustServingScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Select Type",
+                        text = stringResource(R.string.select_type),
                         fontSize = 16.sp,
                         color = colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium,
@@ -1493,39 +1682,39 @@ fun AdjustServingScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                TypeButton(
-                                    text = "Breakfast",
-                                    isSelected = mealType == "Breakfast",
-                                    onClick = { onMealTypeChange("Breakfast") }
-                                )
-                            }
-                            Box(modifier = Modifier.weight(1f)) {
-                                TypeButton(
-                                    text = "Lunch",
-                                    isSelected = mealType == "Lunch",
-                                    onClick = { onMealTypeChange("Lunch") }
-                                )
-                            }
+                        Box(modifier = Modifier.weight(1f)) {
+                            TypeButton(
+                                text = stringResource(R.string.breakfast),
+                                isSelected = mealType == "Breakfast",
+                                onClick = { onMealTypeChange("Breakfast") }
+                            )
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            TypeButton(
+                                text = stringResource(R.string.lunch),
+                                isSelected = mealType == "Lunch",
+                                onClick = { onMealTypeChange("Lunch") }
+                            )
+                        }
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                TypeButton(
-                                    text = "Dinner",
-                                    isSelected = mealType == "Dinner",
-                                    onClick = { onMealTypeChange("Dinner") }
-                                )
-                            }
-                            Box(modifier = Modifier.weight(1f)) {
-                                TypeButton(
-                                    text = "Snacks",
-                                    isSelected = mealType == "Snacks",
-                                    onClick = { onMealTypeChange("Snacks") }
-                                )
-                            }
+                        Box(modifier = Modifier.weight(1f)) {
+                            TypeButton(
+                                text = stringResource(R.string.dinner),
+                                isSelected = mealType == "Dinner",
+                                onClick = { onMealTypeChange("Dinner") }
+                            )
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            TypeButton(
+                                text = stringResource(R.string.snacks),
+                                isSelected = mealType == "Snacks",
+                                onClick = { onMealTypeChange("Snacks") }
+                            )
+                        }
                         }
                     }
                 }
@@ -1559,7 +1748,7 @@ fun AdjustServingScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Continue",
+                            text = stringResource(R.string.continue_btn),
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Medium,
                             color = colorScheme.background
@@ -1585,12 +1774,12 @@ fun AdjustServingScreen(
                             showDatePicker = false
                         }
                     ) {
-                        Text("OK")
+                        Text(stringResource(R.string.ok))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDatePicker = false }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.cancel))
                     }
                 }
             ) {
@@ -1604,7 +1793,7 @@ fun AdjustServingScreen(
                 onDismissRequest = { showMeasuringUnitDialog = false },
                 title = {
                     Text(
-                        "Select Measuring Unit",
+                        stringResource(R.string.select_measuring_unit),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -1618,7 +1807,7 @@ fun AdjustServingScreen(
                         measuringUnits.forEach { unit ->
                             // Show separator as non-clickable divider
                             if (unit == "─────") {
-                                Divider(
+                                HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 8.dp),
                                     color = colorScheme.outline.copy(alpha = 0.3f)
                                 )
@@ -1654,10 +1843,10 @@ fun AdjustServingScreen(
                                             )
                                             // Show conversion hint
                                             val hint = when (unit) {
-                                                "kg" -> "1 kg = 1000 g"
-                                                "g" -> "1000 g = 1 kg"
-                                                "l" -> "1 l = 1000 ml"
-                                                "ml" -> "1000 ml = 1 l"
+                                                "kg" -> stringResource(R.string.conversion_kg_g)
+                                                "g" -> stringResource(R.string.conversion_g_kg)
+                                                "l" -> stringResource(R.string.conversion_l_ml)
+                                                "ml" -> stringResource(R.string.conversion_ml_l)
                                                 else -> null
                                             }
                                             if (hint != null) {
@@ -1685,7 +1874,7 @@ fun AdjustServingScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showMeasuringUnitDialog = false }) {
-                        Text("Close", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.close), fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
                 }
             )
@@ -1711,7 +1900,11 @@ fun AddDetailsScreen(
     mealType: String,
     onSuccess: () -> Unit,
     onBackPressed: () -> Unit,
-    onAddFood: () -> Unit
+    onAddFood: () -> Unit,
+    repository: MealLogRepository,
+    foodLogRepository: FoodLogRepository,
+    isOnline: Boolean,
+    onNavigateToMain: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -1739,19 +1932,19 @@ fun AddDetailsScreen(
     fun saveFoodLog() {
         // Validate inputs
         if (foodName.isBlank()) {
-            Toast.makeText(context, "Please enter food name", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.please_enter_food_name), Toast.LENGTH_SHORT).show()
             return
         }
         if (servingSize.isBlank() || servingSize.toDoubleOrNull() == null) {
-            Toast.makeText(context, "Please enter valid serving size", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.please_enter_valid_serving_size), Toast.LENGTH_SHORT).show()
             return
         }
         if (mealType.isBlank()) {
-            Toast.makeText(context, "Please select meal type", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.please_select_meal_type), Toast.LENGTH_SHORT).show()
             return
         }
         if (calories.isBlank() || calories.toDoubleOrNull() == null) {
-            Toast.makeText(context, "Please enter valid calories", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.please_enter_valid_calories), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -1764,11 +1957,23 @@ fun AddDetailsScreen(
                 val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                 val dateString = apiDateFormatter.format(selectedDate)
 
-                // Create food log request
-                val request = CreateFoodLogRequest(
+                // Create meal ingredient from the food data
+                val mealIngredient = MealIngredient(
+                    foodName = foodName,
+                    quantity = servingSize.toDouble(),
+                    unit = measuringUnit,
+                    calories = calories.toDoubleOrNull() ?: 0.0,
+                    carbs = carbs.toDoubleOrNull() ?: 0.0,
+                    fat = fat.toDoubleOrNull() ?: 0.0,
+                    protein = protein.toDoubleOrNull() ?: 0.0
+                )
+
+                // Use repository for offline-first food logging (for My Foods section)
+                Log.d("AddMealActivity", "Saving food: $foodName, serving: $servingSize $measuringUnit, calories: $calories")
+                val result = foodLogRepository.createFoodLog(
                     userId = userId,
                     foodName = foodName,
-                    servingSize = servingSize.toDouble(),
+                    servingSize = servingSize.toDoubleOrNull() ?: 0.0,
                     measuringUnit = measuringUnit,
                     date = dateString,
                     mealType = mealType,
@@ -1779,16 +1984,34 @@ fun AddDetailsScreen(
                     foodId = null
                 )
 
-                val response = RetrofitClient.api.createFoodLog(request)
-
-                if (response.isSuccessful && response.body()?.success == true) {
-                    onSuccess()
-                } else {
-                    errorMessage = response.body()?.message ?: "Failed to save food log"
+                result.onSuccess { id ->
+                    Log.d("AddMealActivity", "Food saved successfully with ID: $id")
+                    if (!isOnline) {
+                        Toast.makeText(
+                            context,
+                            "Food saved offline - will sync when connected",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } else {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.food_added_success),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    // Navigate back to main screen to refresh My Foods
+                    onNavigateToMain()
+                    // Close activity after a short delay to let user see the updated My Foods
+                    scope.launch {
+                        delay(2000) // 2 second delay
+                        onSuccess()
+                    }
+                }.onFailure { e ->
+                    errorMessage = "Unable to save food. Please check your connection and try again"
                     Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                errorMessage = "Error: ${e.message}"
+                errorMessage = "Something went wrong while saving. Please try again"
                 Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
             } finally {
                 isLoading = false
@@ -1816,12 +2039,12 @@ fun AddDetailsScreen(
                 IconButton(onClick = onBackPressed) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.back),
                         tint = colorScheme.onBackground
                     )
                 }
                 Text(
-                    text = "Add Details",
+                    text = stringResource(R.string.add_details),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
                     color = colorScheme.primary,
@@ -1866,7 +2089,7 @@ fun AddDetailsScreen(
                             TextField(
                                 value = calories,
                                 onValueChange = onCaloriesChange,
-                                placeholder = { Text("Calories*", color = colorScheme.onSurfaceVariant) },
+                                placeholder = { Text(stringResource(R.string.calories_required), color = colorScheme.onSurfaceVariant) },
                                 modifier = Modifier.weight(1f),
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent,
@@ -1882,7 +2105,7 @@ fun AddDetailsScreen(
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                             )
                             Text(
-                                text = "kcal",
+                                text = stringResource(R.string.kcal),
                                 fontSize = 18.sp,
                                 color = colorScheme.primary,
                                 fontWeight = FontWeight.Medium
@@ -1892,7 +2115,7 @@ fun AddDetailsScreen(
 
                     // Calculate calories hint
                     Text(
-                        text = "ForkIt can calculate this for you!",
+                        text = stringResource(R.string.forkit_can_calculate),
                         fontSize = 14.sp,
                         color = colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 8.dp)
@@ -1901,7 +2124,7 @@ fun AddDetailsScreen(
                     // Carbs input field
                     Column {
                         Text(
-                            text = "Carbs",
+                            text = stringResource(R.string.carbs),
                             fontSize = 16.sp,
                             color = colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium,
@@ -1930,7 +2153,7 @@ fun AddDetailsScreen(
                                 TextField(
                                     value = carbs,
                                     onValueChange = onCarbsChange,
-                                    placeholder = { Text("Enter amount", color = colorScheme.onSurfaceVariant) },
+                                    placeholder = { Text(stringResource(R.string.enter_amount), color = colorScheme.onSurfaceVariant) },
                                     modifier = Modifier.weight(1f),
                                     colors = TextFieldDefaults.colors(
                                         focusedContainerColor = Color.Transparent,
@@ -1958,7 +2181,7 @@ fun AddDetailsScreen(
                     // Fat input field
                     Column {
                         Text(
-                            text = "Fat",
+                            text = stringResource(R.string.fat),
                             fontSize = 16.sp,
                             color = colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium,
@@ -2015,7 +2238,7 @@ fun AddDetailsScreen(
                     // Protein input field
                     Column {
                         Text(
-                            text = "Protein",
+                            text = stringResource(R.string.protein),
                             fontSize = 16.sp,
                             color = colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium,

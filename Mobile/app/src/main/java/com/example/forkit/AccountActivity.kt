@@ -40,6 +40,9 @@ class AccountActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
+        // Apply saved language
+        LanguageManager.applyLanguage(this)
+        
         val userId = intent.getStringExtra("USER_ID") ?: ""
 
         setContent {
@@ -49,6 +52,18 @@ class AccountActivity : ComponentActivity() {
                     onBackPressed = { finish() }
                 )
             }
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Check if language changed while in another activity
+        val savedLanguageCode = LanguageManager.getCurrentLanguageCode(this)
+        val currentLocale = resources.configuration.locales[0].language
+        
+        // If language changed, recreate the activity to apply new language
+        if (savedLanguageCode != currentLocale) {
+            recreate()
         }
     }
 }
@@ -516,6 +531,7 @@ private suspend fun loadUserData(
             if (responseBody?.data != null) {
                 try {
                     // Parse the user data from the response
+                    @Suppress("UNCHECKED_CAST")
                     val userDataList = responseBody.data as? List<Map<String, Any>>
                     android.util.Log.d("AccountActivity", "User data list: $userDataList")
                     
