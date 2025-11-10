@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.utils.AuthPreferences
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 
 class SplashActivity : AppCompatActivity() {
@@ -94,24 +95,27 @@ fun SplashScreen(onTimeout: () -> Unit) {
     
     // Animate logo appearance
     LaunchedEffect(Unit) {
-        // Scale and fade in animation
-        scale.animateTo(
-            targetValue = 1f,
-            animationSpec = tween(
-                durationMillis = 800,
-                delayMillis = 100
-            )
+        val animationSpec = tween<Float>(
+            durationMillis = 450,
+            delayMillis = 0
         )
-        alpha.animateTo(
-            targetValue = 1f,
-            animationSpec = tween(
-                durationMillis = 800,
-                delayMillis = 100
+
+        // Run logo scale and fade animations in parallel
+        launch {
+            scale.animateTo(
+                targetValue = 1f,
+                animationSpec = animationSpec
             )
-        )
+        }
+        launch {
+            alpha.animateTo(
+                targetValue = 1f,
+                animationSpec = animationSpec
+            )
+        }
         
-        // Wait for 2 seconds total (including animation)
-        delay(1500)
+        // Shorter overall display time
+        delay(700)
         
         // Navigate to login
         onTimeout()
@@ -139,8 +143,8 @@ fun SplashScreen(onTimeout: () -> Unit) {
         ) {
             // ForkIt Logo
             Image(
-                painter = painterResource(id = R.drawable.forkit_logo),
-                contentDescription = "ForkIt Logo",
+                painter = painterResource(id = R.drawable.icon_logo_),
+                contentDescription = "ForkIt Icon",
                 modifier = Modifier
                     .size(200.dp)
             )
