@@ -1022,7 +1022,7 @@ fun CalorieWheel(
                 Text(
                     text = "Today's Calories",
                     fontSize = 12.sp,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
             }
@@ -1057,13 +1057,13 @@ fun MacronutrientBreakdown(
                     text = "Carbs",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Text(
                 text = "${carbsCalories}cal (${if (totalCalories > 0) ((carbsCalories * 100) / totalCalories) else 0}%)",
                 fontSize = 14.sp,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -1084,13 +1084,13 @@ fun MacronutrientBreakdown(
                     text = "Protein",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Text(
                 text = "${proteinCalories}cal (${if (totalCalories > 0) ((proteinCalories * 100) / totalCalories) else 0}%)",
                 fontSize = 14.sp,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -1111,13 +1111,13 @@ fun MacronutrientBreakdown(
                     text = "Fat",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Text(
                 text = "${fatCalories}cal (${if (totalCalories > 0) ((fatCalories * 100) / totalCalories) else 0}%)",
                 fontSize = 14.sp,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

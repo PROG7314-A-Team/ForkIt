@@ -580,7 +580,7 @@ fun HomeScreen(
                 Text(
                     text = stringResource(R.string.recent_meals),
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 
@@ -634,7 +634,7 @@ fun HomeScreen(
                                 Text(
                                     text = meal.time,
                                     fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onBackground
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                                 )
                                 
                                 // Delete button
@@ -710,7 +710,7 @@ fun HomeScreen(
                     text = stringResource(R.string.recent_workouts),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF333333),
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
                 
@@ -750,7 +750,7 @@ fun HomeScreen(
                                 Text(
                                     text = "${workout.type} • ${workout.caloriesBurnt} cal${if (workout.duration != null) " • ${workout.duration}min" else ""}",
                                     fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onBackground
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                                 )
                                 Text(
                                     text = workout.time,
@@ -829,7 +829,7 @@ fun HomeScreen(
                     text = stringResource(R.string.todays_water_intake),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E9ECD),
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
                 

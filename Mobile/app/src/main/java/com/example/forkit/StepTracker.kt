@@ -177,8 +177,7 @@ class StepTracker(private val context: Context) {
                         Log.d(TAG, "Initial step count: $initialStepCount")
                     }
                     
-                    // Calculate today's steps (this is a simple approach)
-                    // Note: This will reset if app is killed, ideally store in SharedPreferences
+
                     currentSessionSteps = totalStepsSinceBoot - initialStepCount
                     _stepCount.value = currentSessionSteps
                     

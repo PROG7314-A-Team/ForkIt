@@ -216,16 +216,16 @@ fun AddMealScreen(
                 // Use per-serving nutrients if available, otherwise scale from per 100g
                 if (food.nutrientsPerServing != null && food.caloriesPerServing != null) {
                     calories = food.caloriesPerServing.toInt().toString()
-                    carbs = String.format("%.1f", food.nutrientsPerServing.carbs)
-                    fat = String.format("%.1f", food.nutrientsPerServing.fat)
-                    protein = String.format("%.1f", food.nutrientsPerServing.protein)
+                    carbs = String.format(Locale.US, "%.1f", food.nutrientsPerServing.carbs)
+                    fat = String.format(Locale.US, "%.1f", food.nutrientsPerServing.fat)
+                    protein = String.format(Locale.US, "%.1f", food.nutrientsPerServing.protein)
                 } else {
                     // Scale from per 100g values
                     val scale = quantity / 100.0
                     calories = (food.calories * scale).toInt().toString()
-                    carbs = String.format("%.1f", food.nutrients.carbs * scale)
-                    fat = String.format("%.1f", food.nutrients.fat * scale)
-                    protein = String.format("%.1f", food.nutrients.protein * scale)
+                    carbs = String.format(Locale.US, "%.1f", food.nutrients.carbs * scale)
+                    fat = String.format(Locale.US, "%.1f", food.nutrients.fat * scale)
+                    protein = String.format(Locale.US, "%.1f", food.nutrients.protein * scale)
                 }
             } else {
                 // No serving size info - use per 100g as default
@@ -234,9 +234,9 @@ fun AddMealScreen(
                 baseServingQuantity = 100.0
                 unitCategory = "weight" // Default to weight
                 calories = food.calories.toInt().toString()
-                carbs = String.format("%.1f", food.nutrients.carbs)
-                fat = String.format("%.1f", food.nutrients.fat)
-                protein = String.format("%.1f", food.nutrients.protein)
+                carbs = String.format(Locale.US, "%.1f", food.nutrients.carbs)
+                fat = String.format(Locale.US, "%.1f", food.nutrients.fat)
+                protein = String.format(Locale.US, "%.1f", food.nutrients.protein)
             }
 
             // Store base values for scaling
@@ -281,16 +281,16 @@ fun AddMealScreen(
                 // Use per-serving nutrients if available
                 if (food.nutrientsPerServing != null && food.caloriesPerServing != null) {
                     calories = food.caloriesPerServing.toInt().toString()
-                    carbs = String.format("%.1f", food.nutrientsPerServing.carbs)
-                    fat = String.format("%.1f", food.nutrientsPerServing.fat)
-                    protein = String.format("%.1f", food.nutrientsPerServing.protein)
+                    carbs = String.format(Locale.US, "%.1f", food.nutrientsPerServing.carbs)
+                    fat = String.format(Locale.US, "%.1f", food.nutrientsPerServing.fat)
+                    protein = String.format(Locale.US, "%.1f", food.nutrientsPerServing.protein)
                 } else {
                     // Scale from per 100g values
                     val scale = quantity / 100.0
                     calories = ((food.calories ?: 0.0) * scale).toInt().toString()
-                    carbs = String.format("%.1f", food.nutrients.carbs * scale)
-                    fat = String.format("%.1f", food.nutrients.fat * scale)
-                    protein = String.format("%.1f", food.nutrients.protein * scale)
+                    carbs = String.format(Locale.US, "%.1f", food.nutrients.carbs * scale)
+                    fat = String.format(Locale.US, "%.1f", food.nutrients.fat * scale)
+                    protein = String.format(Locale.US, "%.1f", food.nutrients.protein * scale)
                 }
             } else {
                 // No serving size info - use per 100g as default
@@ -299,9 +299,9 @@ fun AddMealScreen(
                 baseServingQuantity = 100.0
                 unitCategory = "weight" // Default to weight
                 calories = (food.calories ?: 0.0).toInt().toString()
-                carbs = String.format("%.1f", food.nutrients.carbs)
-                fat = String.format("%.1f", food.nutrients.fat)
-                protein = String.format("%.1f", food.nutrients.protein)
+                carbs = String.format(Locale.US, "%.1f", food.nutrients.carbs)
+                fat = String.format(Locale.US, "%.1f", food.nutrients.fat)
+                protein = String.format(Locale.US, "%.1f", food.nutrients.protein)
             }
 
             // Store base values for scaling
@@ -374,9 +374,9 @@ fun AddMealScreen(
                         else -> newQuantity / 100.0          // Already in base unit (g or ml)
                     }
                     calories = (baseCaloriesPer100g * scale).toInt().toString()
-                    carbs = String.format("%.1f", baseCarbsPer100g * scale)
-                    fat = String.format("%.1f", baseFatPer100g * scale)
-                    protein = String.format("%.1f", baseProteinPer100g * scale)
+                    carbs = String.format(Locale.US, "%.1f", baseCarbsPer100g * scale)
+                    fat = String.format(Locale.US, "%.1f", baseFatPer100g * scale)
+                    protein = String.format(Locale.US, "%.1f", baseProteinPer100g * scale)
                 }
             },
             onMeasuringUnitChange = { newUnit ->
@@ -402,7 +402,7 @@ fun AddMealScreen(
 
                 // Update serving size with converted value if conversion happened
                 if (convertedValue != currentValue && convertedValue > 0) {
-                    servingSize = String.format("%.2f", convertedValue).trimEnd('0').trimEnd('.')
+                    servingSize = String.format(Locale.US, "%.2f", convertedValue).trimEnd('0').trimEnd('.')
 
                     // Recalculate nutrients with the converted value
                     if (baseCaloriesPer100g > 0) {
@@ -412,9 +412,9 @@ fun AddMealScreen(
                             else -> convertedValue / 100.0
                         }
                         calories = (baseCaloriesPer100g * scale).toInt().toString()
-                        carbs = String.format("%.1f", baseCarbsPer100g * scale)
-                        fat = String.format("%.1f", baseFatPer100g * scale)
-                        protein = String.format("%.1f", baseProteinPer100g * scale)
+                        carbs = String.format(Locale.US, "%.1f", baseCarbsPer100g * scale)
+                        fat = String.format(Locale.US, "%.1f", baseFatPer100g * scale)
+                        protein = String.format(Locale.US, "%.1f", baseProteinPer100g * scale)
                     }
                 }
             },
