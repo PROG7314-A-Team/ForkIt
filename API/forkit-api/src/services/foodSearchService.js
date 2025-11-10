@@ -116,7 +116,7 @@ class FoodSearchService {
       ...commonParams,
       tagtype_0: "countries",
       tag_contains_0: "contains",
-      tag_0: "south africa",
+      tag_0: "south-africa",
     };
 
     try {
@@ -261,8 +261,8 @@ class FoodSearchService {
     // Simplicity (low weight)
     score.simplicity = this.scoreSimplicityOptimized(product);
 
-    // Regional preference (high weight when available)
-    score.regionalPreference = product.isSouthAfrican ? 25 : 0;
+    // Regional preference (very high weight when available)
+    score.regionalPreference = product.isSouthAfrican ? 100 : 0;
 
     // Calculate total score
     score.totalScore =
