@@ -103,31 +103,85 @@ class FoodSearchService {
    * Get results from OpenFoodFacts API with timeout
    */
   async getOpenFoodFactsResults(searchTerm) {
+    const endpoint = `https://world.openfoodfacts.org/cgi/search.pl`;
+    const commonParams = {
+      search_terms: searchTerm,
+      json: 1,
+      page_size: 25,
+      fields:
+        "code,product_name,brands,nutriments,serving_size,serving_quantity,serving_quantity_unit,image_small_url,image_url,ingredients_text,nutriscore_grade,ecoscore_grade,nova_group,countries_tags",
+    };
+
+    const southAfricaParams = {
+      ...commonParams,
+      tagtype_0: "countries",
+      tag_contains_0: "contains",
+      tag_0: "south africa",
+    };
+
     try {
-      // Add timeout and remove country filter for faster results
-      const response = await axios.get(
-        `https://world.openfoodfacts.org/cgi/search.pl`,
-        {
-          params: {
-            search_terms: searchTerm,
-            json: 1,
-            page_size: 25, // Limit results from API
-            fields: 'code,product_name,brands,nutriments,serving_size,serving_quantity,serving_quantity_unit,image_small_url,image_url,ingredients_text,nutriscore_grade,ecoscore_grade,nova_group'
-          },
-          timeout: 5000 // 5 second timeout
-        }
+      const [southAfricaResponse, globalResponse] = await Promise.all([
+        axios.get(endpoint, {
+          params: southAfricaParams,
+          timeout: 5000,
+        }),
+        axios.get(endpoint, {
+          params: commonParams,
+          timeout: 5000,
+        }),
+      ]);
+
+      const southAfricanProducts = this.extractProductsWithRegionFlag(
+        southAfricaResponse,
+        true
+      );
+      const globalProducts = this.extractProductsWithRegionFlag(
+        globalResponse,
+        false
       );
 
-      if (response.data.count > 0) {
-        return response.data.products || [];
+      const seenCodes = new Set(
+        southAfricanProducts
+          .map((product) => product.code)
+          .filter((code) => !!code)
+      );
+
+      const combinedResults = [...southAfricanProducts];
+
+      for (const product of globalProducts) {
+        if (product.code && seenCodes.has(product.code)) {
+          continue;
+        }
+        combinedResults.push(product);
       }
-      return [];
+
+      return combinedResults;
     } catch (error) {
-      if (error.code === 'ECONNABORTED') {
+      if (error.code === "ECONNABORTED") {
         console.error("OpenFoodFacts request timed out");
       }
       throw error;
     }
+  }
+
+  extractProductsWithRegionFlag(response, isSouthAfrican) {
+    if (!response || !response.data) {
+      return [];
+    }
+
+    const products = response.data.products || [];
+    return products.map((product) => ({
+      ...product,
+      isSouthAfrican:
+        isSouthAfrican ||
+        this.hasSouthAfricaCountryTag(product?.countries_tags || []),
+    }));
+  }
+
+  hasSouthAfricaCountryTag(countriesTags = []) {
+    return countriesTags.some((tag) =>
+      String(tag).toLowerCase().includes("south-africa")
+    );
   }
 
   /**
@@ -191,6 +245,7 @@ class FoodSearchService {
       foodQuality: 0,
       nameRelevance: 0,
       simplicity: 0,
+      regionalPreference: 0,
       totalScore: 0,
     };
 
@@ -206,12 +261,16 @@ class FoodSearchService {
     // Simplicity (low weight)
     score.simplicity = this.scoreSimplicityOptimized(product);
 
+    // Regional preference (high weight when available)
+    score.regionalPreference = product.isSouthAfrican ? 25 : 0;
+
     // Calculate total score
     score.totalScore =
       score.dataCompleteness +
       score.foodQuality +
       score.nameRelevance +
-      score.simplicity;
+      score.simplicity +
+      score.regionalPreference;
 
     return score;
   }
@@ -489,6 +548,7 @@ class FoodSearchService {
           breakdown: result.scoreBreakdown,
         },
         isLocal: result.isLocal || false,
+        isSouthAfrican: !!result.isSouthAfrican,
 
         // Nutritional data per 100g
         nutrients: nutritionalData.per100g,
