@@ -145,7 +145,7 @@ class MealLogRepository(
      */
     suspend fun deleteMealLog(mealLogId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val mealLog = mealLogDao.getById(mealLogId)
+            val mealLog = mealLogDao.getById(mealLogId) ?: mealLogDao.getByServerId(mealLogId)
             
             if (mealLog != null) {
                 // If synced and online, delete from API
@@ -158,7 +158,7 @@ class MealLogRepository(
                 }
                 
                 // Delete from local DB
-                mealLogDao.deleteById(mealLogId)
+                mealLogDao.deleteById(mealLog.localId)
                 Log.d("MealLogRepository", "Meal log deleted successfully")
                 Result.success(Unit)
             } else {
