@@ -2,9 +2,9 @@ package com.example.forkit
 
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,7 +39,7 @@ import com.example.forkit.data.repository.ExerciseLogRepository
 import com.example.forkit.data.local.AppDatabase
 import com.example.forkit.utils.NetworkConnectivityManager
 
-class AddWorkoutActivity : ComponentActivity() {
+class AddWorkoutActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

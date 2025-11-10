@@ -4,9 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -48,7 +49,7 @@ fun Context.findActivity(): ComponentActivity? = when (this) {
     else -> null
 }
 
-class AddHabitActivity : ComponentActivity() {
+class AddHabitActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

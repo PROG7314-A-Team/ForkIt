@@ -2,9 +2,9 @@ package com.example.forkit
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
@@ -44,7 +44,7 @@ import com.example.forkit.data.repository.HabitRepository
 import com.example.forkit.data.local.AppDatabase
 import com.example.forkit.utils.NetworkConnectivityManager
 
-class HabitsActivity : ComponentActivity() {
+class HabitsActivity : AppCompatActivity() {
     private var refreshTrigger by mutableStateOf(0)
     
     override fun onCreate(savedInstanceState: Bundle?) {

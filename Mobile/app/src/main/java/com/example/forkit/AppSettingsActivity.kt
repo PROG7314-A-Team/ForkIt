@@ -1,9 +1,9 @@
 package com.example.forkit
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -35,7 +35,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.res.stringResource
 import android.content.Intent
 
-class AppSettingsActivity : ComponentActivity() {
+class AppSettingsActivity : AppCompatActivity() {
     companion object {
         const val RESULT_LANGUAGE_CHANGED = 100
     }
@@ -46,6 +46,7 @@ class AppSettingsActivity : ComponentActivity() {
         
         // Initialize LanguageManager
         LanguageManager.initialize(this)
+        LanguageManager.applyLanguage(this)
         
         setContent {
             ForkItTheme {

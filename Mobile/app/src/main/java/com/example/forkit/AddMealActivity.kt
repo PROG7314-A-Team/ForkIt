@@ -4,9 +4,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -51,7 +51,7 @@ import com.example.forkit.data.local.AppDatabase
 import com.example.forkit.data.local.entities.MealIngredient
 import com.example.forkit.utils.NetworkConnectivityManager
 
-class AddMealActivity : ComponentActivity() {
+class AddMealActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "AddMealActivity"
     }

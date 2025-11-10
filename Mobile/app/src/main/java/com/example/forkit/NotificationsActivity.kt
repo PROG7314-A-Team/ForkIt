@@ -5,9 +5,9 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -33,7 +33,7 @@ import com.example.forkit.services.HabitNotificationHelper
 import com.example.forkit.services.HabitNotificationScheduler
 import com.example.forkit.ui.theme.ForkItTheme
 
-class NotificationsActivity : ComponentActivity() {
+class NotificationsActivity : AppCompatActivity() {
     
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()

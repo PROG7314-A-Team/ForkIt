@@ -3,9 +3,9 @@ package com.example.forkit
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import com.example.forkit.utils.NetworkConnectivityManager
 
-class CoachActivity : ComponentActivity() {
+class CoachActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

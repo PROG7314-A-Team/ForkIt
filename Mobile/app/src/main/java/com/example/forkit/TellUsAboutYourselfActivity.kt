@@ -3,9 +3,10 @@ package com.example.forkit
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,7 +34,7 @@ import com.example.forkit.data.models.UpdateUserProfileRequest
 import kotlinx.coroutines.launch
 import android.widget.Toast
 
-class TellUsAboutYourselfActivity : ComponentActivity() {
+class TellUsAboutYourselfActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

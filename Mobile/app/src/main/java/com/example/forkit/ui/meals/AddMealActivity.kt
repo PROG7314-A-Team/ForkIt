@@ -4,10 +4,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -55,7 +55,7 @@ import java.util.*
 private const val TAG = "AddMealActivity"
 
 @OptIn(ExperimentalMaterial3Api::class)
-class AddMealActivity : ComponentActivity() {
+class AddMealActivity : AppCompatActivity() {
     
     private lateinit var mealLogRepository: MealLogRepository
     private var pendingIngredient by mutableStateOf<UIMealIngredient?>(null)

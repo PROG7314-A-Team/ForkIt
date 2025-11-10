@@ -2,9 +2,9 @@ package com.example.forkit
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -32,7 +32,7 @@ import com.example.forkit.utils.AuthPreferences
 import kotlinx.coroutines.delay
 import androidx.compose.ui.res.stringResource
 
-class SplashActivity : ComponentActivity() {
+class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

@@ -6,11 +6,11 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.DisposableEffect
 import androidx.core.content.ContextCompat
 import androidx.health.connect.client.PermissionController
@@ -84,7 +84,7 @@ import com.example.forkit.sync.SyncManager
 
 
 
-class DashboardActivity : ComponentActivity() {
+class DashboardActivity : AppCompatActivity() {
     private var refreshCallback: (() -> Unit)? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
