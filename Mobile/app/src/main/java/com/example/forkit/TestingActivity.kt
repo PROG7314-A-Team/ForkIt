@@ -2,9 +2,9 @@ package com.example.forkit
 
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-class TestingActivity : ComponentActivity() {
+class TestingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -231,7 +231,7 @@ fun TestingScreen() {
         // Get Food Logs
         GetFoodLogsSection { userId, date ->
             makeApiCall {
-                val response = apiService.getFoodLogs(userId, date)
+                val response = apiService.getFoodLogs(userId ?: "", date)
                 responseText = "Get Food Logs Response:\n${response.body()}"
             }
         }
@@ -316,7 +316,7 @@ fun TestingScreen() {
         // Get Water Logs
         GetWaterLogsSection { userId, date ->
             makeApiCall {
-                val response = apiService.getWaterLogs(userId, date)
+                val response = apiService.getWaterLogs(userId ?: "", date)
                 responseText = "Get Water Logs Response:\n${response.body()}"
             }
         }
@@ -354,7 +354,7 @@ fun TestingScreen() {
         // Get Exercise Logs
         GetExerciseLogsSection { userId, date, type ->
             makeApiCall {
-                val response = apiService.getExerciseLogs(userId, date, type)
+                val response = apiService.getExerciseLogs(userId ?: "", date, type)
                 responseText = "Get Exercise Logs Response:\n${response.body()}"
             }
         }
@@ -1203,6 +1203,7 @@ fun CreateFoodLogSection(onTest: (FoodLog) -> Unit) {
                 onClick = { 
                     val foodLog = FoodLog(
                         id = "",
+                        localId = "", // Add localId parameter
                         userId = userId,
                         foodName = foodName,
                         servingSize = servingSize.toDoubleOrNull() ?: 0.0,

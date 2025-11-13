@@ -2,9 +2,9 @@ package com.example.forkit
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -30,11 +30,17 @@ import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.utils.AuthPreferences
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
 
-class SplashActivity : ComponentActivity() {
+class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Initialize LanguageManager and apply saved language
+        LanguageManager.initialize(this)
+        LanguageManager.applyLanguage(this)
         
         // Load theme preference before setting content
         ThemeManager.loadThemeMode(this)
@@ -89,24 +95,27 @@ fun SplashScreen(onTimeout: () -> Unit) {
     
     // Animate logo appearance
     LaunchedEffect(Unit) {
-        // Scale and fade in animation
-        scale.animateTo(
-            targetValue = 1f,
-            animationSpec = tween(
-                durationMillis = 800,
-                delayMillis = 100
-            )
+        val animationSpec = tween<Float>(
+            durationMillis = 450,
+            delayMillis = 0
         )
-        alpha.animateTo(
-            targetValue = 1f,
-            animationSpec = tween(
-                durationMillis = 800,
-                delayMillis = 100
+
+        // Run logo scale and fade animations in parallel
+        launch {
+            scale.animateTo(
+                targetValue = 1f,
+                animationSpec = animationSpec
             )
-        )
+        }
+        launch {
+            alpha.animateTo(
+                targetValue = 1f,
+                animationSpec = animationSpec
+            )
+        }
         
-        // Wait for 2 seconds total (including animation)
-        delay(1500)
+        // Shorter overall display time
+        delay(700)
         
         // Navigate to login
         onTimeout()
@@ -134,8 +143,8 @@ fun SplashScreen(onTimeout: () -> Unit) {
         ) {
             // ForkIt Logo
             Image(
-                painter = painterResource(id = R.drawable.forkit_logo),
-                contentDescription = "ForkIt Logo",
+                painter = painterResource(id = R.drawable.icon_logo_),
+                contentDescription = "ForkIt Icon",
                 modifier = Modifier
                     .size(200.dp)
             )
@@ -162,7 +171,7 @@ fun SplashScreen(onTimeout: () -> Unit) {
             
             // Tagline
             Text(
-                text = "Track Your Health Journey",
+                text = stringResource(R.string.app_tagline),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color.White.copy(alpha = 0.9f),

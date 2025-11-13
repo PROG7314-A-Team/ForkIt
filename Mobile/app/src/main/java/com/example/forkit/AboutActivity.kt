@@ -1,9 +1,9 @@
 package com.example.forkit
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -20,10 +20,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
 
-class AboutActivity : ComponentActivity() {
+class AboutActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Apply saved language
+        LanguageManager.applyLanguage(this)
         
         setContent {
             ForkItTheme {
@@ -31,6 +34,18 @@ class AboutActivity : ComponentActivity() {
                     onBackPressed = { finish() }
                 )
             }
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Check if language changed while in another activity
+        val savedLanguageCode = LanguageManager.getCurrentLanguageCode(this)
+        val currentLocale = resources.configuration.locales[0].language
+        
+        // If language changed, recreate the activity to apply new language
+        if (savedLanguageCode != currentLocale) {
+            recreate()
         }
     }
 }
@@ -110,7 +125,7 @@ fun AboutScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Version 0.0.1",
+                        text = "Version 0.1.3",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF333333)

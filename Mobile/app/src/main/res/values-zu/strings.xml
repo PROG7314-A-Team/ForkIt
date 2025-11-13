@@ -1,0 +1,317 @@
+<resources>
+    <!-- App Name & Tagline -->
+    <string name="app_name">ForkIt</string>
+    <string name="app_tagline">Thatha ukulandelela kwakho kwamakhalori kuzingeni elilandelayo</string>
+    
+    <!-- Common Actions -->
+    <string name="login">Ngena</string>
+    <string name="sign_up">Bhalisa</string>
+    <string name="cancel">Khansela</string>
+    <string name="delete">Susa</string>
+    <string name="back">Emuva</string>
+    <string name="home">Ikhaya</string>
+    <string name="add">Engeza</string>
+    <string name="refresh">Vuselela</string>
+    <string name="close">Vala</string>
+    <string name="ok">KULUNGILE</string>
+    <string name="continue_btn">Qhubeka</string>
+    <string name="finish">Qedela</string>
+    <string name="logout">Phuma</string>
+    <string name="confirm">Qinisekisa</string>
+    
+    <!-- Sign Up Screen -->
+    <string name="start_tracking">Qala Ukulandelela</string>
+    <string name="create_account_here">Dala i-akhawunti yakho lapha</string>
+    <string name="email">I-imeyili</string>
+    <string name="password">Iphasiwedi</string>
+    <string name="confirm_password">Qinisekisa iphasiwedi</string>
+    <string name="already_have_account">Usunayo i-akhawunti?</string>
+    <string name="sign_up_with_google">Bhalisa nge-Google</string>
+    
+    <!-- Sign In Screen -->
+    <string name="dont_have_account">Awunayo i-akhawunti?</string>
+    <string name="continue_with_google">Qhubeka nge-Google</string>
+    
+    <!-- Onboarding Screens -->
+    <string name="tell_us_about_yourself">Sitshele ngawe</string>
+    <string name="how_old_are_you">Uneminyaka emingaki?</string>
+    <string name="how_tall_are_you">Mude kangakanani?</string>
+    <string name="current_weight">Yini isisindo sakho samanje?</string>
+    <string name="years">iminyaka</string>
+    <string name="cm">cm</string>
+    <string name="kg">kg</string>
+    <string name="btn_continue">Qhubeka</string>
+    <string name="set_your_goals">Setha izinjongo zakho</string>
+    <string name="goals_subtitle">Ake sibeke izinhloso ezimbalwa zokukusiza uhlale usendleleni</string>
+    <string name="daily_calorie_goal">Yini inhloso yakho yokudla amakhalori nsuku zonke?</string>
+    <string name="workouts_per_week">Zingaki izivivinyo ngeviki?</string>
+    <string name="water_goal">Malini amanzi okufanele uwaphuze nsuku zonke?</string>
+    <string name="steps_goal">Zingaki izinyathelo okufanele uzihambe nsuku zonke?</string>
+    <string name="kcal">kcal</string>
+    <string name="sessions">izikhathi</string>
+    <string name="ml">ml</string>
+    <string name="steps">izinyathelo</string>
+    
+    <!-- Account Settings -->
+    <string name="account">I-akhawunti</string>
+    <string name="weight_label">Isisindo</string>
+    <string name="age_label">Ubudala</string>
+    <string name="height_label">Ubude</string>
+    <string name="update_data">Buyekeza Idatha</string>
+    <string name="update_your_preferences">Buyekeza Okuthandayo Kwakho</string>
+    <string name="update_your_account">Buyekeza I-akhawunti Yakho</string>
+    <string name="delete_account">Susa I-akhawunti</string>
+    <string name="delete_account_title">Susa I-akhawunti</string>
+    <string name="delete_account_message">Uqinisekile ukuthi ufuna ukususa i-akhawunti yakho? Lesi senzo asikwazi ukubuyiselwa emuva futhi sizosusa yonke idatha yakho.</string>
+    
+    <!-- Dashboard -->
+    <string name="error">Iphutha</string>
+    <string name="offline_mode_banner">Imodi Engaxhunyiwe - Idatha izovumelaniswa uma ukuxhumeka kubuyiselwa</string>
+    <string name="saved_offline">Kugcinwe kungaxhunyiwe, kuzosethaniswa uma kuxhunyiwe</string>
+    <string name="requires_internet">Lesi sici sidinga ukuxhumeka ku-inthanethi</string>
+    <string name="water">Amanzi</string>
+    <string name="meal">Ukudla</string>
+    <string name="meals">Ukudla</string>
+    <string name="workout">Ukuzivocavoca</string>
+    <string name="carbs_calories">Ama-carbs: %1$d kcal</string>
+    <string name="protein_calories">Amaprotheni: %1$d kcal</string>
+    <string name="fat_calories">Amafutha: %1$d kcal</string>
+    <string name="dashboard">Ibhodi</string>
+    <string name="profile">Iphrofayili</string>
+    <string name="habits">Imikhuba</string>
+    <string name="coach">Umqeqeshi</string>
+    <string name="add_water">Engeza Amanzi</string>
+    <string name="add_meal">Engeza Ukudla</string>
+    <string name="add_workout">Engeza Ukuzivocavoca</string>
+    
+    <!-- Meal Logging -->
+    <string name="add_food">Engeza Ukudla</string>
+    <string name="scan_barcode">Skena Ibhakhodi</string>
+    <string name="search_food">Sesha ukudla</string>
+    <string name="my_foods">Ukudla Kwami</string>
+    <string name="search_results">Imiphumela Yosesho</string>
+    <string name="no_results_found">Ayikho imiphumela etholakele ku \"%1$s\"</string>
+    <string name="no_foods_logged">Akukho ukudla okurekhodiwe okwamanje. Qala ngokwengeza ukudla kwakho kokuqala!</string>
+    <string name="adjust_serving">Lungisa Isabelo</string>
+    <string name="add_details">Engeza Imininingwane</string>
+    <string name="food_name">Igama lokudla</string>
+    <string name="food_name_required">Igama lokudla*</string>
+    <string name="serving_size">Usayizi wesabelo</string>
+    <string name="serving_size_required">Usayizi wesabelo*</string>
+    <string name="select_type">Khetha Uhlobo</string>
+    <string name="breakfast">Isidlo Sasekuseni</string>
+    <string name="lunch">Isidlo Sasemini</string>
+    <string name="dinner">Isidlo Sakusihlwa</string>
+    <string name="snacks">Ukudla Okulula</string>
+    <string name="calories">Amakhalori</string>
+    <string name="calories_required">Amakhalori*</string>
+    <string name="carbs">Ama-carbs</string>
+    <string name="protein">Amaprotheni</string>
+    <string name="fat">Amafutha</string>
+    <string name="enter_amount">Faka inani</string>
+    <string name="nutritional_info">Ulwazi Lokondla</string>
+    <string name="forkit_can_calculate">I-ForkIt ingakubalela wena!</string>
+    <string name="grams">g</string>
+    <string name="delete_food_log_title">Susa Irekhodi Lokudla?</string>
+    <string name="delete_food_log_message">Uqinisekile ukuthi ufuna ukususa \"%1$s\" kurekhodi lwakho?</string>
+    
+    <!-- Ingredient Management -->
+    <string name="add_ingredient">Engeza Isithako</string>
+    <string name="select_measuring_unit">Khetha Iyunithi Yokulinganisa</string>
+    
+    <!-- Exercise -->
+    <string name="add_exercise">Engeza Ukuzivocavoca</string>
+    <string name="exercise_name">Igama Lokuzivocavoca</string>
+    <string name="exercise_name_placeholder">isib. Ukugijima Ekuseni, Ama-push-ups</string>
+    <string name="calories_burned">Amakhalori Ashisiwe (kcal)</string>
+    <string name="enter_calories_burned">Faka amakhalori ashisiwe</string>
+    <string name="duration">Ubude Besikhathi (imizuzu) - Ongakukhetha</string>
+    <string name="enter_duration">Faka ubude besikhathi</string>
+    <string name="type">Uhlobo</string>
+    <string name="cardio">I-Cardio</string>
+    <string name="strength">Amandla</string>
+    <string name="please_enter_exercise_name">Sicela ufake igama lokuzivocavoca</string>
+    <string name="please_enter_calories_burned">Sicela ufake amakhalori ashisiwe</string>
+    <string name="please_enter_valid_calories">Sicela ufake amakhalori avumelekile</string>
+    <string name="please_select_exercise_type">Sicela ukhethe uhlobo lokuzivocavoca</string>
+    <string name="exercise_logged_success">Ukuzivocavoca kurekhodwe ngempumelelo! 💪</string>
+    
+    <!-- Water -->
+    <string name="amount_ml">Inani (ml)</string>
+    <string name="enter_amount_ml">Faka inani nge-ml</string>
+    <string name="quick_adds">Ukwengeza Okusheshayo</string>
+    <string name="add_250ml">+250ml</string>
+    <string name="add_500ml">+500ml</string>
+    <string name="add_1000ml">+1000ml</string>
+    <string name="please_enter_amount">Sicela ufake inani</string>
+    <string name="please_enter_valid_amount">Sicela ufake inani elivumelekile</string>
+    <string name="water_logged_success">Ukudla kwamanzi kurekhodwe ngempumelelo</string>
+    <string name="food_logged_success">Into yokudla irekhodwe ngempumelelo</string>
+    <string name="food_selected_success">Ukudla okukhethiwe: %1$s</string>
+    <string name="food_added_success">Ukudla kufakwe ngempumelelo kurekhodi lakho</string>
+    
+    <!-- Profile -->
+    <string name="your_profile">Iphrofayili</string>
+    <string name="manage_account_settings">Phatha izilungiselelo ze-akhawunti yakho</string>
+    <string name="goals">Izinjongo</string>
+    <string name="set_daily_health_goals">Setha izinjongo zakho zempilo nokuzivocavoca zansuku zonke</string>
+    <string name="notifications">Izaziso</string>
+    <string name="configure_notifications">Lungisa okuthandwayo kwezaziso</string>
+    <string name="app_settings">Izilungiselelo Ze-app</string>
+    <string name="customize_app_settings">Lungisa izilungiselelo ze-app</string>
+    <string name="about">Mayelana</string>
+    <string name="app_info_version">Ulwazi lwe-app nenguqulo</string>
+    <string name="developer_tools">Amathuluzi Womthuthukisi</string>
+    <string name="access_dev_features">Finyelela ekuthuthukiseni nasekuhloleni izici</string>
+    
+    <!-- Habits -->
+    <string name="your_habits">Imikhuba Yakho</string>
+    <string name="new_habit">Umkhuba Omusha</string>
+    <string name="today">Namuhla</string>
+    <string name="weekly">Ngeviki</string>
+    <string name="monthly">Ngenyanga</string>
+    <string name="no_habits_yet">Ayikho imikhuba okwamanje!</string>
+    <string name="create_first_habit">Dala umkhuba wakho wokuqala ukuze uqale ukwakha ukuqhubeka</string>
+    <string name="loading_habits">Kulayisha imikhuba yakho...</string>
+    <string name="delete_habit_title">Susa Umkhuba?</string>
+    <string name="delete_habit_message">Uqinisekile ukuthi ufuna ukususa \"%1$s\"? Lokhu kuzosusa konke ukulandelela kwentuthuko yalo mkhuba.</string>
+    
+    <!-- Validation Messages -->
+    <string name="user_id_not_found">I-ID yomsebenzisi ayitholakali. Sicela ungene futhi.</string>
+    <string name="please_enter_food_name">Sicela ufake igama lokudla</string>
+    <string name="please_enter_valid_serving_size">Sicela ufake usayizi wesabelo ovumelekile</string>
+    <string name="please_select_meal_type">Sicela ukhethe uhlobo lokudla</string>
+    
+    <!-- Toast Messages -->
+    <string name="added_to_today">✓ %1$s kwengeziwe kwanamuhla!</string>
+    <string name="failed_to_add_food">Kuhlulekile ukwengeza ukudla</string>
+    <string name="food_deleted_successfully">Ukudla kususiwe ngempumelelo</string>
+    <string name="failed_to_delete_food">Kuhlulekile ukususa ukudla</string>
+    <string name="error_message">Iphutha: %1$s</string>
+    <string name="found_food">Kutholakele: %1$s</string>
+    <string name="no_food_found_barcode">Ayikho idatha yokudla etholakale yale bhakhodi</string>
+    <string name="failed_get_food">Kuhlulekile ukuthola ukudla: %1$s</string>
+    <string name="no_results_found_api">Ayikho imiphumela etholakele</string>
+    <string name="search_failed_retries">Usesho luhlulekile ngemuva kokuzama futhi</string>
+    <string name="search_timeout_try_again">Isikhathi sokushesha sedlule: Sicela uzame futhi</string>
+    <string name="network_error_check_connection">Iphutha lenethiwekhi: Hlola ukuxhumeka kwakho</string>
+    <string name="connection_error_server_unavailable">Iphutha loxhumo: Iseva ayitholakali</string>
+    <string name="search_error">Iphutha lokushesha: %1$s</string>
+    <string name="deleted_successfully">Kususiwe ngempumelelo</string>
+    <string name="failed_to_delete">Kuhlulekile ukususa</string>
+    <string name="no_ingredient_found_barcode">Ayikho isithako esitholakele kule bhakhodi</string>
+    <string name="failed_fetch_ingredient">Kuhlulekile ukuthola isithako: %1$s</string>
+    
+    <!-- Unit Conversion Hints -->
+    <string name="conversion_kg_g">1 kg = 1000 g</string>
+    <string name="conversion_g_kg">1000 g = 1 kg</string>
+    <string name="conversion_l_ml">1 l = 1000 ml</string>
+    <string name="conversion_ml_l">1000 ml = 1 l</string>
+    
+    <!-- HomeScreen -->
+    <string name="welcome_dashboard">Siyakwamukela Kubhodi</string>
+    <string name="track_health_journey">Landelela uhambo lwakho lwempilo nokuzivocavoca</string>
+    <string name="todays_caloric_intake">Ukudla Kwamakhalori Kwanamuhla</string>
+    <string name="consumed">Kudliwe</string>
+    <string name="burned">Kushisiwe</string>
+    <string name="todays_calorie_budget">Isabelomali Samakhalori Sanamuhla</string>
+    <string name="percent_used">%1$d%% Kusetshenzisiwe</string>
+    <string name="over_budget">Edlule Isabelomali</string>
+    <string name="kcal_remaining">%1$d kcal esele</string>
+    <string name="no_food_logged_today">Akukho ukudla okurekhodiwe namuhla</string>
+    <string name="start_logging_meals">Qala urekhode ukudla kwakho ukuze ubone ukwahlukaniswa kokondla</string>
+    <string name="recent_meals">Ukudla Kwakamuva</string>
+    <string name="see_all_meals">Buka konke ukudla →</string>
+    <string name="no_meals_today">Akukho ukudla okurekhodiwe namuhla</string>
+    <string name="recent_workouts">Ukuzivocavoca Kwakamuva</string>
+    <string name="no_workouts_today">Akukho ukuzivocavoca okurekhodiwe namuhla</string>
+    <string name="todays_water_intake">Ukuphuza Amanzi Kwanamuhla</string>
+    <string name="entries">%1$d okufakiwe</string>
+    <string name="no_water_logged_today">Akukho manzi arekhodiwe namuhla</string>
+    <string name="daily_steps">Izinyathelo Zansuku Zonke</string>
+    <string name="goal_progress">%1$d / %2$d</string>
+    <string name="step_tracking_unavailable">Ukulandelela izinyathelo akutholakali</string>
+    <string name="delete_meal_title">Susa Ukudla?</string>
+    <string name="delete_meal_message">Uqinisekile ukuthi ufuna ukususa \"%1$s\"?</string>
+    <string name="delete_workout_title">Susa Ukuzivocavoca?</string>
+    <string name="delete_workout_message">Uqinisekile ukuthi ufuna ukususa \"%1$s\"?</string>
+    <string name="delete_water_log_title">Susa Irekhodi Lamanzi?</string>
+    <string name="delete_water_log_message">Uqinisekile ukuthi ufuna ukususa leli rekhodi lamanzi (%1$d ml)?</string>
+    
+    <!-- MealsScreen -->
+    <string name="your_meals">Ukudla Kwakho.</string>
+    <string name="refreshing_meals">Ivuselela ukudla...</string>
+    <string name="error_loading_meals">Iphutha ekulayisheni kokudla: %1$s</string>
+    <string name="no_meals_logged_yet">Akukho ukudla okurekhodiwe okwamanje.</string>
+    <string name="ingredients_count">%1$d izithako: %2$s</string>
+    
+    <!-- HabitsScreen -->
+    <string name="todo">Okufanele Kwenziwe</string>
+    <string name="completed">Kuqediwe</string>
+    <string name="using_offline_data">Kusebenzisa idatha engaxhunyiwe: %1$s</string>
+    <string name="no_completed_habits">Ayikho imikhuba eqediwe okwamanje</string>
+    
+    <!-- Appearance & Language -->
+    <string name="appearance">Ukubukeka</string>
+    <string name="choose_preferred_theme">Khetha ithemu oyithandayo</string>
+    <string name="system">Isistimu</string>
+    <string name="light">Okukhanyayo</string>
+    <string name="dark">Okumnyama</string>
+    <string name="following_device_settings">Ukulandelela izilungiselelo zedivayisi</string>
+    <string name="always_light_mode">Njalo imodi ekhanyayo</string>
+    <string name="always_dark_mode">Njalo imodi emnyama</string>
+    <string name="language">Ulimi</string>
+    <string name="select_preferred_language">Khetha ulimi lwakho oluthandayo</string>
+    
+    <!-- Coach Screen -->
+    <string name="track_metrics_over_time">Landelela izilinganiso zakho zempilo ngokuhamba kwesikhathi</string>
+    <string name="calorie_tracking">Ukulandelela Amakhalori</string>
+    <string name="track_daily_budget">Landelela isabelomali sakho sansuku zonke</string>
+    <string name="water_tracking">Ukulandelela Amanzi</string>
+    <string name="monitor_hydration">Gada ukumanzisa kwakho</string>
+    <string name="workout_tracking">Ukulandelela Ukuzivocavoca</string>
+    <string name="track_exercises">Landelela ukuzivocavoca kwakho</string>
+    <string name="stay_within_budget">Hlala ngaphakathi kwesabelomali sakho samakhalori sansuku zonke</string>
+    <string name="week_calorie_tracking">Ukulandelela kwesabelomali samakhalori saleviki (Mso-Mgo)</string>
+    <string name="month_calorie_tracking">%1$s ukulandelela kwesabelomali samakhalori (1-%2$d)</string>
+    <string name="track_calorie_over_time">Landelela isabelomali sakho samakhalori ngokuhamba kwesikhathi</string>
+    <string name="calorie_budget">Isabelomali Samakhalori</string>
+    <string name="below">Ngaphansi</string>
+    <string name="over_goal">Ngaphezu Kwenhloso</string>
+    <string name="error_loading_data">Iphutha ekulayisheni idatha</string>
+    <string name="no_data_period">Ayikho idatha etholakele kule nkathi</string>
+    <string name="start_logging_meals_trends">Qala urekhode ukudla kwakho ukuze ubone amathrendi akho!</string>
+    <string name="statistics">Izibalo</string>
+    <string name="average">Isilinganiso</string>
+    <string name="highest">Okuphezulu</string>
+    <string name="lowest">Okuphansi</string>
+    <string name="daily_budget">Isabelomali Sansuku Zonke</string>
+    <string name="within_budget">Ngaphakathi Kwesabelomali</string>
+    <string name="over_budget_stat">Edlule Isabelomali</string>
+    <string name="budget_label">Isabelomali:</string>
+    <string name="day">Usuku</string>
+    <string name="week">Iviki</string>
+    <string name="month">Inyanga</string>
+    <string name="water_intake">Ukuphuza Amanzi</string>
+    <string name="goal_met">Inhloso Ifinyelelwe</string>
+    <string name="calories_burned_label">Amakhalori Ashisiwe</string>
+    <string name="todays_water_intake_subtitle">Ukuphuza amanzi kwanamuhla</string>
+    <string name="week_water_intake">Ukuphuza amanzi kwaleviki (Mso-Mgo)</string>
+    <string name="month_water_intake">%1$s ukuphuza amanzi (1-%2$d)</string>
+    <string name="track_water_over_time">Landelela ukuphuza kwakho kwamanzi ngokuhamba kwesikhathi</string>
+    <string name="start_logging_water">Qala urekhode ukuphuza kwakho kwamanzi!</string>
+    <string name="goal_colon">Inhloso:</string>
+    <string name="daily_goal">Inhloso Yansuku Zonke</string>
+    <string name="todays_calories_burned">Amakhalori ashisiwe namuhla</string>
+    <string name="week_calories_burned">Amakhalori ashisiwe kuleviki (Mso-Mgo)</string>
+    <string name="month_calories_burned">%1$s amakhalori ashisiwe (1-%2$d)</string>
+    <string name="track_workout_calories">Landelela amakhalori akho okuzivocavoca ngokuhamba kwesikhathi</string>
+    <string name="start_logging_workouts">Qala urekhode ukuzivocavoca kwakho!</string>
+    <string name="active_days">Izinsuku Ezisebenzayo</string>
+    <string name="total_workouts">Sonke Ukuzivocavoca</string>
+    <string name="days_stat">%1$d izinsuku</string>
+    <string name="exercises_stat">%1$d ukuzivocavoca</string>
+
+    <string name="default_web_client_id">308029174448-vcuvlj3rp3b60d68kjtie24p6rkp62r2.apps.googleusercontent.com</string>
+</resources>
+

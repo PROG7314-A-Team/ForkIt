@@ -4,9 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,10 +36,13 @@ import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.R
 import kotlinx.coroutines.launch
 
-class AccountActivity : ComponentActivity() {
+class AccountActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Apply saved language
+        LanguageManager.applyLanguage(this)
         
         val userId = intent.getStringExtra("USER_ID") ?: ""
 
@@ -49,6 +53,18 @@ class AccountActivity : ComponentActivity() {
                     onBackPressed = { finish() }
                 )
             }
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Check if language changed while in another activity
+        val savedLanguageCode = LanguageManager.getCurrentLanguageCode(this)
+        val currentLocale = resources.configuration.locales[0].language
+        
+        // If language changed, recreate the activity to apply new language
+        if (savedLanguageCode != currentLocale) {
+            recreate()
         }
     }
 }
@@ -516,6 +532,7 @@ private suspend fun loadUserData(
             if (responseBody?.data != null) {
                 try {
                     // Parse the user data from the response
+                    @Suppress("UNCHECKED_CAST")
                     val userDataList = responseBody.data as? List<Map<String, Any>>
                     android.util.Log.d("AccountActivity", "User data list: $userDataList")
                     

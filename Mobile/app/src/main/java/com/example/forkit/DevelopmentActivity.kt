@@ -2,9 +2,9 @@ package com.example.forkit
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,14 +20,30 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
 
-class DevelopmentActivity : ComponentActivity() {
+class DevelopmentActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Apply saved language
+        LanguageManager.applyLanguage(this)
+        
         setContent {
             ForkItTheme {
                 DevelopmentScreen()
             }
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Check if language changed while in another activity
+        val savedLanguageCode = LanguageManager.getCurrentLanguageCode(this)
+        val currentLocale = resources.configuration.locales[0].language
+        
+        // If language changed, recreate the activity to apply new language
+        if (savedLanguageCode != currentLocale) {
+            recreate()
         }
     }
 }

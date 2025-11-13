@@ -3,10 +3,11 @@ package com.example.forkit
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
- import android.os.Bundle
-import androidx.activity.ComponentActivity
+import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,6 +35,11 @@ import com.example.forkit.data.models.CreateHabitApiRequest
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import com.example.forkit.data.repository.HabitRepository
+import com.example.forkit.data.local.AppDatabase
+import com.example.forkit.utils.NetworkConnectivityManager
+import com.example.forkit.services.HabitNotificationScheduler
+import com.example.forkit.services.HabitNotificationHelper
 
 // Extension function to find the activity
 @Composable
@@ -43,7 +49,7 @@ fun Context.findActivity(): ComponentActivity? = when (this) {
     else -> null
 }
 
-class AddHabitActivity : ComponentActivity() {
+class AddHabitActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -525,6 +531,16 @@ private suspend fun createHabit(
     errorMessage: (String?) -> Unit,
     onSuccess: () -> Unit
 ) {
+    // Initialize repository
+    val database = AppDatabase.getInstance(context)
+    val networkManager = NetworkConnectivityManager(context)
+    val repository = HabitRepository(
+        apiService = RetrofitClient.api,
+        habitDao = database.habitDao(),
+        networkManager = networkManager
+    )
+    val isOnline = networkManager.isOnline()
+    
     try {
         isLoading(true)
         errorMessage(null)
@@ -574,29 +590,46 @@ private suspend fun createHabit(
             habit = habitRequest
         )
         
-        android.util.Log.d("AddHabitActivity", "API Request: $apiRequest")
+        android.util.Log.d("AddHabitActivity", "Creating habit via repository (offline-first)...")
         
-        val response = RetrofitClient.api.createHabit(apiRequest)
+        // Use repository for offline-first habit creation
+        val result = repository.createHabit(
+            userId = userId,
+            title = habitRequest.title,
+            description = habitRequest.description,
+            frequency = habitRequest.frequency,
+            selectedDays = habitRequest.selectedDays,
+            dayOfMonth = habitRequest.dayOfMonth,
+            notificationsEnabled = false, // Default to false since not in API model
+            notificationTime = null // Default to null since not in API model
+        )
         
-        android.util.Log.d("AddHabitActivity", "Response code: ${response.code()}")
-        android.util.Log.d("AddHabitActivity", "Response body: ${response.body()}")
-        
-        if (response.isSuccessful && response.body()?.success == true) {
-            android.util.Log.d("AddHabitActivity", "Habit created successfully")
-            Toast.makeText(context, "Habit created successfully! 🎉", Toast.LENGTH_SHORT).show()
-            onSuccess()
-        } else {
-            val errorBody = response.errorBody()?.string()
-            android.util.Log.e("AddHabitActivity", "Error response body: $errorBody")
+        result.onSuccess { id ->
+            android.util.Log.d("AddHabitActivity", "Habit created successfully: $id")
             
-            val errorMsg = response.body()?.message ?: "Failed to create habit (Code: ${response.code()})"
-            android.util.Log.e("AddHabitActivity", "Failed to create habit: $errorMsg")
-            Toast.makeText(context, "Failed to create habit: $errorMsg", Toast.LENGTH_LONG).show()
+            // Schedule notifications for the new habit
+            val notificationHelper = HabitNotificationHelper(context)
+            if (notificationHelper.areNotificationsEnabled()) {
+                val scheduler = HabitNotificationScheduler(context)
+                scheduler.scheduleAllNotifications(userId)
+                android.util.Log.d("AddHabitActivity", "Notifications scheduled for new habit")
+            }
+            
+            if (!isOnline) {
+                Toast.makeText(context, "Habit saved offline - will sync when connected", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(context, "Habit created successfully", Toast.LENGTH_SHORT).show()
+            }
+            onSuccess()
+        }.onFailure { e ->
+            val errorMsg = "Couldn't create habit. Please try again"
+            android.util.Log.e("AddHabitActivity", "Failed to create habit: ${e.localizedMessage}", e)
+            Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
             errorMessage(errorMsg)
         }
         
     } catch (e: Exception) {
-        val errorMsg = "Error creating habit: ${e.message}"
+        val errorMsg = "Something went wrong. Please try again"
         Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
         errorMessage(errorMsg)
     } finally {

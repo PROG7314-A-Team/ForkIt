@@ -5,7 +5,8 @@ const exerciseLogService = new FirebaseService("exerciseLogs");
 exports.getExerciseLogs = async (req, res) => {
   try {
     console.log("Get exercise logs query", req.query);
-    const { userId, date, type } = req.query;
+    const { userId } = req.params; // Read userId from path parameters
+    const { date, type } = req.query; // Read date and type from query parameters
     let filters = [];
 
     if (userId) {

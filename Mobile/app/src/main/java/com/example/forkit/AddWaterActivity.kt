@@ -2,9 +2,9 @@ package com.example.forkit
 
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,8 +34,12 @@ import com.example.forkit.ui.theme.ForkItTheme
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.ui.res.stringResource
+import com.example.forkit.data.repository.WaterLogRepository
+import com.example.forkit.data.local.AppDatabase
+import com.example.forkit.utils.NetworkConnectivityManager
 
-class AddWaterActivity : ComponentActivity() {
+class AddWaterActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -48,7 +52,7 @@ class AddWaterActivity : ComponentActivity() {
                     userId = userId,
                     onBackPressed = { finish() },
                     onSuccess = { 
-                        Toast.makeText(this, "Water logged successfully! 💧", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, getString(R.string.water_logged_success), Toast.LENGTH_SHORT).show()
                         finish()
                     }
                 )
@@ -66,6 +70,18 @@ fun AddWaterScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    
+    // Initialize repository
+    val database = remember { AppDatabase.getInstance(context) }
+    val networkManager = remember { NetworkConnectivityManager(context) }
+    val repository = remember {
+        WaterLogRepository(
+            apiService = RetrofitClient.api,
+            waterLogDao = database.waterLogDao(),
+            networkManager = networkManager
+        )
+    }
+    val isOnline = remember { networkManager.isOnline() }
     
     var amount by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -101,12 +117,12 @@ fun AddWaterScreen(
                 IconButton(onClick = onBackPressed) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.back),
                         tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
                 Text(
-                    text = "Add Water",
+                    text = stringResource(R.string.add_water),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.primary,
@@ -137,8 +153,8 @@ fun AddWaterScreen(
                                 errorMessage = ""
                             }
                         },
-                        label = { Text("Amount (ml)") },
-                        placeholder = { Text("Enter amount in ml") },
+                        label = { Text(stringResource(R.string.amount_ml)) },
+                        placeholder = { Text(stringResource(R.string.enter_amount_ml)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
@@ -187,7 +203,7 @@ fun AddWaterScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Quick Adds",
+                        text = stringResource(R.string.quick_adds),
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium,
@@ -201,19 +217,19 @@ fun AddWaterScreen(
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
                             QuickAddButton(
-                                text = "+250ml",
+                                text = stringResource(R.string.add_250ml),
                                 onClick = { amount = "250" }
                             )
                         }
                         Box(modifier = Modifier.weight(1f)) {
                             QuickAddButton(
-                                text = "+500ml",
+                                text = stringResource(R.string.add_500ml),
                                 onClick = { amount = "500" }
                             )
                         }
                         Box(modifier = Modifier.weight(1f)) {
                             QuickAddButton(
-                                text = "+1000ml",
+                                text = stringResource(R.string.add_1000ml),
                                 onClick = { amount = "1000" }
                             )
                         }
@@ -238,18 +254,18 @@ fun AddWaterScreen(
                     onClick = {
                         // Validate input
                         if (amount.isEmpty()) {
-                            errorMessage = "Please enter an amount"
+                            errorMessage = context.getString(R.string.please_enter_amount)
                             return@Button
                         }
                         
                         val amountValue = amount.toDoubleOrNull()
                         if (amountValue == null || amountValue <= 0) {
-                            errorMessage = "Please enter a valid amount"
+                            errorMessage = context.getString(R.string.please_enter_valid_amount)
                             return@Button
                         }
                         
                         if (userId.isEmpty()) {
-                            errorMessage = "User ID not found. Please log in again."
+                            errorMessage = context.getString(R.string.user_id_not_found)
                             return@Button
                         }
                         
@@ -257,30 +273,34 @@ fun AddWaterScreen(
                         errorMessage = ""
                         isLoading = true
                         
-                        // Make API call
+                        // Use repository for offline-first logging
                         scope.launch {
                             try {
                                 android.util.Log.d("AddWaterActivity", "Adding water: $amountValue ml for user $userId on ${apiDateFormatter.format(selectedDate)}")
                                 
-                                val response = RetrofitClient.api.createWaterLog(
-                                    CreateWaterLogRequest(
-                                        userId = userId,
-                                        amount = amountValue,
-                                        date = apiDateFormatter.format(selectedDate)
-                                    )
+                                val result = repository.createWaterLog(
+                                    userId = userId,
+                                    amount = amountValue,
+                                    date = apiDateFormatter.format(selectedDate)
                                 )
                                 
-                                if (response.isSuccessful) {
-                                    android.util.Log.d("AddWaterActivity", "Water logged successfully")
+                                result.onSuccess { id ->
+                                    android.util.Log.d("AddWaterActivity", "Water logged successfully: $id")
+                        if (!isOnline) {
+                            Toast.makeText(
+                                context,
+                                "Saved offline - will sync when connected",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                                     onSuccess()
-                                } else {
-                                    val errorBody = response.errorBody()?.string()
-                                    android.util.Log.e("AddWaterActivity", "Failed to log water: $errorBody")
-                                    errorMessage = "Failed to log water: ${response.code()}"
+                                }.onFailure { e ->
+                                    android.util.Log.e("AddWaterActivity", "Failed to log water: ${e.message}", e)
+                                    errorMessage = "Couldn't save water. Please try again"
                                 }
                             } catch (e: Exception) {
                                 android.util.Log.e("AddWaterActivity", "Error logging water: ${e.message}", e)
-                                errorMessage = "Error: ${e.localizedMessage}"
+                                errorMessage = "Something went wrong. Please try again"
                             } finally {
                                 isLoading = false
                             }
@@ -317,7 +337,7 @@ fun AddWaterScreen(
                             )
                         } else {
                             Text(
-                                text = "Add Water",
+                                text = stringResource(R.string.add_water),
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = Color.White
@@ -346,7 +366,7 @@ fun AddWaterScreen(
                         }
                     ) {
                         Text(
-                            "OK",
+                            stringResource(R.string.ok),
                             color = MaterialTheme.colorScheme.secondary,
                             fontWeight = FontWeight.Medium
                         )
@@ -357,7 +377,7 @@ fun AddWaterScreen(
                         onClick = { showDatePicker = false }
                     ) {
                         Text(
-                            "Cancel",
+                            stringResource(R.string.cancel),
                             color = Color.Gray,
                             fontWeight = FontWeight.Medium
                         )

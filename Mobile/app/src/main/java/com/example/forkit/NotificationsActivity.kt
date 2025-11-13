@@ -5,9 +5,9 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -33,7 +33,7 @@ import com.example.forkit.services.HabitNotificationHelper
 import com.example.forkit.services.HabitNotificationScheduler
 import com.example.forkit.ui.theme.ForkItTheme
 
-class NotificationsActivity : ComponentActivity() {
+class NotificationsActivity : AppCompatActivity() {
     
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -41,13 +41,16 @@ class NotificationsActivity : ComponentActivity() {
         if (isGranted) {
             Toast.makeText(this, "Notification permission granted", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(this, "Notification permission denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Notification permission denied - habit reminders won't work", Toast.LENGTH_LONG).show()
         }
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Apply saved language
+        LanguageManager.applyLanguage(this)
         
         val userId = intent.getStringExtra("USER_ID") ?: ""
         
@@ -69,6 +72,18 @@ class NotificationsActivity : ComponentActivity() {
                     onBackPressed = { finish() }
                 )
             }
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Check if language changed while in another activity
+        val savedLanguageCode = LanguageManager.getCurrentLanguageCode(this)
+        val currentLocale = resources.configuration.locales[0].language
+        
+        // If language changed, recreate the activity to apply new language
+        if (savedLanguageCode != currentLocale) {
+            recreate()
         }
     }
 }

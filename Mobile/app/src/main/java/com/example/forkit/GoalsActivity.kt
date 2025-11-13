@@ -2,9 +2,9 @@ package com.example.forkit
 
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -30,10 +30,13 @@ import com.example.forkit.data.models.UpdateUserGoalsRequest
 import com.example.forkit.ui.theme.ForkItTheme
 import kotlinx.coroutines.launch
 
-class GoalsActivity : ComponentActivity() {
+class GoalsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Apply saved language
+        LanguageManager.applyLanguage(this)
         
         val userId = intent.getStringExtra("USER_ID") ?: ""
         
@@ -48,6 +51,18 @@ class GoalsActivity : ComponentActivity() {
                     }
                 )
             }
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Check if language changed while in another activity
+        val savedLanguageCode = LanguageManager.getCurrentLanguageCode(this)
+        val currentLocale = resources.configuration.locales[0].language
+        
+        // If language changed, recreate the activity to apply new language
+        if (savedLanguageCode != currentLocale) {
+            recreate()
         }
     }
 }

@@ -4,51 +4,95 @@ const FirebaseService = require("./firebaseService");
 class FoodSearchService {
   constructor() {
     this.foodService = new FirebaseService("food");
+    // Simple in-memory cache with 5 minute TTL
+    this.searchCache = new Map();
+    this.CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    this.CACHE_MAX_SIZE = 100; // Maximum cache entries
   }
 
   /**
-   * Enhanced food search with scoring and filtering
+   * Get cached search results
+   */
+  getCachedResults(searchTerm) {
+    const cached = this.searchCache.get(searchTerm.toLowerCase());
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      console.log(`Cache hit for search term: "${searchTerm}"`);
+      return cached.data;
+    }
+    return null;
+  }
+
+  /**
+   * Store search results in cache
+   */
+  setCachedResults(searchTerm, data) {
+    // Limit cache size
+    if (this.searchCache.size >= this.CACHE_MAX_SIZE) {
+      // Remove oldest entry
+      const firstKey = this.searchCache.keys().next().value;
+      this.searchCache.delete(firstKey);
+    }
+    
+    this.searchCache.set(searchTerm.toLowerCase(), {
+      data: data,
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Enhanced food search with caching, parallel execution, and optimized scoring
    * @param {string} searchTerm - The food name to search for
    * @param {number} maxResults - Maximum number of results to return (default: 25)
    * @returns {Array} - Sorted array of scored food items
    */
   async searchFoodByName(searchTerm, maxResults = 25) {
     try {
-      // Get results from OpenFoodFacts
-      const openFoodFactsResults = await this.getOpenFoodFactsResults(
-        searchTerm
-      );
-
-      // Score and filter results
-      const scoredResults = this.scoreAndFilterResults(
-        openFoodFactsResults,
-        searchTerm
-      );
-
-      // Sort by score and limit results
-      const sortedResults = scoredResults
-        .sort((a, b) => b.totalScore - a.totalScore)
-        .slice(0, maxResults);
-
-      // If we don't have enough results from OpenFoodFacts, try local database
-      if (sortedResults.length < maxResults) {
-        const localResults = await this.getLocalDatabaseResults(searchTerm);
-        const scoredLocalResults = this.scoreAndFilterResults(
-          localResults,
-          searchTerm,
-          true
-        );
-
-        // Merge and deduplicate results
-        const mergedResults = this.mergeResults(
-          sortedResults,
-          scoredLocalResults,
-          maxResults
-        );
-        return mergedResults;
+      // Check cache first
+      const cachedResults = this.getCachedResults(searchTerm);
+      if (cachedResults) {
+        return cachedResults.slice(0, maxResults);
       }
 
-      return sortedResults;
+      // Execute OpenFoodFacts and local database queries in parallel
+      const [openFoodFactsResults, localResults] = await Promise.all([
+        this.getOpenFoodFactsResults(searchTerm).catch(err => {
+          console.error("OpenFoodFacts error (continuing):", err.message);
+          return [];
+        }),
+        this.getLocalDatabaseResults(searchTerm).catch(err => {
+          console.error("Local DB error (continuing):", err.message);
+          return [];
+        })
+      ]);
+
+      console.log(`Found ${openFoodFactsResults.length} results from OpenFoodFacts, ${localResults.length} from local DB`);
+
+      // Score and filter results with optimized algorithm
+      const scoredOpenFoodResults = this.scoreAndFilterResults(
+        openFoodFactsResults,
+        searchTerm,
+        false,
+        maxResults
+      );
+
+      const scoredLocalResults = this.scoreAndFilterResults(
+        localResults,
+        searchTerm,
+        true,
+        maxResults
+      );
+
+      // Merge and deduplicate results
+      const mergedResults = this.mergeResults(
+        scoredOpenFoodResults,
+        scoredLocalResults,
+        maxResults
+      );
+
+      // Cache the results
+      this.setCachedResults(searchTerm, mergedResults);
+
+      return mergedResults;
     } catch (error) {
       console.error("Error in enhanced food search:", error);
       throw error;
@@ -56,22 +100,88 @@ class FoodSearchService {
   }
 
   /**
-   * Get results from OpenFoodFacts API
+   * Get results from OpenFoodFacts API with timeout
    */
   async getOpenFoodFactsResults(searchTerm) {
+    const endpoint = `https://world.openfoodfacts.org/cgi/search.pl`;
+    const commonParams = {
+      search_terms: searchTerm,
+      json: 1,
+      page_size: 25,
+      fields:
+        "code,product_name,brands,nutriments,serving_size,serving_quantity,serving_quantity_unit,image_small_url,image_url,ingredients_text,nutriscore_grade,ecoscore_grade,nova_group,countries_tags",
+    };
+
+    const southAfricaParams = {
+      ...commonParams,
+      tagtype_0: "countries",
+      tag_contains_0: "contains",
+      tag_0: "south-africa",
+    };
+
     try {
-      const response = await axios.get(
-        `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${searchTerm}&json=1&countries_tags=South_Africa`
+      const [southAfricaResponse, globalResponse] = await Promise.all([
+        axios.get(endpoint, {
+          params: southAfricaParams,
+          timeout: 5000,
+        }),
+        axios.get(endpoint, {
+          params: commonParams,
+          timeout: 5000,
+        }),
+      ]);
+
+      const southAfricanProducts = this.extractProductsWithRegionFlag(
+        southAfricaResponse,
+        true
+      );
+      const globalProducts = this.extractProductsWithRegionFlag(
+        globalResponse,
+        false
       );
 
-      if (response.data.count > 0) {
-        return response.data.products || [];
+      const seenCodes = new Set(
+        southAfricanProducts
+          .map((product) => product.code)
+          .filter((code) => !!code)
+      );
+
+      const combinedResults = [...southAfricanProducts];
+
+      for (const product of globalProducts) {
+        if (product.code && seenCodes.has(product.code)) {
+          continue;
+        }
+        combinedResults.push(product);
       }
-      return [];
+
+      return combinedResults;
     } catch (error) {
-      console.error("Error fetching from OpenFoodFacts:", error);
+      if (error.code === "ECONNABORTED") {
+        console.error("OpenFoodFacts request timed out");
+      }
+      throw error;
+    }
+  }
+
+  extractProductsWithRegionFlag(response, isSouthAfrican) {
+    if (!response || !response.data) {
       return [];
     }
+
+    const products = response.data.products || [];
+    return products.map((product) => ({
+      ...product,
+      isSouthAfrican:
+        isSouthAfrican ||
+        this.hasSouthAfricaCountryTag(product?.countries_tags || []),
+    }));
+  }
+
+  hasSouthAfricaCountryTag(countriesTags = []) {
+    return countriesTags.some((tag) =>
+      String(tag).toLowerCase().includes("south-africa")
+    );
   }
 
   /**
@@ -90,15 +200,18 @@ class FoodSearchService {
   }
 
   /**
-   * Score and filter food results based on the scoring algorithm
+   * Score and filter food results with optimized algorithm
+   * Early termination after maxResults to avoid processing unnecessary items
    */
-  scoreAndFilterResults(products, searchTerm, isLocal = false) {
+  scoreAndFilterResults(products, searchTerm, isLocal = false, maxResults = 25) {
     const scoredResults = [];
+    const searchTermLower = searchTerm.toLowerCase();
 
     for (const product of products) {
       if (!product || !product.product_name) continue;
 
-      const score = this.calculateFoodScore(product, searchTerm, isLocal);
+      // Quick score calculation (optimized version)
+      const score = this.calculateFoodScoreOptimized(product, searchTermLower, isLocal);
 
       // Only include products with a positive score or from local database
       if (score.totalScore > 0 || isLocal) {
@@ -109,49 +222,63 @@ class FoodSearchService {
           isLocal: isLocal,
         });
       }
+
+      // Early termination optimization - if we have enough good results, stop processing
+      if (scoredResults.length >= maxResults * 2 && !isLocal) {
+        break;
+      }
     }
 
-    return scoredResults;
+    // Sort by score and return top results
+    return scoredResults
+      .sort((a, b) => b.totalScore - a.totalScore)
+      .slice(0, maxResults);
   }
 
   /**
-   * Calculate comprehensive food score based on the scoring algorithm
+   * Optimized food scoring - removed expensive Levenshtein calculations
+   * Focus on simpler, faster matching algorithms
    */
-  calculateFoodScore(product, searchTerm, isLocal = false) {
+  calculateFoodScoreOptimized(product, searchTermLower, isLocal = false) {
     const score = {
       dataCompleteness: 0,
       foodQuality: 0,
       nameRelevance: 0,
       simplicity: 0,
+      regionalPreference: 0,
       totalScore: 0,
     };
 
-    // Data completeness (high weight)
-    score.dataCompleteness += this.scoreDataCompleteness(product);
+    // Data completeness (high weight) - simplified checks
+    score.dataCompleteness = this.scoreDataCompletenessOptimized(product);
 
     // Food quality indicators (medium weight)
-    score.foodQuality += this.scoreFoodQuality(product);
+    score.foodQuality = this.scoreFoodQuality(product);
 
-    // Name relevance (high weight)
-    score.nameRelevance += this.scoreNameRelevance(product, searchTerm);
+    // Name relevance (high weight) - optimized matching without Levenshtein
+    score.nameRelevance = this.scoreNameRelevanceOptimized(product, searchTermLower);
 
     // Simplicity (low weight)
-    score.simplicity += this.scoreSimplicity(product);
+    score.simplicity = this.scoreSimplicityOptimized(product);
+
+    // Regional preference (very high weight when available)
+    score.regionalPreference = product.isSouthAfrican ? 100 : 0;
 
     // Calculate total score
     score.totalScore =
       score.dataCompleteness +
       score.foodQuality +
       score.nameRelevance +
-      score.simplicity;
+      score.simplicity +
+      score.regionalPreference;
 
     return score;
   }
 
   /**
-   * Score data completeness
+   * Optimized data completeness scoring
    */
-  scoreDataCompleteness(product) {
+  scoreDataCompletenessOptimized(product) {
     let score = 0;
 
     // Has nutriscore? +10 points
@@ -159,12 +286,7 @@ class FoodSearchService {
       score += 10;
     }
 
-    // Has ecoscore? +5 points
-    if (product.ecoscore_grade && product.ecoscore_grade !== "unknown") {
-      score += 5;
-    }
-
-    // Has complete nutrition facts? +10 points
+    // Has complete nutrition facts? +15 points (increased weight)
     const nutriments = product.nutriments || {};
     const hasCompleteNutrition =
       nutriments.carbohydrates_100g !== undefined &&
@@ -172,7 +294,7 @@ class FoodSearchService {
       nutriments.fat_100g !== undefined &&
       nutriments["energy-kcal_100g"] !== undefined;
     if (hasCompleteNutrition) {
-      score += 10;
+      score += 15;
     }
 
     // Has ingredients list? +5 points
@@ -215,35 +337,30 @@ class FoodSearchService {
   }
 
   /**
-   * Score name relevance with fuzzy matching
+   * Optimized name relevance scoring - removed expensive Levenshtein algorithm
+   * Focus on substring matching and word-based matching
    */
-  scoreNameRelevance(product, searchTerm) {
+  scoreNameRelevanceOptimized(product, searchTermLower) {
     let score = 0;
     const productName = (product.product_name || "").toLowerCase();
-    const searchTermLower = searchTerm.toLowerCase();
 
-    // Exact search term match in name? +25 points
+    // Exact search term match in name? +30 points
     if (productName === searchTermLower) {
-      score += 25;
+      return 30;
     }
-    // Search term at start of name? +20 points
-    else if (productName.startsWith(searchTermLower)) {
-      score += 20;
+    
+    // Search term at start of name? +25 points
+    if (productName.startsWith(searchTermLower)) {
+      return 25;
     }
-    // Contains search term? +10 points
-    else if (productName.includes(searchTermLower)) {
-      score += 10;
+    
+    // Contains search term? +15 points
+    if (productName.includes(searchTermLower)) {
+      score += 15;
     }
 
-    // Enhanced fuzzy matching for better relevance
-    const fuzzyScore = this.calculateFuzzyMatchScore(
-      productName,
-      searchTermLower
-    );
-    score += fuzzyScore;
-
-    // Word-based matching (higher weight for individual words)
-    const wordScore = this.calculateWordMatchScore(
+    // Word-based matching (optimized)
+    const wordScore = this.calculateWordMatchScoreOptimized(
       productName,
       searchTermLower
     );
@@ -257,15 +374,6 @@ class FoodSearchService {
       "candy",
       "sweet",
       "artificial",
-      "processed",
-      "topped",
-      "marinated",
-      "seasoned",
-      "coated",
-      "breaded",
-      "crumbed",
-      "crispy",
-      "crunchy",
     ];
     const hasNegativeKeywords = negativeKeywords.some((keyword) =>
       productName.includes(keyword)
@@ -274,7 +382,7 @@ class FoodSearchService {
       score -= 15;
     }
 
-    // Bonus for simple, clean names (no extra descriptors)
+    // Bonus for simple, clean names
     if (this.isSimpleCleanName(productName, searchTermLower)) {
       score += 8;
     }
@@ -283,59 +391,9 @@ class FoodSearchService {
   }
 
   /**
-   * Calculate fuzzy match score using Levenshtein distance
+   * Optimized word matching without expensive Levenshtein distance
    */
-  calculateFuzzyMatchScore(productName, searchTerm) {
-    const distance = this.levenshteinDistance(productName, searchTerm);
-    const maxLength = Math.max(productName.length, searchTerm.length);
-
-    if (maxLength === 0) return 0;
-
-    const similarity = 1 - distance / maxLength;
-
-    // Only give fuzzy score if similarity is above 0.6 (60% similar)
-    if (similarity > 0.6) {
-      return Math.round(similarity * 12); // Max 12 points for fuzzy match
-    }
-
-    return 0;
-  }
-
-  /**
-   * Calculate Levenshtein distance between two strings
-   */
-  levenshteinDistance(str1, str2) {
-    const matrix = [];
-
-    for (let i = 0; i <= str2.length; i++) {
-      matrix[i] = [i];
-    }
-
-    for (let j = 0; j <= str1.length; j++) {
-      matrix[0][j] = j;
-    }
-
-    for (let i = 1; i <= str2.length; i++) {
-      for (let j = 1; j <= str1.length; j++) {
-        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
-          );
-        }
-      }
-    }
-
-    return matrix[str2.length][str1.length];
-  }
-
-  /**
-   * Calculate word-based matching score
-   */
-  calculateWordMatchScore(productName, searchTerm) {
+  calculateWordMatchScoreOptimized(productName, searchTerm) {
     const productWords = productName.split(/\s+/);
     const searchWords = searchTerm.split(/\s+/);
     let score = 0;
@@ -348,25 +406,12 @@ class FoodSearchService {
           score += 15;
         }
         // Word starts with search term
-        else if (productWord.startsWith(searchWord)) {
-          score += 12;
+        else if (productWord.startsWith(searchWord) && searchWord.length > 2) {
+          score += 10;
         }
-        // Word contains search term
-        else if (productWord.includes(searchWord)) {
-          score += 8;
-        }
-        // Fuzzy word match
-        else {
-          const wordDistance = this.levenshteinDistance(
-            productWord,
-            searchWord
-          );
-          const wordSimilarity =
-            1 - wordDistance / Math.max(productWord.length, searchWord.length);
-
-          if (wordSimilarity > 0.7) {
-            score += Math.round(wordSimilarity * 6); // Max 6 points for fuzzy word match
-          }
+        // Word contains search term (for longer search terms only)
+        else if (searchWord.length > 3 && productWord.includes(searchWord)) {
+          score += 5;
         }
       }
     }
@@ -421,18 +466,16 @@ class FoodSearchService {
   }
 
   /**
-   * Score simplicity
+   * Optimized simplicity scoring
    */
-  scoreSimplicity(product) {
+  scoreSimplicityOptimized(product) {
     let score = 0;
 
-    // Fewer than 5 ingredients? +5 points
+    // Fewer ingredients? +5 points
     if (product.ingredients_text) {
       const ingredientCount = product.ingredients_text.split(",").length;
       if (ingredientCount < 5) {
         score += 5;
-      } else if (ingredientCount < 10) {
-        score += 2;
       }
     }
 
@@ -445,34 +488,14 @@ class FoodSearchService {
       score += 3;
     }
 
-    // Bonus for simple product names (fewer words, no complex descriptors)
+    // Simple product names
     const productName = (product.product_name || "").toLowerCase();
     const wordCount = productName.split(/\s+/).length;
 
     if (wordCount <= 2) {
-      score += 5; // Very simple names like "chicken breast"
+      score += 5;
     } else if (wordCount <= 4) {
-      score += 2; // Moderately simple names
-    }
-
-    // Penalty for overly complex names with many descriptors
-    const complexDescriptors = [
-      "topped with",
-      "marinated in",
-      "seasoned with",
-      "coated in",
-      "breaded with",
-      "stuffed with",
-      "filled with",
-      "served with",
-    ];
-
-    const hasComplexDescriptors = complexDescriptors.some((descriptor) =>
-      productName.includes(descriptor)
-    );
-
-    if (hasComplexDescriptors) {
-      score -= 3;
+      score += 2;
     }
 
     return score;
@@ -483,17 +506,16 @@ class FoodSearchService {
    */
   mergeResults(openFoodFactsResults, localResults, maxResults) {
     const mergedResults = [...openFoodFactsResults];
+    const seenNames = new Set(
+      openFoodFactsResults.map(r => (r.product_name || '').toLowerCase())
+    );
 
     // Add local results that aren't already in the merged results
     for (const localResult of localResults) {
-      const isDuplicate = mergedResults.some(
-        (result) =>
-          result.product_name === localResult.name ||
-          result.barcode === localResult.barcode
-      );
-
-      if (!isDuplicate) {
+      const localName = (localResult.name || localResult.product_name || '').toLowerCase();
+      if (!seenNames.has(localName)) {
         mergedResults.push(localResult);
+        seenNames.add(localName);
       }
     }
 
@@ -526,6 +548,7 @@ class FoodSearchService {
           breakdown: result.scoreBreakdown,
         },
         isLocal: result.isLocal || false,
+        isSouthAfrican: !!result.isSouthAfrican,
 
         // Nutritional data per 100g
         nutrients: nutritionalData.per100g,

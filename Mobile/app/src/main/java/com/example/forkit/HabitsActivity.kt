@@ -1,12 +1,10 @@
 package com.example.forkit
 
-import android.content.ContentValues.TAG
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
@@ -18,25 +16,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -46,15 +35,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.data.models.Habit
-import com.example.forkit.data.models.MockHabits
 import com.example.forkit.data.RetrofitClient
-import com.example.forkit.data.models.HabitsResponse
-import com.example.forkit.data.models.UpdateHabitRequest
+import androidx.compose.ui.res.stringResource
 import com.example.forkit.services.HabitNotificationScheduler
 import com.example.forkit.services.HabitNotificationHelper
 import kotlinx.coroutines.launch
+import com.example.forkit.data.repository.HabitRepository
+import com.example.forkit.data.local.AppDatabase
+import com.example.forkit.utils.NetworkConnectivityManager
 
-class HabitsActivity : ComponentActivity() {
+class HabitsActivity : AppCompatActivity() {
     private var refreshTrigger by mutableStateOf(0)
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,6 +52,16 @@ class HabitsActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         val userId = intent.getStringExtra("USER_ID") ?: ""
+        
+        // Schedule notifications when activity is created
+        if (userId.isNotEmpty()) {
+            val notificationHelper = HabitNotificationHelper(this)
+            if (notificationHelper.areNotificationsEnabled()) {
+                val scheduler = HabitNotificationScheduler(this)
+                scheduler.scheduleAllNotifications(userId)
+                android.util.Log.d("HabitsActivity", "Notifications scheduled on activity creation")
+            }
+        }
         
         setContent {
             ForkItTheme {
@@ -106,82 +106,56 @@ fun HabitsScreen(
     var habitToDelete by remember { mutableStateOf<Habit?>(null) }
     val scope = rememberCoroutineScope()
     
-    // Function to fetch habits from API
-    val fetchHabits: () -> Unit = {
-        scope.launch {
-            try {
-                isLoading = true
-                errorMessage = null
-                android.util.Log.d("HabitsActivity", "Fetching habits for userId: $userId, filter: $selectedTimeFilter")
-                
-                val response = when (selectedTimeFilter) {
-                    0 -> RetrofitClient.api.getDailyHabits(userId)
-                    1 -> RetrofitClient.api.getWeeklyHabits(userId)
-                    2 -> RetrofitClient.api.getMonthlyHabits(userId)
-                    else -> RetrofitClient.api.getDailyHabits(userId)
-                }
-
-                Log.d(TAG, "Habits reponse ${response}")
-                
-                android.util.Log.d("HabitsActivity", "Response code: ${response.code()}")
-                android.util.Log.d("HabitsActivity", "Response body: ${response.body()}")
-                
-                if (response.isSuccessful) {
-                    val habitsResponse = response.body()
-                    android.util.Log.d("HabitsActivity", "Habits response: $habitsResponse")
-                    if (habitsResponse?.success == true) {
-                        habits = habitsResponse.data
-                        android.util.Log.d("HabitsActivity", "Successfully loaded ${habits.size} habits")
-                    } else {
-                        errorMessage = habitsResponse?.message ?: "Failed to load habits"
-                        android.util.Log.e("HabitsActivity", "API error: ${habitsResponse?.message}")
-                        // Fallback to mock data for now
-                        habits = when (selectedTimeFilter) {
-                            0 -> MockHabits.getTodayHabits()
-                            1 -> MockHabits.getWeeklyHabits()
-                            2 -> MockHabits.getMonthlyHabits()
-                            else -> MockHabits.getTodayHabits()
-                        }
-                    }
-                } else {
-                    errorMessage = "Network error: ${response.code()}"
-                    android.util.Log.e("HabitsActivity", "Network error: ${response.code()}")
-                    // Fallback to mock data for now
-                    habits = when (selectedTimeFilter) {
-                        0 -> MockHabits.getTodayHabits()
-                        1 -> MockHabits.getWeeklyHabits()
-                        2 -> MockHabits.getMonthlyHabits()
-                        else -> MockHabits.getTodayHabits()
-                    }
-                }
-            } catch (e: Exception) {
-                errorMessage = "Error: ${e.message}"
-                android.util.Log.e("HabitsActivity", "Exception loading habits: ${e.message}", e)
-                // Fallback to mock data for now
-                habits = when (selectedTimeFilter) {
-                    0 -> MockHabits.getTodayHabits()
-                    1 -> MockHabits.getWeeklyHabits()
-                    2 -> MockHabits.getMonthlyHabits()
-                    else -> MockHabits.getTodayHabits()
-                }
-            } finally {
-                isLoading = false
+    // Initialize repository for offline support
+    val database = remember { AppDatabase.getInstance(context) }
+    val networkManager = remember { NetworkConnectivityManager(context) }
+    val repository = remember {
+        HabitRepository(
+            apiService = RetrofitClient.api,
+            habitDao = database.habitDao(),
+            networkManager = networkManager
+        )
+    }
+    val isOnline = remember { networkManager.isOnline() }
+    
+    // Observe habits from repository using LaunchedEffect
+    LaunchedEffect(userId) {
+        repository.getHabits(userId).collect { habitEntities ->
+            habits = habitEntities.map { entity ->
+                // Convert HabitEntity to Habit model
+                Habit(
+                    id = entity.serverId ?: entity.localId,
+                    title = entity.title,
+                    description = entity.description,
+                    frequency = entity.frequency,
+                    isCompleted = entity.isCompleted,
+                    completedAt = entity.completedAt,
+                    createdAt = entity.createdAt.toString()
+                )
             }
+            android.util.Log.d("HabitsActivity", "Successfully loaded ${habits.size} habits from repository")
         }
     }
     
-    // Function to delete a habit
+    // Function to delete a habit using repository (works offline!)
     val deleteHabit: (String) -> Unit = { habitId ->
         scope.launch {
             try {
-                val response = RetrofitClient.api.deleteHabit(habitId)
-                
-                if (response.isSuccessful && response.body()?.success == true) {
+                val result = repository.deleteHabit(habitId)
+                result.onSuccess {
                     // Remove from local state
                     habits = habits.filter { it.id != habitId }
                     android.util.Log.d("HabitsActivity", "Successfully deleted habit: $habitId")
-                } else {
-                    android.util.Log.e("HabitsActivity", "Failed to delete habit: ${response.body()?.message}")
+                    
+                    // Reschedule notifications after habit deletion
+                    val notificationHelper = HabitNotificationHelper(context)
+                    if (notificationHelper.areNotificationsEnabled()) {
+                        val scheduler = HabitNotificationScheduler(context)
+                        scheduler.rescheduleNotifications(userId)
+                        android.util.Log.d("HabitsActivity", "Notifications rescheduled after habit deletion")
+                    }
+                }.onFailure { e ->
+                    android.util.Log.e("HabitsActivity", "Failed to delete habit: ${e.message}", e)
                 }
             } catch (e: Exception) {
                 android.util.Log.e("HabitsActivity", "Error deleting habit: ${e.message}", e)
@@ -192,7 +166,7 @@ fun HabitsScreen(
     // Update habits when time filter changes, component loads, or refresh is triggered
     LaunchedEffect(selectedTimeFilter, userId, refreshTrigger) {
         if (userId.isNotEmpty()) {
-            fetchHabits()
+            // Habits are now automatically updated via LaunchedEffect above
         }
     }
     
@@ -215,7 +189,7 @@ fun HabitsScreen(
             ) {
                 // "Your Habits" title with gradient
                 Text(
-                    text = "Your Habits",
+                    text = stringResource(R.string.your_habits),
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     style = TextStyle(
@@ -232,7 +206,7 @@ fun HabitsScreen(
                 
                 // Refresh button
                 IconButton(
-                    onClick = { fetchHabits() },
+                    onClick = { /* Habits are automatically updated via LaunchedEffect */ },
                     modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
@@ -267,7 +241,7 @@ fun HabitsScreen(
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Text(
-                        text = "New Habit",
+                        text = stringResource(R.string.new_habit),
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
@@ -289,7 +263,11 @@ fun HabitsScreen(
                 Row(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    val timeFilters = listOf("Today", "Weekly", "Monthly")
+                    val timeFilters = listOf(
+                        stringResource(R.string.today),
+                        stringResource(R.string.weekly),
+                        stringResource(R.string.monthly)
+                    )
                     timeFilters.forEachIndexed { index, filter ->
                         Box(
                             modifier = Modifier
@@ -400,33 +378,37 @@ fun HabitsScreen(
                             try {
                                 val habitToUpdate = habits.find { it.id == habitId }
                                 if (habitToUpdate != null) {
-                                    val updateRequest = UpdateHabitRequest(
-                                        isCompleted = !habitToUpdate.isCompleted
-                                    )
-                                    val response = RetrofitClient.api.updateHabit(habitId, updateRequest)
+                                    val newCompletedState = !habitToUpdate.isCompleted
+                                    val newCompletedAt = if (newCompletedState) java.time.Instant.now().toString() else null
                                     
-                                    if (response.isSuccessful && response.body()?.success == true) {
+                                    // Update using repository (works offline!)
+                                    val result = repository.updateHabit(
+                                        localId = habitId,
+                                        isCompleted = newCompletedState,
+                                        completedAt = newCompletedAt
+                                    )
+                                    
+                                    result.onSuccess {
                                         // Update local state
                                         habits = habits.map { h ->
                                             if (h.id == habitId) {
                                                 h.copy(
-                                                    isCompleted = !h.isCompleted,
-                                                    completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
+                                                    isCompleted = newCompletedState,
+                                                    completedAt = newCompletedAt
                                                 )
                                             } else h
                                         }
                                         android.util.Log.d("HabitsActivity", "Successfully updated habit: $habitId")
-                                    } else {
-                                        android.util.Log.e("HabitsActivity", "Failed to update habit: ${response.body()?.message}")
-                                        // Still update locally for better UX
-                                        habits = habits.map { h ->
-                                            if (h.id == habitId) {
-                                                h.copy(
-                                                    isCompleted = !h.isCompleted,
-                                                    completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
-                                                )
-                                            } else h
+                                        
+                                        // Reschedule notifications after habit update
+                                        val notificationHelper = HabitNotificationHelper(context)
+                                        if (notificationHelper.areNotificationsEnabled()) {
+                                            val scheduler = HabitNotificationScheduler(context)
+                                            scheduler.rescheduleNotifications(userId)
+                                            android.util.Log.d("HabitsActivity", "Notifications rescheduled after habit update")
                                         }
+                                    }.onFailure { e ->
+                                        android.util.Log.e("HabitsActivity", "Failed to update habit: ${e.message}")
                                     }
                                 }
                             } catch (e: Exception) {
@@ -473,33 +455,37 @@ fun HabitsScreen(
                                 try {
                                     val habitToUpdate = habits.find { it.id == habitId }
                                     if (habitToUpdate != null) {
-                                        val updateRequest = UpdateHabitRequest(
-                                            isCompleted = !habitToUpdate.isCompleted
-                                        )
-                                        val response = RetrofitClient.api.updateHabit(habitId, updateRequest)
+                                        val newCompletedState = !habitToUpdate.isCompleted
+                                        val newCompletedAt = if (newCompletedState) java.time.Instant.now().toString() else null
                                         
-                                        if (response.isSuccessful && response.body()?.success == true) {
+                                        // Update using repository (works offline!)
+                                        val result = repository.updateHabit(
+                                            localId = habitId,
+                                            isCompleted = newCompletedState,
+                                            completedAt = newCompletedAt
+                                        )
+                                        
+                                        result.onSuccess {
                                             // Update local state
                                             habits = habits.map { h ->
                                                 if (h.id == habitId) {
                                                     h.copy(
-                                                        isCompleted = !h.isCompleted,
-                                                        completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
+                                                        isCompleted = newCompletedState,
+                                                        completedAt = newCompletedAt
                                                     )
                                                 } else h
                                             }
                                             android.util.Log.d("HabitsActivity", "Successfully updated habit: $habitId")
-                                        } else {
-                                            android.util.Log.e("HabitsActivity", "Failed to update habit: ${response.body()?.message}")
-                                            // Still update locally for better UX
-                                            habits = habits.map { h ->
-                                                if (h.id == habitId) {
-                                                    h.copy(
-                                                        isCompleted = !h.isCompleted,
-                                                        completedAt = if (!h.isCompleted) java.time.Instant.now().toString() else null
-                                                    )
-                                                } else h
+                                            
+                                            // Reschedule notifications after habit update
+                                            val notificationHelper = HabitNotificationHelper(context)
+                                            if (notificationHelper.areNotificationsEnabled()) {
+                                                val scheduler = HabitNotificationScheduler(context)
+                                                scheduler.rescheduleNotifications(userId)
+                                                android.util.Log.d("HabitsActivity", "Notifications rescheduled after habit update")
                                             }
+                                        }.onFailure { e ->
+                                            android.util.Log.e("HabitsActivity", "Failed to update habit: ${e.message}")
                                         }
                                     }
                                 } catch (e: Exception) {

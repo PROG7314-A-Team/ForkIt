@@ -5,9 +5,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -51,7 +52,7 @@ import com.google.firebase.ktx.Firebase
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.launch
 
-class SignInActivity : ComponentActivity() {
+class SignInActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -200,7 +201,7 @@ fun SignInScreen(prefilledEmail: String = "") {
                                 )
                                 if (response.isSuccessful) {
                                     val body: LoginResponse? = response.body()
-                                    message = body?.message ?: "Login successful!"
+                                    message = body?.message ?: "Welcome back! You have successfully signed in"
                                     
                                     // Save login credentials for auto sign-in
                                     val authPreferences = AuthPreferences(context)
@@ -218,10 +219,10 @@ fun SignInScreen(prefilledEmail: String = "") {
                                     context.startActivity(intent)
                                     (context as? ComponentActivity)?.finish()
                                 } else {
-                                    message = "Login failed: ${response.errorBody()?.string()}"
+                                    message = "The email or password you entered is incorrect. Please check your credentials and try again"
                                 }
                             } catch (e: Exception) {
-                                message = "Error: ${e.localizedMessage}"
+                                message = "Unable to connect to the server. Please check your internet connection and try again"
                             } finally {
                                 isLoading = false
                             }
@@ -344,6 +345,7 @@ private suspend fun signInWithGoogle(context: Context) {
             GoogleIdTokenCredential.createFrom(result.credential.data)
         val idToken = googleIdTokenCredential.idToken
 
+        @Suppress("SENSELESS_COMPARISON")
         if (idToken == null) {
             Toast.makeText(context, "Google sign-in failed: No ID token", Toast.LENGTH_SHORT).show()
             return
@@ -364,7 +366,7 @@ private suspend fun signInWithGoogle(context: Context) {
                             .addOnSuccessListener { result ->
                                 val firebaseIdToken = result.token
                                 if (firebaseIdToken == null) {
-                                    Toast.makeText(context, "Failed to get Firebase ID token", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Google sign-in failed. Please try again or use email sign-in", Toast.LENGTH_SHORT).show()
                                     return@addOnSuccessListener
                                 }
 
@@ -391,7 +393,7 @@ private suspend fun signInWithGoogle(context: Context) {
                                                     }
                                                 }
 
-                                                Toast.makeText(context, "Welcome back!", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "Welcome back! You have successfully signed in with Google", Toast.LENGTH_SHORT).show()
 
                                                 // Navigate to DashboardActivity with userId
                                                 val intent = Intent(context, DashboardActivity::class.java)
@@ -414,7 +416,7 @@ private suspend fun signInWithGoogle(context: Context) {
                                         Log.e("Auth", "Error logging in with Google", e)
                                         Toast.makeText(
                                             context,
-                                            "Error logging in: ${e.localizedMessage}",
+                                            "❌ Couldn't sign in with Google. Please try again.",
                                             Toast.LENGTH_LONG
                                         ).show()
                                     }
@@ -422,22 +424,22 @@ private suspend fun signInWithGoogle(context: Context) {
                             }
                             .addOnFailureListener { e ->
                                 Log.e("Auth", "Failed to get Firebase ID token", e)
-                                Toast.makeText(context, "Failed to get Firebase ID token", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "❌ Authentication failed. Please try again.", Toast.LENGTH_SHORT).show()
                             }
                     } else {
-                        Toast.makeText(context, "No email found in Google account", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "❌ No email found in Google account", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Toast.makeText(context, "Firebase Google sign-in failed", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "❌ Google sign-in failed. Please try again.", Toast.LENGTH_SHORT).show()
                     Log.e("Auth", "Firebase Google sign-in failed", task.exception)
                 }
             }
 
     } catch (e: GetCredentialException) {
-        Toast.makeText(context, "Google Sign-In failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "❌ Google sign-in failed. Please try again.", Toast.LENGTH_SHORT).show()
         Log.e("Auth", "Google Sign-In failed", e)
     } catch (e: Exception) {
-        Toast.makeText(context, "Unexpected error: ${e.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "❌ Something went wrong. Please try again.", Toast.LENGTH_SHORT).show()
         Log.e("Auth", "Unexpected error during Google sign-in", e)
     }
 }

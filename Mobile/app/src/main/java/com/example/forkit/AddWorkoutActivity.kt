@@ -2,9 +2,9 @@ package com.example.forkit
 
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,8 +34,12 @@ import com.example.forkit.ui.theme.ForkItTheme
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.ui.res.stringResource
+import com.example.forkit.data.repository.ExerciseLogRepository
+import com.example.forkit.data.local.AppDatabase
+import com.example.forkit.utils.NetworkConnectivityManager
 
-class AddWorkoutActivity : ComponentActivity() {
+class AddWorkoutActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -48,7 +52,7 @@ class AddWorkoutActivity : ComponentActivity() {
                     userId = userId,
                     onBackPressed = { finish() },
                     onSuccess = {
-                        Toast.makeText(this, "Exercise logged successfully! 💪", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, getString(R.string.exercise_logged_success), Toast.LENGTH_SHORT).show()
                         finish()
                     }
                 )
@@ -66,6 +70,18 @@ fun AddWorkoutScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    
+    // Initialize repository for offline support
+    val database = remember { AppDatabase.getInstance(context) }
+    val networkManager = remember { NetworkConnectivityManager(context) }
+    val repository = remember {
+        ExerciseLogRepository(
+            apiService = RetrofitClient.api,
+            exerciseLogDao = database.exerciseLogDao(),
+            networkManager = networkManager
+        )
+    }
+    val isOnline = remember { networkManager.isOnline() }
     
     var name by remember { mutableStateOf("") }
     var caloriesBurned by remember { mutableStateOf("") }
@@ -104,12 +120,12 @@ fun AddWorkoutScreen(
                 IconButton(onClick = onBackPressed) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.back),
                         tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
                 Text(
-                    text = "Add Exercise",
+                    text = stringResource(R.string.add_exercise),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.primary,
@@ -138,8 +154,8 @@ fun AddWorkoutScreen(
                             name = it
                             errorMessage = ""
                         },
-                        label = { Text("Exercise Name") },
-                        placeholder = { Text("e.g., Morning Jog, Push-ups") },
+                        label = { Text(stringResource(R.string.exercise_name)) },
+                        placeholder = { Text(stringResource(R.string.exercise_name_placeholder)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -187,8 +203,8 @@ fun AddWorkoutScreen(
                                 errorMessage = ""
                             }
                         },
-                        label = { Text("Calories Burned (kcal)") },
-                        placeholder = { Text("Enter calories burned") },
+                        label = { Text(stringResource(R.string.calories_burned)) },
+                        placeholder = { Text(stringResource(R.string.enter_calories_burned)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
@@ -210,8 +226,8 @@ fun AddWorkoutScreen(
                                 errorMessage = ""
                             }
                         },
-                        label = { Text("Duration (minutes) - Optional") },
-                        placeholder = { Text("Enter duration") },
+                        label = { Text(stringResource(R.string.duration)) },
+                        placeholder = { Text(stringResource(R.string.enter_duration)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
@@ -233,7 +249,7 @@ fun AddWorkoutScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Type",
+                        text = stringResource(R.string.type),
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium,
@@ -246,14 +262,14 @@ fun AddWorkoutScreen(
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
                             TypeButton(
-                                text = "Cardio",
+                                text = stringResource(R.string.cardio),
                                 isSelected = selectedType == "Cardio",
                                 onClick = { selectedType = "Cardio" }
                             )
                         }
                         Box(modifier = Modifier.weight(1f)) {
                             TypeButton(
-                                text = "Strength",
+                                text = stringResource(R.string.strength),
                                 isSelected = selectedType == "Strength",
                                 onClick = { selectedType = "Strength" }
                             )
@@ -279,28 +295,28 @@ fun AddWorkoutScreen(
                     onClick = {
                         // Validate inputs
                         if (name.isEmpty()) {
-                            errorMessage = "Please enter exercise name"
+                            errorMessage = context.getString(R.string.please_enter_exercise_name)
                             return@Button
                         }
                         
                         if (caloriesBurned.isEmpty()) {
-                            errorMessage = "Please enter calories burned"
+                            errorMessage = context.getString(R.string.please_enter_calories_burned)
                             return@Button
                         }
                         
                         val caloriesValue = caloriesBurned.toDoubleOrNull()
                         if (caloriesValue == null || caloriesValue <= 0) {
-                            errorMessage = "Please enter valid calories"
+                            errorMessage = context.getString(R.string.please_enter_valid_calories)
                             return@Button
                         }
                         
                         if (selectedType.isEmpty()) {
-                            errorMessage = "Please select exercise type"
+                            errorMessage = context.getString(R.string.please_select_exercise_type)
                             return@Button
                         }
                         
                         if (userId.isEmpty()) {
-                            errorMessage = "User ID not found. Please log in again."
+                            errorMessage = context.getString(R.string.user_id_not_found)
                             return@Button
                         }
                         
@@ -308,33 +324,38 @@ fun AddWorkoutScreen(
                         errorMessage = ""
                         isLoading = true
                         
-                        // Make API call
+                        // Use repository for offline-first logging
                         scope.launch {
                             try {
                                 android.util.Log.d("AddWorkoutActivity", "Adding exercise: $name - $caloriesValue kcal ($selectedType) for user $userId on ${apiDateFormatter.format(selectedDate)}")
                                 
-                                val response = RetrofitClient.api.createExerciseLog(
-                                    CreateExerciseLogRequest(
-                                        userId = userId,
-                                        name = name,
-                                        date = apiDateFormatter.format(selectedDate),
-                                        caloriesBurnt = caloriesValue,
-                                        type = selectedType,
-                                        duration = duration.toDoubleOrNull()
-                                    )
+                                val result = repository.createExerciseLog(
+                                    userId = userId,
+                                    name = name,
+                                    date = apiDateFormatter.format(selectedDate),
+                                    caloriesBurnt = caloriesValue,
+                                    type = selectedType,
+                                    duration = duration.toDoubleOrNull(),
+                                    notes = ""
                                 )
                                 
-                                if (response.isSuccessful) {
-                                    android.util.Log.d("AddWorkoutActivity", "Exercise logged successfully")
+                                result.onSuccess { id ->
+                                    android.util.Log.d("AddWorkoutActivity", "Exercise logged successfully: $id")
+                                    if (!isOnline) {
+                                        Toast.makeText(
+                                            context,
+                                            "Saved offline - will sync when connected",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
                                     onSuccess()
-                                } else {
-                                    val errorBody = response.errorBody()?.string()
-                                    android.util.Log.e("AddWorkoutActivity", "Failed to log exercise: $errorBody")
-                                    errorMessage = "Failed to log exercise: ${response.code()}"
+                                }.onFailure { e ->
+                                    android.util.Log.e("AddWorkoutActivity", "Failed to log exercise: ${e.message}", e)
+                                    errorMessage = "Couldn't save exercise. Please try again"
                                 }
                             } catch (e: Exception) {
                                 android.util.Log.e("AddWorkoutActivity", "Error logging exercise: ${e.message}", e)
-                                errorMessage = "Error: ${e.localizedMessage}"
+                                errorMessage = "Something went wrong. Please try again"
                             } finally {
                                 isLoading = false
                             }
@@ -371,7 +392,7 @@ fun AddWorkoutScreen(
                             )
                         } else {
                             Text(
-                                text = "Add Exercise",
+                                text = stringResource(R.string.add_exercise),
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = Color.White
@@ -400,7 +421,7 @@ fun AddWorkoutScreen(
                         }
                     ) {
                         Text(
-                            "OK",
+                            stringResource(R.string.ok),
                             color = MaterialTheme.colorScheme.secondary,
                             fontWeight = FontWeight.Medium
                         )
@@ -411,7 +432,7 @@ fun AddWorkoutScreen(
                         onClick = { showDatePicker = false }
                     ) {
                         Text(
-                            "Cancel",
+                            stringResource(R.string.cancel),
                             color = Color.Gray,
                             fontWeight = FontWeight.Medium
                         )

@@ -76,6 +76,7 @@ data class FoodLogDashboardResponse(
 // Data Classes
 data class FoodLog(
     val id: String,
+    val localId: String, // Add localId field to preserve the original local database ID
     val userId: String,
     val foodName: String,
     val servingSize: Double,
@@ -146,6 +147,7 @@ data class RecentFoodActivity(
 
 data class RecentActivityEntry(
     val id: String,
+    val localId: String,
     val foodName: String,
     val servingSize: Double,
     val measuringUnit: String,

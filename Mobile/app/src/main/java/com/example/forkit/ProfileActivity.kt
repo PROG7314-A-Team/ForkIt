@@ -2,10 +2,10 @@ package com.example.forkit
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.BackHandler
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,10 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Build
-//import androidx.compose.material.icons.filled.QuestionAnswer
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -39,30 +36,63 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.forkit.ui.theme.ForkItTheme
 import com.example.forkit.utils.AuthPreferences
+import androidx.compose.ui.res.stringResource
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import java.util.concurrent.Executor
 
-class ProfileActivity : ComponentActivity() {
+class ProfileActivity : AppCompatActivity() {
+    
+    private val appSettingsLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        // If language was changed in AppSettingsActivity, recreate this activity
+        if (result.resultCode == AppSettingsActivity.RESULT_LANGUAGE_CHANGED) {
+            recreate()
+        }
+    }
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Apply saved language
+        LanguageManager.applyLanguage(this)
         
         val userId = intent.getStringExtra("USER_ID") ?: ""
         
         setContent {
             ForkItTheme {
-                ProfileScreen(userId = userId)
+                ProfileScreen(
+                    userId = userId,
+                    onNavigateToAppSettings = {
+                        val intent = Intent(this, AppSettingsActivity::class.java)
+                        appSettingsLauncher.launch(intent)
+                    }
+                )
             }
         }
     }
 }
 
+enum class ProfileOptionType {
+    ACCOUNT, GOALS, NOTIFICATIONS, APP_SETTINGS, ABOUT
+}
+
 data class ProfileOption(
     val icon: ImageVector,
+    val type: ProfileOptionType,
     val title: String,
     val description: String
 )
 
 @Composable
-fun ProfileScreen(userId: String = "") {
+fun ProfileScreen(
+    userId: String = "",
+    onNavigateToAppSettings: () -> Unit = {}
+) {
     val context = LocalContext.current
     
     // Handle back button press
@@ -75,33 +105,33 @@ fun ProfileScreen(userId: String = "") {
     val profileOptions = listOf(
         ProfileOption(
             icon = Icons.Default.Person,
-            title = "Account",
-            description = "Manage your account settings"
+            type = ProfileOptionType.ACCOUNT,
+            title = stringResource(R.string.account),
+            description = stringResource(R.string.manage_account_settings)
         ),
         ProfileOption(
             icon = Icons.Default.Star,
-            title = "Goals",
-            description = "Set your daily health and fitness goals"
+            type = ProfileOptionType.GOALS,
+            title = stringResource(R.string.goals),
+            description = stringResource(R.string.set_daily_health_goals)
         ),
         ProfileOption(
             icon = Icons.Default.Notifications,
-            title = "Notifications",
-            description = "Configure notification preferences"
+            type = ProfileOptionType.NOTIFICATIONS,
+            title = stringResource(R.string.notifications),
+            description = stringResource(R.string.configure_notifications)
         ),
         ProfileOption(
             icon = Icons.Default.Settings,
-            title = "App Settings",
-            description = "Customize app settings"
+            type = ProfileOptionType.APP_SETTINGS,
+            title = stringResource(R.string.app_settings),
+            description = stringResource(R.string.customize_app_settings)
         ),
         ProfileOption(
             icon = Icons.Default.Info,
-            title = "About",
-            description = "App information and version"
-        ),
-        ProfileOption(
-            icon = Icons.Default.Build,
-            title = "Developer Tools",
-            description = "Access development and testing features"
+            type = ProfileOptionType.ABOUT,
+            title = stringResource(R.string.about),
+            description = stringResource(R.string.app_info_version)
         )
     )
 
@@ -134,7 +164,7 @@ fun ProfileScreen(userId: String = "") {
             Spacer(modifier = Modifier.width(16.dp))
             
             Text(
-                text = "Profile",
+                text = stringResource(R.string.profile),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary // ForkIt Green
@@ -152,32 +182,73 @@ fun ProfileScreen(userId: String = "") {
                 ProfileOptionCard(
                     option = option,
                     onClick = { 
-                        when (option.title) {
-                            "Account" -> {
-                                val intent = Intent(context, AccountActivity::class.java)
-                                intent.putExtra("USER_ID", userId)
-                                context.startActivity(intent)
+                        when (option.type) {
+                            ProfileOptionType.ACCOUNT -> {
+                                // Require biometric authentication before navigating to Account
+                                val activity = (context as? AppCompatActivity)
+                                if (activity != null) {
+                                    val biometricManager = BiometricManager.from(activity)
+                                    val canAuth = biometricManager.canAuthenticate(
+                                        BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                                            BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                                    )
+
+                                    if (canAuth == BiometricManager.BIOMETRIC_SUCCESS) {
+                                        val executor: Executor = ContextCompat.getMainExecutor(activity)
+                                        val prompt = BiometricPrompt(
+                                            activity,
+                                            executor,
+                                            object : BiometricPrompt.AuthenticationCallback() {
+                                                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                                                    super.onAuthenticationSucceeded(result)
+                                                    val intent = Intent(activity, AccountActivity::class.java)
+                                                    intent.putExtra("USER_ID", userId)
+                                                    activity.startActivity(intent)
+                                                }
+
+                                                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                                                    super.onAuthenticationError(errorCode, errString)
+                                                    // Do nothing; stay on Profile
+                                                }
+
+                                                override fun onAuthenticationFailed() {
+                                                    super.onAuthenticationFailed()
+                                                    // Do nothing; user can try again
+                                                }
+                                            }
+                                        )
+
+                                        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+                                            .setTitle(context.getString(R.string.account))
+                                            .setSubtitle(context.getString(R.string.manage_account_settings))
+                                            .setAllowedAuthenticators(
+                                                BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                                                    BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                                            )
+                                            .build()
+
+                                        prompt.authenticate(promptInfo)
+                                    } else {
+                                        // If device has no biometric/credential setup, block access silently
+                                        // Optionally, you could show a Toast/snackbar here.
+                                    }
+                                }
                             }
-                            "Goals" -> {
+                            ProfileOptionType.GOALS -> {
                                 val intent = Intent(context, GoalsActivity::class.java)
                                 intent.putExtra("USER_ID", userId)
                                 context.startActivity(intent)
                             }
-                            "Notifications" -> {
+                            ProfileOptionType.NOTIFICATIONS -> {
                                 val intent = Intent(context, NotificationsActivity::class.java)
                                 intent.putExtra("USER_ID", userId)
                                 context.startActivity(intent)
                             }
-                            "App Settings" -> {
-                                val intent = Intent(context, AppSettingsActivity::class.java)
-                                context.startActivity(intent)
+                            ProfileOptionType.APP_SETTINGS -> {
+                                onNavigateToAppSettings()
                             }
-                            "About" -> {
+                            ProfileOptionType.ABOUT -> {
                                 val intent = Intent(context, AboutActivity::class.java)
-                                context.startActivity(intent)
-                            }
-                            "Developer Tools" -> {
-                                val intent = Intent(context, DevelopmentActivity::class.java)
                                 context.startActivity(intent)
                             }
                         }
@@ -202,7 +273,7 @@ fun ProfileScreen(userId: String = "") {
                         val intent = Intent(context, LoginActivity::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         context.startActivity(intent)
-                        (context as? ComponentActivity)?.finish()
+                        (context as? AppCompatActivity)?.finish()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -239,7 +310,7 @@ fun ProfileScreen(userId: String = "") {
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Logout",
+                                text = stringResource(R.string.logout),
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
