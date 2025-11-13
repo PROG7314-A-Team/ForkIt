@@ -3,12 +3,21 @@ package com.example.forkit.sync
 import android.content.Context
 import android.util.Log
 import androidx.work.*
+import com.example.forkit.utils.ConnectivityObserver
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 class SyncManager(private val context: Context) {
     
     private val TAG = "SyncManager"
     private val workManager = WorkManager.getInstance(context)
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var connectivityJob: Job? = null
     
     companion object {
         private const val SYNC_WORK_NAME = "forkit_data_sync"
@@ -71,7 +80,6 @@ class SyncManager(private val context: Context) {
     
 
      //Trigger immediate sync
-
     fun triggerImmediateSync() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -102,6 +110,30 @@ class SyncManager(private val context: Context) {
     fun isSyncing(): Boolean {
         val workInfos = workManager.getWorkInfosForUniqueWork(SYNC_WORK_NAME).get()
         return workInfos.any { it.state == WorkInfo.State.RUNNING }
+    }
+
+    /**
+     * Begin observing connectivity changes and trigger sync automatically when coming online.
+     */
+    fun startConnectivityListener() {
+        ConnectivityObserver.initialize(context.applicationContext)
+        if (connectivityJob != null) return
+
+        connectivityJob = scope.launch {
+            var wasOnline = ConnectivityObserver.isOnline.value
+            ConnectivityObserver.isOnline.collectLatest { isOnline ->
+                if (isOnline && !wasOnline) {
+                    Log.d(TAG, "Connectivity restored – scheduling sync")
+                    scheduleSync()
+                }
+                wasOnline = isOnline
+            }
+        }
+    }
+
+    fun stopConnectivityListener() {
+        connectivityJob?.cancel()
+        connectivityJob = null
     }
 }
 

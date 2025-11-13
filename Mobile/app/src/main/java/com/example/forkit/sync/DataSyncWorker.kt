@@ -64,6 +64,8 @@ class DataSyncWorker(
                 networkManager
             )
             
+            val affectedUserIds = mutableSetOf<String>()
+            
             var syncSuccess = true
             
             // Sync Food Logs
@@ -71,6 +73,7 @@ class DataSyncWorker(
             Log.d(TAG, "Syncing ${unsyncedFoodLogs.size} food logs...")
             
             for (foodLog in unsyncedFoodLogs) {
+                affectedUserIds.add(foodLog.userId)
                 try {
                     val request = CreateFoodLogRequest(
                         userId = foodLog.userId,
@@ -109,6 +112,7 @@ class DataSyncWorker(
             Log.d(TAG, "Syncing ${unsyncedMealLogs.size} meal logs...")
             
             for (mealLog in unsyncedMealLogs) {
+                affectedUserIds.add(mealLog.userId)
                 try {
                     val request = CreateMealLogRequest(
                         userId = mealLog.userId,
@@ -154,6 +158,7 @@ class DataSyncWorker(
             Log.d(TAG, "Syncing ${unsyncedWaterLogs.size} water logs...")
             
             for (waterLog in unsyncedWaterLogs) {
+                affectedUserIds.add(waterLog.userId)
                 try {
                     val request = CreateWaterLogRequest(
                         userId = waterLog.userId,
@@ -184,6 +189,7 @@ class DataSyncWorker(
             Log.d(TAG, "Syncing ${unsyncedExerciseLogs.size} exercise logs...")
             
             for (exerciseLog in unsyncedExerciseLogs) {
+                affectedUserIds.add(exerciseLog.userId)
                 try {
                     val request = CreateExerciseLogRequest(
                         userId = exerciseLog.userId,
@@ -218,6 +224,7 @@ class DataSyncWorker(
             Log.d(TAG, "Syncing ${unsyncedHabits.size} habits...")
             
             for (habit in unsyncedHabits) {
+                affectedUserIds.add(habit.userId)
                 try {
                     val habitRequest = CreateHabitRequest(
                         title = habit.title,
@@ -253,6 +260,7 @@ class DataSyncWorker(
             Log.d(TAG, "Syncing ${unsyncedDeletes.size} habit deletions...")
             
             for (habit in unsyncedDeletes) {
+                habit.userId?.let { affectedUserIds.add(it) }
                 try {
                     if (habit.serverId != null) {
                         val response = apiService.deleteHabit(habit.serverId)
@@ -281,6 +289,18 @@ class DataSyncWorker(
             val totalSynced = unsyncedFoodLogs.size + unsyncedMealLogs.size + 
                              unsyncedWaterLogs.size + unsyncedExerciseLogs.size + unsyncedHabits.size
             Log.d(TAG, "Sync complete! Total items processed: $totalSynced")
+
+            for (userId in affectedUserIds) {
+                try {
+                    foodLogRepository.refreshUserLogs(userId)
+                    mealLogRepository.refreshUserMeals(userId)
+                    waterLogRepository.refreshUserWaterLogs(userId)
+                    exerciseLogRepository.refreshUserExerciseLogs(userId)
+                    habitRepository.refreshHabits(userId)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Post-sync refresh failed for user $userId: ${e.message}")
+                }
+            }
             
             return@withContext if (syncSuccess) {
                 Result.success()

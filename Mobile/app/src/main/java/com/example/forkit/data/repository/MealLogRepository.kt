@@ -7,9 +7,12 @@ import com.example.forkit.data.local.entities.MealIngredient
 import com.example.forkit.data.local.entities.MealLogEntity
 import com.example.forkit.data.models.CreateMealLogRequest
 import com.example.forkit.data.models.Ingredient
+import com.example.forkit.data.models.MealLog
 import com.example.forkit.utils.NetworkConnectivityManager
+import com.example.forkit.utils.TimeUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.util.UUID
 
 class MealLogRepository(
@@ -59,7 +62,13 @@ class MealLogRepository(
                 isSynced = false
             )
             
-            // Online-first: attempt API regardless of connectivity indicator
+            val currentlyOnline = networkManager.isOnline()
+            if (!currentlyOnline) {
+                mealLogDao.insert(mealLogEntity)
+                Log.i("MealLogRepository", "Device offline, saved meal log locally for later sync")
+                return@withContext Result.success("offline")
+            }
+
             try {
                 val safeInstructions = if (instructions.isEmpty()) listOf("Logged from template") else instructions
                 val request = CreateMealLogRequest(
@@ -90,28 +99,27 @@ class MealLogRepository(
                 Log.d("MealLogRepository", "createMealLog response: code=${response.code()} success=${response.isSuccessful} bodyMsg=${response.body()?.message} error=${errorMsg}")
 
                 if (response.isSuccessful && response.body()?.success == true) {
-                    val serverId = response.body()?.data?.id
-
-                    val syncedEntity = mealLogEntity.copy(
-                        serverId = serverId,
+                    val serverLog = response.body()?.data
+                    val syncedEntity = serverLog?.toEntity(mealLogEntity.localId) ?: mealLogEntity.copy(
+                        serverId = response.body()?.data?.id,
                         isSynced = true
                     )
-                    mealLogDao.insert(syncedEntity)
+                    mealLogDao.insert(syncedEntity.copy(isSynced = true))
 
                     Log.d("MealLogRepository", "Meal log created online and saved locally")
-                    return@withContext Result.success(serverId ?: "")
+                    return@withContext Result.success(syncedEntity.serverId ?: "")
                 } else {
-                    mealLogDao.insert(mealLogEntity)
-                    Log.w(
-                        "MealLogRepository",
-                        "API createMealLog failed (${response.code()} ${response.message()}), saved offline"
-                    )
-                    return@withContext Result.success("offline")
+                    val message = errorMsg ?: response.message()
+                    Log.w("MealLogRepository", "API createMealLog failed (${response.code()}): $message")
+                    return@withContext Result.failure(Exception(message))
                 }
-            } catch (e: Exception) {
+            } catch (e: IOException) {
                 mealLogDao.insert(mealLogEntity)
-                Log.e("MealLogRepository", "API error in createMealLog, saved offline: ${e.message}", e)
+                Log.e("MealLogRepository", "Network error in createMealLog, saved offline: ${e.message}", e)
                 return@withContext Result.success("offline")
+            } catch (e: Exception) {
+                Log.e("MealLogRepository", "API error in createMealLog: ${e.message}", e)
+                return@withContext Result.failure(e)
             }
         } catch (e: Exception) {
             Log.e("MealLogRepository", "Error creating meal log: ${e.message}", e)
@@ -273,5 +281,65 @@ class MealLogRepository(
             Log.e("MealLogRepository", "Error logging meal template: ${e.message}", e)
             Result.failure(e)
         }
+    }
+
+    /**
+     * Refresh local meal logs from the server when connectivity is available.
+     */
+    suspend fun refreshUserMeals(userId: String) = withContext(Dispatchers.IO) {
+        if (!networkManager.isOnline()) return@withContext
+        try {
+            val response = apiService.getMealLogs(userId)
+            if (response.isSuccessful && response.body()?.success == true) {
+                val remoteMeals = response.body()?.data.orEmpty()
+                val unsynced = mealLogDao.getUnsyncedLogs()
+                for (meal in remoteMeals) {
+                    val existing = mealLogDao.getByServerId(meal.id)
+                    val localId = existing?.localId ?: UUID.randomUUID().toString()
+                    mealLogDao.insert(meal.toEntity(localId).copy(isSynced = true))
+                }
+                unsynced.forEach { mealLogDao.insert(it) }
+                Log.d("MealLogRepository", "Refreshed ${remoteMeals.size} meal logs from server")
+            } else {
+                Log.w("MealLogRepository", "Failed to refresh meal logs: ${response.message()}")
+            }
+        } catch (e: Exception) {
+            Log.w("MealLogRepository", "Error refreshing meal logs: ${e.message}")
+        }
+    }
+
+    private fun MealLog.toEntity(localId: String): MealLogEntity {
+        val ingredientEntities = ingredients.map {
+            MealIngredient(
+                foodName = it.name,
+                quantity = it.amount,
+                unit = it.unit,
+                calories = 0.0,
+                carbs = 0.0,
+                fat = 0.0,
+                protein = 0.0
+            )
+        }
+
+        return MealLogEntity(
+            localId = localId,
+            serverId = id,
+            userId = userId,
+            name = name,
+            description = description,
+            ingredients = ingredientEntities,
+            instructions = instructions,
+            totalCalories = totalCalories,
+            totalCarbs = totalCarbs,
+            totalFat = totalFat,
+            totalProtein = totalProtein,
+            servings = servings,
+            date = date,
+            mealType = mealType,
+            isTemplate = isTemplate,
+            templateId = templateId,
+            isSynced = true,
+            createdAt = TimeUtils.parseIsoToMillis(createdAt)
+        )
     }
 }
