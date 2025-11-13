@@ -67,6 +67,7 @@ import com.example.forkit.ui.theme.ForkItTheme
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.collectLatest
 
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.foundation.lazy.LazyColumn
@@ -79,7 +80,9 @@ import com.example.forkit.ui.screens.MealsScreen
 import com.example.forkit.ui.screens.HabitsScreen
 import com.example.forkit.ui.screens.CoachScreen
 import com.example.forkit.utils.NetworkConnectivityManager
+import com.example.forkit.utils.ConnectivityObserver
 import com.example.forkit.sync.SyncManager
+import com.example.forkit.data.repository.HabitRepository
 
 
 
@@ -161,6 +164,13 @@ fun DashboardScreen(
         com.example.forkit.data.repository.ExerciseLogRepository(
             apiService = com.example.forkit.data.RetrofitClient.api,
             exerciseLogDao = database.exerciseLogDao(),
+            networkManager = networkManager
+        )
+    }
+    val habitRepository = remember {
+        HabitRepository(
+            apiService = com.example.forkit.data.RetrofitClient.api,
+            habitDao = database.habitDao(),
             networkManager = networkManager
         )
     }
@@ -317,6 +327,19 @@ fun DashboardScreen(
                     
                     // Refresh step count
                     currentSteps = stepTracker?.fetchTodaySteps() ?: 0
+                    
+                    if (isOnline) {
+                        try {
+                            android.util.Log.d("DashboardActivity", "Online - refreshing local caches from server")
+                            foodLogRepository.refreshUserLogs(userId)
+                            mealLogRepository.refreshUserMeals(userId)
+                            waterLogRepository.refreshUserWaterLogs(userId)
+                            exerciseLogRepository.refreshUserExerciseLogs(userId)
+                            habitRepository.refreshHabits(userId)
+                        } catch (e: Exception) {
+                            android.util.Log.w("DashboardActivity", "Cache refresh failed: ${e.message}", e)
+                        }
+                    }
                     
                     // **OPTIMIZED: Fetch all data in parallel using async**
                     android.util.Log.d("DashboardActivity", "Starting parallel API calls...")
@@ -557,16 +580,14 @@ fun DashboardScreen(
     
     // Observe connectivity changes
     LaunchedEffect(Unit) {
-        networkManager.observeConnectivity().collect { online ->
+        ConnectivityObserver.initialize(context.applicationContext)
+        syncManager.startConnectivityListener()
+        ConnectivityObserver.isOnline.collectLatest { online ->
             val wasOffline = !isOnline
             isOnline = online
-            
-            // Trigger sync when coming back online
             if (online && wasOffline) {
-                Log.d("DashboardActivity", "Device came online, triggering sync")
-                syncManager.scheduleSync()
-                // Refresh data after a short delay to get synced data
-                kotlinx.coroutines.delay(2000)
+                Log.d("DashboardActivity", "Connectivity restored - forcing sync and refresh")
+                syncManager.triggerImmediateSync()
                 maybeRefresh()
             }
         }
