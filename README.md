@@ -222,7 +222,6 @@ This application was developed using **Cursor AI** as an integrated development 
 ## Documentation
 
 - **API Documentation**: Complete endpoint documentation in `API/forkit-api/API_ENDPOINTS_DOCUMENTATION.md`
-- **Step Tracking Guide**: Detailed implementation guide in `Mobile/STEP_TRACKING_GUIDE.md`
 - **Test Coverage Reports**: Available in `API/forkit-api/coverage/`
 - **Code Comments**: Comprehensive inline documentation throughout the codebase
 
