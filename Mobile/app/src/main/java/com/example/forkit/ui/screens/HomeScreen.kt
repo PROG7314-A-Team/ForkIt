@@ -37,9 +37,12 @@ import com.example.forkit.data.RetrofitClient
 import com.example.forkit.data.models.RecentActivityEntry
 import com.example.forkit.data.models.RecentExerciseActivityEntry
 import com.example.forkit.data.models.RecentWaterActivityEntry
+import com.example.forkit.data.models.StreakData
 import kotlinx.coroutines.launch
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.res.stringResource
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
 fun HomeScreen(
@@ -66,6 +69,9 @@ fun HomeScreen(
     isOverBudget: Boolean,
     isWithinBudget: Boolean,
     animatedProgress: Float,
+    streakData: StreakData?,
+    isStreakLoading: Boolean,
+    streakErrorMessage: String?,
     refreshData: () -> Unit,
     onMealDelete: (RecentActivityEntry) -> Unit,
     onWorkoutDelete: (RecentExerciseActivityEntry) -> Unit,
@@ -340,7 +346,7 @@ fun HomeScreen(
         }
         
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Today's Calorie Wheel Card
         Card(
             modifier = Modifier
@@ -407,6 +413,15 @@ fun HomeScreen(
                 }
             }
         }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        StreakSummaryCard(
+            streakData = streakData,
+            isStreakLoading = isStreakLoading,
+            streakErrorMessage = streakErrorMessage,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
         
         Spacer(modifier = Modifier.height(16.dp))
         
@@ -934,3 +949,152 @@ fun HomeScreen(
     }
 }
 
+@Composable
+private fun StreakSummaryCard(
+    streakData: StreakData?,
+    isStreakLoading: Boolean,
+    streakErrorMessage: String?,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.daily_streak_title),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                if (!isStreakLoading && streakErrorMessage == null && streakData != null) {
+                    val isActive = streakData.isActive
+                    val statusText = if (isActive) {
+                        stringResource(R.string.streak_status_active)
+                    } else {
+                        stringResource(R.string.streak_status_paused)
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.errorContainer
+                    ) {
+                        Text(
+                            text = statusText.uppercase(),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+            
+            when {
+                isStreakLoading -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                streakErrorMessage != null -> {
+                    Text(
+                        text = streakErrorMessage,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                streakData == null || streakData.currentStreak <= 0 -> {
+                    Text(
+                        text = stringResource(R.string.streak_not_started),
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+                else -> {
+                    val formattedStartDate = formatStreakDate(streakData.streakStartDate)
+                    val formattedLastLogDate = formatStreakDate(streakData.lastLogDate)
+                    
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.streak_days_label, streakData.currentStreak),
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center
+                        )
+                        
+                        Text(
+                            text = stringResource(R.string.streak_longest_format, streakData.longestStreak),
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    
+                    if (formattedLastLogDate != null || formattedStartDate != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            formattedLastLogDate?.let {
+                                Text(
+                                    text = stringResource(R.string.streak_last_logged_format, it),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                            
+                            if (formattedLastLogDate != null && formattedStartDate != null) {
+                                Spacer(modifier = Modifier.width(12.dp))
+                            }
+                            
+                            formattedStartDate?.let {
+                                Text(
+                                    text = stringResource(R.string.streak_since_format, it),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatStreakDate(dateString: String?): String? {
+    if (dateString.isNullOrBlank()) return null
+    return try {
+        val parser = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+        val parsedDate = parser.parse(dateString)
+        parsedDate?.let { formatter.format(it) }
+    } catch (e: Exception) {
+        null
+    }
+}
