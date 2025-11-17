@@ -50,7 +50,9 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SignInActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -339,7 +341,9 @@ private suspend fun signInWithGoogle(context: Context) {
         .build()
 
     try {
-        val result = credentialManager.getCredential(context, request)
+        val result = withContext(Dispatchers.IO) {
+            credentialManager.getCredential(context, request)
+        }
 
         val googleIdTokenCredential =
             GoogleIdTokenCredential.createFrom(result.credential.data)
