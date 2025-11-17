@@ -25,7 +25,8 @@ data class LoginResponse(
 )
 
 data class GoogleRegisterRequest(
-    val email: String
+    val email: String,
+    val idToken: String
 )
 
 data class GoogleRegisterResponse(
@@ -44,6 +45,6 @@ data class GoogleLoginResponse(
     val success: Boolean,
     val message: String,
     val userId: String? = null,
-    val idToken: String
-
+    val idToken: String,
+    val customToken: String? = null
 )

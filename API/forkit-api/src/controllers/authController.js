@@ -102,66 +102,94 @@ const loginUser = async (req, res) => {
 };
 
 
-// Create document from Google Sign Up (SSO):
- const registerGoogleUser = async (req, res) => {
-  const { email, ...otherData } = req.body;
+const buildDefaultUserProfile = (uid, email, otherData = {}) => {
+  const now = new Date(new Date().getTime() + 2 * 60 * 60 * 1000).toISOString();
+  return {
+    userId: uid,
+    email,
+    authProvider: "google",
+    streakData: {
+      currentStreak: 0,
+      longestStreak: 0,
+      lastLogDate: null,
+      streakStartDate: null,
+    },
+    goals: {
+      dailyCalories: 2000,
+      dailyWater: 2000,
+      dailySteps: 8000,
+      weeklyExercises: 3,
+    },
+    ...otherData,
+    createdAt: now,
+    goalsUpdatedAt: now,
+  };
+};
 
-  if (!email) {
-    return res.status(400).json({ message: "Email is required" });
+// Create document from Google Sign Up (SSO):
+const registerGoogleUser = async (req, res) => {
+  const { email, idToken, ...otherData } = req.body;
+
+  if (!email || !idToken) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Email and idToken are required" });
   }
 
   try {
-    // 1. Check if the user already exists in Firebase Auth
+    // 1. Verify the provided Firebase ID token
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+
+    if (decodedToken.email !== email) {
+      return res
+        .status(401)
+        .json({
+          success: false,
+          message: "Token email mismatch. Please sign in again.",
+        });
+    }
+
+    // 2. Check if the user already exists in Firebase Auth
     let userRecord;
     try {
       userRecord = await auth.getUserByEmail(email);
-      console.log(`User ${email} already exists in Firebase`);
     } catch (error) {
       if (error.code === "auth/user-not-found") {
-        // 2. Create Firebase user (without password)
         userRecord = await auth.createUser({
           email,
           emailVerified: true,
         });
-        console.log(`Created new Firebase user for ${email}`);
       } else {
         throw error;
       }
     }
 
-    const uid = userRecord.uid;
+    const uid = userRecord.uid || decodedToken.uid;
 
     // 3. Create Firestore record if not already created
     const userDocRef = db.collection("users").doc(uid);
     const userDoc = await userDocRef.get();
 
     if (!userDoc.exists) {
-      await userDocRef.set({
-        userId: uid,
-        email,
-        authProvider: "google",
-        streakData: {
-          currentStreak: 0,
-          longestStreak: 0,
-          lastLogDate: null,
-          streakStartDate: null,
-        },
-        ...otherData,
-        createdAt: new Date(
-          new Date().getTime() + 2 * 60 * 60 * 1000
-        ).toISOString(),
-      });
+      await userDocRef.set(buildDefaultUserProfile(uid, email, otherData));
     }
 
     return res.status(201).json({
+      success: true,
       message: "Google user registered successfully",
       uid,
       email,
     });
   } catch (error) {
     console.error("Error registering Google user:", error);
-    return res.status(500).json({
-      message: "Error registering Google user",
+    const statusCode =
+      error.code === "auth/argument-error" || error.code === "auth/id-token-expired"
+        ? 401
+        : 500;
+    return res.status(statusCode).json({
+      success: false,
+      message:
+        statusCode === 401 ? "Invalid or expired Google token" : "Error registering Google user",
       error: error.message,
     });
   }
@@ -172,18 +200,32 @@ const loginGoogleUser = async (req, res) => {
   const { email, idToken } = req.body;
 
   if (!email || !idToken) {
-    return res.status(400).json({ message: "Email and idToken are required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Email and idToken are required" });
   }
 
   try {
     // 1. Verify the token using Firebase Admin SDK
     const decodedToken = await admin.auth().verifyIdToken(idToken);
+
+    if (decodedToken.email !== email) {
+      return res
+        .status(401)
+        .json({
+          success: false,
+          message: "Token email mismatch. Please sign in again.",
+        });
+    }
+
     const uid = decodedToken.uid;
 
-    // 2. Confirm user exists in Firestore
-    const userDoc = await db.collection("users").doc(uid).get();
+    // 2. Ensure user exists in Firestore. Create a default profile if missing.
+    const userDocRef = db.collection("users").doc(uid);
+    const userDoc = await userDocRef.get();
+
     if (!userDoc.exists) {
-      return res.status(404).json({ message: "User not found in Firestore" });
+      await userDocRef.set(buildDefaultUserProfile(uid, email));
     }
 
     // 3. Generate a new token for session management (optional)
@@ -191,14 +233,16 @@ const loginGoogleUser = async (req, res) => {
 
     // 4. Respond with user details and token
     return res.status(200).json({
+      success: true,
       message: "Google login successful",
       userId: uid,
-      idToken, // return original token if you wish to reuse it
+      idToken,
       customToken,
     });
   } catch (error) {
     console.error("Error verifying Google ID token:", error);
     return res.status(401).json({
+      success: false,
       message: "Invalid or expired token",
       error: error.message,
     });

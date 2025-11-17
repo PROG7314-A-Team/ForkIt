@@ -384,28 +384,24 @@ private suspend fun signInWithGoogle(context: Context) {
                                             val body = response.body()
                                             Log.d("Auth", "Backend login response: $body")
 
-                                            if (body != null) {
-                                                // Optionally save locally for persistence
+                                            if (body?.success == true && body.userId != null) {
                                                 val authPreferences = AuthPreferences(context)
-                                                body.userId?.let { userId ->
-                                                    body.idToken?.let { token ->
-                                                        authPreferences.saveLoginData(userId, token, email)
-                                                    }
+                                                body.idToken?.let { token ->
+                                                    authPreferences.saveLoginData(body.userId, token, email)
                                                 }
 
                                                 Toast.makeText(context, "Welcome back! You have successfully signed in with Google", Toast.LENGTH_SHORT).show()
 
-                                                // Navigate to DashboardActivity with userId
                                                 val intent = Intent(context, DashboardActivity::class.java)
-                                                intent.putExtra("USER_ID", body?.userId)
-                                                intent.putExtra("ID_TOKEN", body?.idToken)
+                                                intent.putExtra("USER_ID", body.userId)
+                                                intent.putExtra("ID_TOKEN", body.idToken)
                                                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                                 context.startActivity(intent)
                                                 (context as? ComponentActivity)?.finish()
-
                                             } else {
-                                                Log.e("Auth", "Backend returned empty body")
-                                                Toast.makeText(context, "Unexpected backend response", Toast.LENGTH_LONG).show()
+                                                val message = body?.message ?: "Unexpected backend response"
+                                                Log.e("Auth", "Backend login unsuccessful: $message")
+                                                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                                             }
                                         } else {
                                             val errorMsg = response.errorBody()?.string() ?: "Backend login failed"

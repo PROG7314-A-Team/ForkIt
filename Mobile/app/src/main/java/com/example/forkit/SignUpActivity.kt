@@ -399,53 +399,93 @@ private suspend fun signInWithGoogle(context: Context) {
                     if (email != null) {
                         Log.d("Auth", "Firebase sign-in successful: $email")
 
-                        // Safely use lifecycleScope for coroutine
-                        (context as? ComponentActivity)?.lifecycleScope?.launch {
-                            try {
-                                // Call backend to register Google user
-                                val response = RetrofitClient.api.registerGoogleUser(
-                                    GoogleRegisterRequest(email)
-                                )
+                        user.getIdToken(true)
+                            .addOnSuccessListener { tokenResult ->
+                                val firebaseIdToken = tokenResult.token
 
-                                if (response.isSuccessful) {
-                                    val body = response.body()
-                                    val success = body?.success ?: false
-                                    val message = body?.message ?: "Account created successfully! Welcome to ForkIt"
-                                    val uid = body?.uid
-
-                                    Log.d(
-                                        "Auth",
-                                        "Google user registered successfully: success=$success, message=$message, userId=$uid"
-                                    )
-
-                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-
-                                    // Navigate to onboarding flow for new users
-                                    val intent = Intent(context, TellUsAboutYourselfActivity::class.java)
-                                    intent.putExtra("USER_ID", body?.uid)
-                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                    context.startActivity(intent)
-                                    (context as? ComponentActivity)?.finish()
-
-                                } else {
-                                    val errorMsg =
-                                        response.errorBody()?.string() ?: "Unknown registration error"
-                                    Log.e("Auth", "Google registration failed: $errorMsg")
+                                if (firebaseIdToken.isNullOrBlank()) {
                                     Toast.makeText(
                                         context,
-                                        "Registration failed: $errorMsg",
-                                        Toast.LENGTH_LONG
+                                        "Google sign-in failed. Please try again.",
+                                        Toast.LENGTH_SHORT
                                     ).show()
+                                    Log.e("Auth", "Firebase ID token is null or blank")
+                                    return@addOnSuccessListener
                                 }
-                            } catch (e: Exception) {
-                                Log.e("Auth", "Error registering Google user", e)
+
+                                // Safely use lifecycleScope for coroutine
+                                (context as? ComponentActivity)?.lifecycleScope?.launch {
+                                    try {
+                                        val response = RetrofitClient.api.registerGoogleUser(
+                                            GoogleRegisterRequest(
+                                                email = email,
+                                                idToken = firebaseIdToken
+                                            )
+                                        )
+
+                                        if (response.isSuccessful) {
+                                            val body = response.body()
+                                            val success = body?.success == true
+                                            val message = body?.message
+                                                ?: "Account created successfully! Welcome to ForkIt"
+
+                                            if (success) {
+                                                val uid = body?.uid
+                                                Log.d(
+                                                    "Auth",
+                                                    "Google user registered successfully: success=$success, message=$message, userId=$uid"
+                                                )
+
+                                                Toast.makeText(context, message, Toast.LENGTH_SHORT)
+                                                    .show()
+
+                                                // Navigate to onboarding flow for new users
+                                                val intent = Intent(
+                                                    context,
+                                                    TellUsAboutYourselfActivity::class.java
+                                                )
+                                                intent.putExtra("USER_ID", uid)
+                                                intent.flags =
+                                                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                                context.startActivity(intent)
+                                                (context as? ComponentActivity)?.finish()
+                                            } else {
+                                                Log.e("Auth", "Google registration unsuccessful: $message")
+                                                Toast.makeText(
+                                                    context,
+                                                    message,
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        } else {
+                                            val errorMsg =
+                                                response.errorBody()?.string()
+                                                    ?: "Unknown registration error"
+                                            Log.e("Auth", "Google registration failed: $errorMsg")
+                                            Toast.makeText(
+                                                context,
+                                                "Registration failed: $errorMsg",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+                                    } catch (e: Exception) {
+                                        Log.e("Auth", "Error registering Google user", e)
+                                        Toast.makeText(
+                                            context,
+                                            "Error registering Google user: ${e.localizedMessage}",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+                            }
+                            .addOnFailureListener { exception ->
+                                Log.e("Auth", "Failed to fetch Firebase ID token", exception)
                                 Toast.makeText(
                                     context,
-                                    "Error registering Google user: ${e.localizedMessage}",
-                                    Toast.LENGTH_LONG
+                                    "Failed to complete Google sign-in. Please try again.",
+                                    Toast.LENGTH_SHORT
                                 ).show()
                             }
-                        }
                     } else {
                         Toast.makeText(context, "No email found in Firebase user", Toast.LENGTH_SHORT)
                             .show()
