@@ -103,6 +103,7 @@ fun SignUpScreen(/*navController: NavController*/) {
     var message by remember { mutableStateOf("") }
 
     val firebaseAuth = remember { FirebaseAuth.getInstance() }
+    val scope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
@@ -280,13 +281,33 @@ fun SignUpScreen(/*navController: NavController*/) {
                                                 return@addOnSuccessListener
                                             }
 
-                                            context.navigateToOnboarding(
-                                                user.uid,
-                                                idToken,
-                                                trimmedEmail
-                                            )
-                                            message = "Account created successfully! Welcome to ForkIt"
-                                            isLoading = false
+                                            val activity = context as? SignUpActivity
+                                            if (activity == null) {
+                                                message = "Something went wrong. Please try again."
+                                                isLoading = false
+                                                return@addOnSuccessListener
+                                            }
+
+                                            scope.launch {
+                                                val registered = activity.ensureBackendUserProfile(
+                                                    email = trimmedEmail,
+                                                    firebaseIdToken = idToken,
+                                                    authProvider = "email"
+                                                )
+
+                                                if (registered) {
+                                                    context.navigateToOnboarding(
+                                                        user.uid,
+                                                        idToken,
+                                                        trimmedEmail
+                                                    )
+                                                    message = "Account created successfully! Welcome to ForkIt"
+                                                } else {
+                                                    message = "We couldn't finish setting up your account. Please try again."
+                                                    Firebase.auth.signOut()
+                                                }
+                                                isLoading = false
+                                            }
                                         }
                                         .addOnFailureListener { tokenError ->
                                             Log.e("Auth", "Failed to fetch ID token for new account", tokenError)
@@ -487,18 +508,17 @@ private fun SignUpActivity.completeGoogleSignUp(credential: AuthCredential) {
                     }
 
                     lifecycleScope.launch {
-                        val registrationSucceeded = ensureGoogleUserRegistered(email, firebaseIdToken)
+                        val registrationSucceeded = ensureBackendUserProfile(
+                            email = email,
+                            firebaseIdToken = firebaseIdToken,
+                            authProvider = "google"
+                        )
                         if (!registrationSucceeded) {
                             Firebase.auth.signOut()
                             return@launch
                         }
 
                         activity.navigateToOnboarding(user.uid, firebaseIdToken, email)
-                        Toast.makeText(
-                            activity,
-                            "Account created successfully! Welcome to ForkIt",
-                            Toast.LENGTH_SHORT
-                        ).show()
                     }
                 }
                 .addOnFailureListener { exception ->
@@ -508,16 +528,18 @@ private fun SignUpActivity.completeGoogleSignUp(credential: AuthCredential) {
         }
 }
 
-private suspend fun SignUpActivity.ensureGoogleUserRegistered(
+private suspend fun SignUpActivity.ensureBackendUserProfile(
     email: String,
-    firebaseIdToken: String
+    firebaseIdToken: String,
+    authProvider: String
 ): Boolean {
     return try {
         val response = withContext(Dispatchers.IO) {
             RetrofitClient.api.registerGoogleUser(
                 GoogleRegisterRequest(
                     email = email,
-                    idToken = firebaseIdToken
+                    idToken = firebaseIdToken,
+                    authProvider = authProvider
                 )
             )
         }
@@ -525,21 +547,21 @@ private suspend fun SignUpActivity.ensureGoogleUserRegistered(
         if (response.isSuccessful) {
             val body = response.body()
             if (body?.success == true) {
-                Log.d("Auth", "Google user registered in backend with uid=${body.uid}")
+                Log.d("Auth", "Backend user profile ensured with uid=${body.uid}")
                 true
             } else {
-                val message = body?.message ?: "Unable to create your ForkIt account with Google."
+                val message = body?.message ?: "Unable to create your ForkIt account."
                 Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 false
             }
         } else {
-            val errorMsg = response.errorBody()?.string() ?: "Unable to create your ForkIt account with Google."
+            val errorMsg = response.errorBody()?.string() ?: "Unable to create your ForkIt account."
             Log.e("Auth", "registerGoogleUser failed: $errorMsg")
             Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()
             false
         }
     } catch (e: Exception) {
-        Log.e("Auth", "Exception while registering Google user", e)
+        Log.e("Auth", "Exception while ensuring backend user profile", e)
         Toast.makeText(
             this,
             "We couldn't finish creating your ForkIt account. Please try again.",
