@@ -3,9 +3,9 @@ package com.example.forkit.ui.meals
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -42,7 +42,7 @@ import java.util.*
 private const val TAG = "MealAdjustmentActivity"
 
 @OptIn(ExperimentalMaterial3Api::class)
-class MealAdjustmentActivity : ComponentActivity() {
+class MealAdjustmentActivity : AppCompatActivity() {
     
     private lateinit var mealLogRepository: MealLogRepository
     private var mealTemplate: MealLogEntity? = null

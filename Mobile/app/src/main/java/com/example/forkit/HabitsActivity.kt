@@ -2,9 +2,9 @@ package com.example.forkit
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
@@ -40,11 +40,13 @@ import androidx.compose.ui.res.stringResource
 import com.example.forkit.services.HabitNotificationScheduler
 import com.example.forkit.services.HabitNotificationHelper
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
 import com.example.forkit.data.repository.HabitRepository
 import com.example.forkit.data.local.AppDatabase
 import com.example.forkit.utils.NetworkConnectivityManager
+import com.example.forkit.utils.ConnectivityObserver
 
-class HabitsActivity : ComponentActivity() {
+class HabitsActivity : AppCompatActivity() {
     private var refreshTrigger by mutableStateOf(0)
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -116,7 +118,13 @@ fun HabitsScreen(
             networkManager = networkManager
         )
     }
-    val isOnline = remember { networkManager.isOnline() }
+    var isOnline by remember { mutableStateOf(networkManager.isOnline()) }
+    
+    LaunchedEffect(userId, refreshTrigger) {
+        if (userId.isNotEmpty() && isOnline) {
+            repository.refreshHabits(userId)
+        }
+    }
     
     // Observe habits from repository using LaunchedEffect
     LaunchedEffect(userId) {
@@ -134,6 +142,18 @@ fun HabitsScreen(
                 )
             }
             android.util.Log.d("HabitsActivity", "Successfully loaded ${habits.size} habits from repository")
+            isLoading = false
+        }
+    }
+    
+    LaunchedEffect(Unit) {
+        ConnectivityObserver.initialize(context.applicationContext)
+        ConnectivityObserver.isOnline.collectLatest { online ->
+            val wasOffline = !isOnline
+            isOnline = online
+            if (online && wasOffline && userId.isNotEmpty()) {
+                repository.refreshHabits(userId)
+            }
         }
     }
     

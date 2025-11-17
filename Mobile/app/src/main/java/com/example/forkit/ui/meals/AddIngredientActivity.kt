@@ -5,10 +5,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -89,7 +89,7 @@ import com.example.forkit.data.models.MealIngredient
 
 
 private const val TAG= "MealsDebug"
-class AddIngredientActivity : ComponentActivity() {
+class AddIngredientActivity : AppCompatActivity() {
 
     private var scannedFoodState by mutableStateOf<Food?>(null)
 
@@ -321,9 +321,9 @@ fun AddIngredientScreen(
 
             // Apply nutrition and macro details
             calories = scannedFood.calories.toInt().toString()
-            carbs = String.format("%.1f", scannedFood.nutrients.carbs)
-            fat = String.format("%.1f", scannedFood.nutrients.fat)
-            protein = String.format("%.1f", scannedFood.nutrients.protein)
+            carbs = String.format(Locale.US, "%.1f", scannedFood.nutrients.carbs)
+            fat = String.format(Locale.US, "%.1f", scannedFood.nutrients.fat)
+            protein = String.format(Locale.US, "%.1f", scannedFood.nutrients.protein)
 
             // Store base values for future scaling
             baseCaloriesPer100g = scannedFood.calories
@@ -350,9 +350,9 @@ fun AddIngredientScreen(
             val scaleFactor = newServingSize / baseServingQuantity
             
             calories = (baseCaloriesPer100g * scaleFactor).toInt().toString()
-            carbs = String.format("%.1f", baseCarbsPer100g * scaleFactor)
-            fat = String.format("%.1f", baseFatPer100g * scaleFactor)
-            protein = String.format("%.1f", baseProteinPer100g * scaleFactor)
+            carbs = String.format(Locale.US, "%.1f", baseCarbsPer100g * scaleFactor)
+            fat = String.format(Locale.US, "%.1f", baseFatPer100g * scaleFactor)
+            protein = String.format(Locale.US, "%.1f", baseProteinPer100g * scaleFactor)
             
             Log.d(TAG, "[AddIngredientScreen] -> Recalculated nutrition: ${servingSize}${measuringUnit} -> ${calories}kcal")
         }
@@ -379,9 +379,9 @@ fun AddIngredientScreen(
             }
 
             calories = (food.calories ?: 0.0).toInt().toString()
-            carbs = String.format("%.1f", food.nutrients.carbs)
-            fat = String.format("%.1f", food.nutrients.fat)
-            protein = String.format("%.1f", food.nutrients.protein)
+            carbs = String.format(Locale.US, "%.1f", food.nutrients.carbs)
+            fat = String.format(Locale.US, "%.1f", food.nutrients.fat)
+            protein = String.format(Locale.US, "%.1f", food.nutrients.protein)
 
             baseCaloriesPer100g = food.calories ?: 0.0
             baseCarbsPer100g = food.nutrients.carbs

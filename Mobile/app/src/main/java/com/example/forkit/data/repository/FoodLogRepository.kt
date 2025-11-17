@@ -5,9 +5,13 @@ import com.example.forkit.data.ApiService
 import com.example.forkit.data.local.dao.FoodLogDao
 import com.example.forkit.data.local.entities.FoodLogEntity
 import com.example.forkit.data.models.CreateFoodLogRequest
+import com.example.forkit.data.models.FoodLog
 import com.example.forkit.utils.NetworkConnectivityManager
+import com.example.forkit.utils.TimeUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.IOException
+import java.util.UUID
 
 class FoodLogRepository(
     private val apiService: ApiService,
@@ -50,7 +54,13 @@ class FoodLogRepository(
                 isSynced = false
             )
             
-            // Always try API first (online-first). Connectivity checks can be inaccurate; rely on result.
+            val currentlyOnline = networkManager.isOnline()
+            if (!currentlyOnline) {
+                foodLogDao.insert(foodLogEntity)
+                Log.i("FoodLogRepository", "Device offline, saved food log locally for later sync")
+                return@withContext Result.success("offline")
+            }
+
             try {
                 val request = CreateFoodLogRequest(
                     userId = userId,
@@ -69,31 +79,28 @@ class FoodLogRepository(
                 val response = apiService.createFoodLog(request)
 
                 if (response.isSuccessful && response.body()?.success == true) {
-                    val serverId = response.body()?.data?.id
-
-                    // Save to local DB with sync flag
-                    val syncedEntity = foodLogEntity.copy(
-                        serverId = serverId,
+                    val serverLog = response.body()?.data
+                    val syncedEntity = serverLog?.toEntity(foodLogEntity.localId) ?: foodLogEntity.copy(
+                        serverId = response.body()?.data?.id,
                         isSynced = true
                     )
-                    foodLogDao.insert(syncedEntity)
+                    foodLogDao.insert(syncedEntity.copy(isSynced = true))
 
                     Log.d("FoodLogRepository", "Food log created online and saved locally")
-                    return@withContext Result.success(serverId ?: "")
+                    return@withContext Result.success(syncedEntity.serverId ?: "")
                 } else {
-                    // API call failed, save locally as unsynced
-                    foodLogDao.insert(foodLogEntity)
-                    Log.w(
-                        "FoodLogRepository",
-                        "API createFoodLog failed (${response.code()} ${response.message()}), saved offline"
-                    )
-                    return@withContext Result.success("offline")
+                    val message = response.errorBody()?.string() ?: response.message()
+                    Log.w("FoodLogRepository", "API createFoodLog failed (${response.code()}): $message")
+                    return@withContext Result.failure(Exception(message))
                 }
-            } catch (e: Exception) {
+            } catch (e: IOException) {
                 // Network or serialization error, save locally as unsynced
                 foodLogDao.insert(foodLogEntity)
-                Log.e("FoodLogRepository", "API error, saved offline: ${e.message}", e)
+                Log.e("FoodLogRepository", "Network error, saved offline: ${e.message}", e)
                 return@withContext Result.success("offline")
+            } catch (e: Exception) {
+                Log.e("FoodLogRepository", "API error creating food log: ${e.message}", e)
+                return@withContext Result.failure(e)
             }
         } catch (e: Exception) {
             Log.e("FoodLogRepository", "Error creating food log: ${e.message}", e)
@@ -167,6 +174,54 @@ class FoodLogRepository(
      */
     suspend fun markAsSynced(localId: String, serverId: String) = withContext(Dispatchers.IO) {
         foodLogDao.markAsSynced(localId, serverId)
+    }
+
+    /**
+     * Refresh local cache from the server when connectivity is available.
+     */
+    suspend fun refreshUserLogs(userId: String) = withContext(Dispatchers.IO) {
+        if (!networkManager.isOnline()) return@withContext
+        try {
+            val response = apiService.getFoodLogs(userId)
+            if (response.isSuccessful && response.body()?.success == true) {
+                val remoteLogs = response.body()?.data.orEmpty()
+                val syncedEntities = remoteLogs.map { it.toEntity() }
+                if (syncedEntities.isNotEmpty()) {
+                    val unsynced = foodLogDao.getUnsyncedLogs()
+                    foodLogDao.insertAll(syncedEntities)
+                    unsynced.forEach { foodLogDao.insert(it) }
+                }
+                Log.d("FoodLogRepository", "Refreshed ${syncedEntities.size} food logs from server")
+            } else {
+                Log.w("FoodLogRepository", "Failed to refresh food logs: ${response.message()}")
+            }
+        } catch (e: Exception) {
+            Log.w("FoodLogRepository", "Error refreshing food logs: ${e.message}")
+        }
+    }
+
+    private fun FoodLog.toEntity(existingLocalId: String? = null): FoodLogEntity {
+        val localIdentifier = existingLocalId
+            ?: localId.takeIf { it.isNotBlank() }
+            ?: UUID.randomUUID().toString()
+
+        return FoodLogEntity(
+            localId = localIdentifier,
+            serverId = id,
+            userId = userId,
+            foodName = foodName,
+            servingSize = servingSize,
+            measuringUnit = measuringUnit,
+            date = date,
+            mealType = mealType,
+            calories = calories,
+            carbs = carbs,
+            fat = fat,
+            protein = protein,
+            foodId = foodId,
+            isSynced = true,
+            createdAt = TimeUtils.parseIsoToMillis(createdAt)
+        )
     }
 }
 

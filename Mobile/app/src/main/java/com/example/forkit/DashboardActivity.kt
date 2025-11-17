@@ -6,11 +6,11 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.DisposableEffect
 import androidx.core.content.ContextCompat
 import androidx.health.connect.client.PermissionController
@@ -63,10 +63,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.forkit.data.RetrofitClient
+import com.example.forkit.data.models.StreakData
 import com.example.forkit.ui.theme.ForkItTheme
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.collectLatest
 
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.foundation.lazy.LazyColumn
@@ -79,12 +81,14 @@ import com.example.forkit.ui.screens.MealsScreen
 import com.example.forkit.ui.screens.HabitsScreen
 import com.example.forkit.ui.screens.CoachScreen
 import com.example.forkit.utils.NetworkConnectivityManager
+import com.example.forkit.utils.ConnectivityObserver
 import com.example.forkit.sync.SyncManager
+import com.example.forkit.data.repository.HabitRepository
 
 
 
 
-class DashboardActivity : ComponentActivity() {
+class DashboardActivity : AppCompatActivity() {
     private var refreshCallback: (() -> Unit)? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -164,6 +168,13 @@ fun DashboardScreen(
             networkManager = networkManager
         )
     }
+    val habitRepository = remember {
+        HabitRepository(
+            apiService = com.example.forkit.data.RetrofitClient.api,
+            habitDao = database.habitDao(),
+            networkManager = networkManager
+        )
+    }
     
     // Observe connectivity changes - moved after refreshData definition
     
@@ -182,6 +193,9 @@ fun DashboardScreen(
     var isRefreshing by remember { mutableStateOf(false) }
     var lastRefreshAt by remember { mutableStateOf(0L) }
     var errorMessage by remember { mutableStateOf("") }
+    var streakData by remember { mutableStateOf<StreakData?>(null) }
+    var isStreakLoading by remember { mutableStateOf(false) }
+    var streakErrorMessage by remember { mutableStateOf<String?>(null) }
     
     // User goals - fetched from API
     var dailyGoal by remember { mutableStateOf(2000) }
@@ -318,8 +332,23 @@ fun DashboardScreen(
                     // Refresh step count
                     currentSteps = stepTracker?.fetchTodaySteps() ?: 0
                     
+                    if (isOnline) {
+                        try {
+                            android.util.Log.d("DashboardActivity", "Online - refreshing local caches from server")
+                            foodLogRepository.refreshUserLogs(userId)
+                            mealLogRepository.refreshUserMeals(userId)
+                            waterLogRepository.refreshUserWaterLogs(userId)
+                            exerciseLogRepository.refreshUserExerciseLogs(userId)
+                            habitRepository.refreshHabits(userId)
+                        } catch (e: Exception) {
+                            android.util.Log.w("DashboardActivity", "Cache refresh failed: ${e.message}", e)
+                        }
+                    }
+                    
                     // **OPTIMIZED: Fetch all data in parallel using async**
                     android.util.Log.d("DashboardActivity", "Starting parallel API calls...")
+                    isStreakLoading = true
+                    streakErrorMessage = null
                     val startTime = System.currentTimeMillis()
                     
                     // Launch all API calls simultaneously
@@ -378,6 +407,21 @@ fun DashboardScreen(
                         }
                     }
                     
+                    val streakDeferred = if (isOnline) {
+                        async {
+                            try {
+                                com.example.forkit.data.RetrofitClient.api.getUserStreak(userId)
+                            } catch (e: Exception) {
+                                android.util.Log.e("DashboardActivity", "Error fetching streak: ${e.message}", e)
+                                null
+                            }
+                        }
+                    } else {
+                        streakErrorMessage = context.getString(R.string.streak_offline_message)
+                        isStreakLoading = false
+                        null
+                    }
+                    
                     // Wait for goals API call to complete
                     val goalsResponse = goalsDeferred.await()
                     
@@ -394,6 +438,23 @@ fun DashboardScreen(
                             weeklyExercisesGoal = goals?.weeklyExercises ?: 3
                             android.util.Log.d("DashboardActivity", "✅ Goals loaded: Calories=$dailyGoal, Water=$dailyWaterGoal ml")
                         }
+                    }
+                    
+                    streakDeferred?.await()?.let { response ->
+                        if (response.isSuccessful) {
+                            streakData = response.body()?.data
+                            streakErrorMessage = null
+                        } else {
+                            streakErrorMessage = response.body()?.message
+                                ?: response.message()
+                                ?: context.getString(R.string.streak_error_generic)
+                        }
+                        isStreakLoading = false
+                    } ?: run {
+                        if (isOnline) {
+                            streakErrorMessage = context.getString(R.string.streak_error_generic)
+                        }
+                        isStreakLoading = false
                     }
 
 // ─────────────────────────────────────────────
@@ -557,16 +618,14 @@ fun DashboardScreen(
     
     // Observe connectivity changes
     LaunchedEffect(Unit) {
-        networkManager.observeConnectivity().collect { online ->
+        ConnectivityObserver.initialize(context.applicationContext)
+        syncManager.startConnectivityListener()
+        ConnectivityObserver.isOnline.collectLatest { online ->
             val wasOffline = !isOnline
             isOnline = online
-            
-            // Trigger sync when coming back online
             if (online && wasOffline) {
-                Log.d("DashboardActivity", "Device came online, triggering sync")
-                syncManager.scheduleSync()
-                // Refresh data after a short delay to get synced data
-                kotlinx.coroutines.delay(2000)
+                Log.d("DashboardActivity", "Connectivity restored - forcing sync and refresh")
+                syncManager.triggerImmediateSync()
                 maybeRefresh()
             }
         }
@@ -712,6 +771,9 @@ fun DashboardScreen(
                             isOverBudget = isOverBudget,
                             isWithinBudget = isWithinBudget,
                             animatedProgress = animatedProgress,
+                            streakData = streakData,
+                            isStreakLoading = isStreakLoading,
+                            streakErrorMessage = streakErrorMessage,
                             refreshData = refreshData,
                             onMealDelete = { meal -> 
                                 scope.launch {
@@ -1022,7 +1084,7 @@ fun CalorieWheel(
                 Text(
                     text = "Today's Calories",
                     fontSize = 12.sp,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
             }
@@ -1057,13 +1119,13 @@ fun MacronutrientBreakdown(
                     text = "Carbs",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Text(
                 text = "${carbsCalories}cal (${if (totalCalories > 0) ((carbsCalories * 100) / totalCalories) else 0}%)",
                 fontSize = 14.sp,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -1084,13 +1146,13 @@ fun MacronutrientBreakdown(
                     text = "Protein",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Text(
                 text = "${proteinCalories}cal (${if (totalCalories > 0) ((proteinCalories * 100) / totalCalories) else 0}%)",
                 fontSize = 14.sp,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -1111,13 +1173,13 @@ fun MacronutrientBreakdown(
                     text = "Fat",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Text(
                 text = "${fatCalories}cal (${if (totalCalories > 0) ((fatCalories * 100) / totalCalories) else 0}%)",
                 fontSize = 14.sp,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

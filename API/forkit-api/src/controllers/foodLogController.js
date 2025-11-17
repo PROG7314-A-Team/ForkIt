@@ -3,6 +3,7 @@ const CalorieCalculatorService = require("../services/calorieCalculatorService")
 const StreakService = require("../services/streakService");
 
 const foodLogService = new FirebaseService("foodLogs");
+const mealLogService = new FirebaseService("mealLogs");
 const calorieCalculator = new CalorieCalculatorService();
 const streakService = new StreakService();
 
@@ -488,12 +489,46 @@ exports.getCalorieTrends = async (req, res) => {
       { field: "date", operator: "<=", value: endDate },
     ];
 
-    const foodLogs = await foodLogService.query(filters, "date", "asc");
+    const [foodLogs, mealLogs] = await Promise.all([
+      foodLogService.query(filters, "date", "asc"),
+      mealLogService.query(
+        [
+          { field: "userId", operator: "==", value: userId },
+          { field: "date", operator: ">=", value: startDate },
+          { field: "date", operator: "<=", value: endDate },
+        ],
+        "date",
+        "asc"
+      ),
+    ]);
+
+    // Normalize logs to a common structure
+    const normalizedLogs = [
+      ...foodLogs.map((log) => ({
+        date: log.date,
+        calories: parseFloat(log.calories) || 0,
+        carbs: parseFloat(log.carbs) || 0,
+        fat: parseFloat(log.fat) || 0,
+        protein: parseFloat(log.protein) || 0,
+      })),
+      ...mealLogs
+        .filter((log) => !log.isTemplate && log.date)
+        .map((log) => ({
+          date: log.date,
+          calories: parseFloat(log.totalCalories) || 0,
+          carbs: parseFloat(log.totalCarbs) || 0,
+          fat: parseFloat(log.totalFat) || 0,
+          protein: parseFloat(log.totalProtein) || 0,
+        })),
+    ];
 
     // Group by day, week, or month
     const trends = {};
 
-    foodLogs.forEach((log) => {
+    normalizedLogs.forEach((log) => {
+      if (!log.date) {
+        return;
+      }
       let groupKey;
       const logDate = new Date(log.date);
 

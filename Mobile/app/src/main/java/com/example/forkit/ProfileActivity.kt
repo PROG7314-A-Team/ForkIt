@@ -2,7 +2,6 @@ package com.example.forkit
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.BackHandler
@@ -40,11 +39,11 @@ import com.example.forkit.utils.AuthPreferences
 import androidx.compose.ui.res.stringResource
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import java.util.concurrent.Executor
-import androidx.fragment.app.FragmentActivity
 
-class ProfileActivity : FragmentActivity() {
+class ProfileActivity : AppCompatActivity() {
     
     private val appSettingsLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -186,7 +185,7 @@ fun ProfileScreen(
                         when (option.type) {
                             ProfileOptionType.ACCOUNT -> {
                                 // Require biometric authentication before navigating to Account
-                                val activity = (context as? FragmentActivity)
+                                val activity = (context as? AppCompatActivity)
                                 if (activity != null) {
                                     val biometricManager = BiometricManager.from(activity)
                                     val canAuth = biometricManager.canAuthenticate(
@@ -274,7 +273,7 @@ fun ProfileScreen(
                         val intent = Intent(context, LoginActivity::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         context.startActivity(intent)
-                        (context as? ComponentActivity)?.finish()
+                        (context as? AppCompatActivity)?.finish()
                     },
                     modifier = Modifier
                         .fillMaxWidth()

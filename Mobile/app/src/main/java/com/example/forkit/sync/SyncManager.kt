@@ -3,21 +3,30 @@ package com.example.forkit.sync
 import android.content.Context
 import android.util.Log
 import androidx.work.*
+import com.example.forkit.utils.ConnectivityObserver
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 class SyncManager(private val context: Context) {
     
     private val TAG = "SyncManager"
     private val workManager = WorkManager.getInstance(context)
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var connectivityJob: Job? = null
     
     companion object {
         private const val SYNC_WORK_NAME = "forkit_data_sync"
         private const val PERIODIC_SYNC_WORK_NAME = "forkit_periodic_sync"
     }
     
-    /**
-     * Schedule a one-time sync when network is available
-     */
+
+     //Schedule a one-time sync when network is available
+
     fun scheduleSync() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -41,9 +50,9 @@ class SyncManager(private val context: Context) {
         Log.d(TAG, "Sync work scheduled")
     }
     
-    /**
-     * Schedule periodic sync (every 15 minutes when connected)
-     */
+
+     //Schedule periodic sync (every 15 minutes when connected)
+
     fun schedulePeriodicSync() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -69,9 +78,8 @@ class SyncManager(private val context: Context) {
         Log.d(TAG, "Periodic sync scheduled (every 15 minutes)")
     }
     
-    /**
-     * Trigger immediate sync
-     */
+
+     //Trigger immediate sync
     fun triggerImmediateSync() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -87,21 +95,45 @@ class SyncManager(private val context: Context) {
         Log.d(TAG, "Immediate sync triggered")
     }
     
-    /**
-     * Cancel all sync work
-     */
+
+      //Cancel all sync work
+
     fun cancelSync() {
         workManager.cancelUniqueWork(SYNC_WORK_NAME)
         workManager.cancelUniqueWork(PERIODIC_SYNC_WORK_NAME)
         Log.d(TAG, "All sync work cancelled")
     }
     
-    /**
-     * Check if sync is in progress
-     */
+
+     //Check if sync is in progress
+
     fun isSyncing(): Boolean {
         val workInfos = workManager.getWorkInfosForUniqueWork(SYNC_WORK_NAME).get()
         return workInfos.any { it.state == WorkInfo.State.RUNNING }
+    }
+
+    /**
+     * Begin observing connectivity changes and trigger sync automatically when coming online.
+     */
+    fun startConnectivityListener() {
+        ConnectivityObserver.initialize(context.applicationContext)
+        if (connectivityJob != null) return
+
+        connectivityJob = scope.launch {
+            var wasOnline = ConnectivityObserver.isOnline.value
+            ConnectivityObserver.isOnline.collectLatest { isOnline ->
+                if (isOnline && !wasOnline) {
+                    Log.d(TAG, "Connectivity restored – scheduling sync")
+                    scheduleSync()
+                }
+                wasOnline = isOnline
+            }
+        }
+    }
+
+    fun stopConnectivityListener() {
+        connectivityJob?.cancel()
+        connectivityJob = null
     }
 }
 

@@ -1,4 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="daily_streak_title">Daaglikse reeks</string>
+    <string name="streak_days_label">%1$d-dag reeks</string>
+    <string name="streak_longest_format">Beste: %1$d dae</string>
+    <string name="streak_since_format">Begin %1$s</string>
+    <string name="streak_last_logged_format">Laaste inskrywing %1$s</string>
+    <string name="streak_not_started">Teken jou maaltye konsekwent aan om \'n reeks te begin.</string>
+    <string name="streak_error_generic">Kan nie nou reeksdata laai nie.</string>
+    <string name="streak_offline_message">Reeksdata is nie vanlyn beskikbaar nie.</string>
+    <string name="streak_status_active">Aktief</string>
+    <string name="streak_status_paused">Gepouseer</string>
     <!-- App Name & Tagline -->
     <string name="app_name">ForkIt</string>
     <string name="app_tagline">Vat jou kalorie-opvolging na die volgende vlak</string>

@@ -6,8 +6,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -40,7 +40,7 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "MealDetailActivity"
 
-class MealDetailActivity : ComponentActivity() {
+class MealDetailActivity : AppCompatActivity() {
     
     private lateinit var mealLogRepository: MealLogRepository
     

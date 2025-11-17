@@ -6,11 +6,16 @@ import com.example.forkit.data.local.dao.HabitDao
 import com.example.forkit.data.local.entities.HabitEntity
 import com.example.forkit.data.models.CreateHabitApiRequest
 import com.example.forkit.data.models.CreateHabitRequest
+import com.example.forkit.data.models.Habit
+import com.example.forkit.data.models.HabitsResponse
 import com.example.forkit.data.models.UpdateHabitRequest
 import com.example.forkit.utils.NetworkConnectivityManager
+import com.example.forkit.utils.TimeUtils
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
+import java.io.IOException
+import java.util.UUID
 
 class HabitRepository(
     private val apiService: ApiService,
@@ -44,7 +49,13 @@ class HabitRepository(
                 isSynced = false
             )
             
-            // Online-first
+            val currentlyOnline = networkManager.isOnline()
+            if (!currentlyOnline) {
+                habitDao.insert(habitEntity)
+                Log.i("HabitRepository", "Device offline, saved habit locally for later sync")
+                return@withContext Result.success("offline")
+            }
+
             try {
                 val habitRequest = CreateHabitRequest(
                     title = title,
@@ -62,28 +73,27 @@ class HabitRepository(
                 val response = apiService.createHabit(request)
 
                 if (response.isSuccessful && response.body()?.success == true) {
-                    val serverId = response.body()?.data?.id
-
-                    val syncedEntity = habitEntity.copy(
-                        serverId = serverId,
+                    val serverHabit = response.body()?.data
+                    val syncedEntity = serverHabit?.toEntity(userId, habitEntity.localId) ?: habitEntity.copy(
+                        serverId = response.body()?.data?.id,
                         isSynced = true
                     )
-                    habitDao.insert(syncedEntity)
+                    habitDao.insert(syncedEntity.copy(isSynced = true))
 
                     Log.d("HabitRepository", "Habit created online and saved locally")
-                    return@withContext Result.success(serverId ?: "")
+                    return@withContext Result.success(syncedEntity.serverId ?: "")
                 } else {
-                    habitDao.insert(habitEntity)
-                    Log.w(
-                        "HabitRepository",
-                        "API createHabit failed (${response.code()} ${response.message()}), saved offline"
-                    )
-                    return@withContext Result.success("offline")
+                    val message = response.errorBody()?.string() ?: response.message()
+                    Log.w("HabitRepository", "API createHabit failed (${response.code()}): $message")
+                    return@withContext Result.failure(Exception(message))
                 }
-            } catch (e: Exception) {
+            } catch (e: IOException) {
                 habitDao.insert(habitEntity)
-                Log.e("HabitRepository", "API error, saved offline: ${e.message}", e)
+                Log.e("HabitRepository", "Network error, saved offline: ${e.message}", e)
                 return@withContext Result.success("offline")
+            } catch (e: Exception) {
+                Log.e("HabitRepository", "API error creating habit: ${e.message}", e)
+                return@withContext Result.failure(e)
             }
         } catch (e: Exception) {
             Log.e("HabitRepository", "Error creating habit: ${e.message}", e)
@@ -201,6 +211,63 @@ class HabitRepository(
      */
     suspend fun markAsSynced(localId: String, serverId: String) = withContext(Dispatchers.IO) {
         habitDao.markAsSynced(localId, serverId)
+    }
+
+    suspend fun refreshHabits(userId: String) = withContext(Dispatchers.IO) {
+        if (!networkManager.isOnline()) return@withContext
+        try {
+            val daily = apiService.getDailyHabits(userId)
+            val weekly = apiService.getWeeklyHabits(userId)
+            val monthly = apiService.getMonthlyHabits(userId)
+
+            val remoteHabits = buildList {
+                addAll(extractHabits(daily))
+                addAll(extractHabits(weekly))
+                addAll(extractHabits(monthly))
+            }
+
+            if (remoteHabits.isNotEmpty()) {
+                val unsynced = habitDao.getUnsyncedHabits()
+                remoteHabits.forEach { habit ->
+                    val existing = habitDao.getByServerId(habit.id)
+                    val localId = existing?.localId ?: UUID.randomUUID().toString()
+                    habitDao.insert(habit.toEntity(userId, localId).copy(isSynced = true))
+                }
+                unsynced.forEach { habitDao.insert(it) }
+                Log.d("HabitRepository", "Refreshed ${remoteHabits.size} habits from server")
+            }
+        } catch (e: Exception) {
+            Log.w("HabitRepository", "Error refreshing habits: ${e.message}")
+        }
+    }
+
+    private fun extractHabits(response: retrofit2.Response<HabitsResponse>): List<Habit> {
+        return if (response.isSuccessful && response.body()?.success == true) {
+            response.body()?.data.orEmpty()
+        } else {
+            emptyList()
+        }
+    }
+
+    private fun Habit.toEntity(userId: String, localId: String): HabitEntity {
+        return HabitEntity(
+            localId = localId,
+            serverId = id,
+            userId = userId,
+            title = title,
+            description = description,
+            frequency = frequency,
+            selectedDays = selectedDays?.joinToString(","),
+            dayOfMonth = dayOfMonth,
+            isCompleted = isCompleted,
+            completedAt = completedAt,
+            notificationsEnabled = false,
+            notificationTime = null,
+            isSynced = true,
+            isDeleted = false,
+            createdAt = TimeUtils.parseIsoToMillis(createdAt),
+            updatedAt = TimeUtils.parseIsoToMillis(completedAt ?: createdAt)
+        )
     }
 }
 

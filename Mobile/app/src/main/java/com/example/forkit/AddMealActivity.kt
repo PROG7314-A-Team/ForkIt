@@ -4,9 +4,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -42,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -49,9 +50,10 @@ import com.example.forkit.data.repository.FoodLogRepository
 import com.example.forkit.data.repository.MealLogRepository
 import com.example.forkit.data.local.AppDatabase
 import com.example.forkit.data.local.entities.MealIngredient
+import com.example.forkit.utils.ConnectivityObserver
 import com.example.forkit.utils.NetworkConnectivityManager
 
-class AddMealActivity : ComponentActivity() {
+class AddMealActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "AddMealActivity"
     }
@@ -185,7 +187,14 @@ fun AddMealScreen(
             networkManager = networkManager
         )
     }
-    val isOnline = remember { networkManager.isOnline() }
+    var isOnline by remember { mutableStateOf(networkManager.isOnline()) }
+
+    LaunchedEffect(Unit) {
+        ConnectivityObserver.initialize(context.applicationContext)
+        ConnectivityObserver.isOnline.collectLatest { status ->
+            isOnline = status
+        }
+    }
 
     // Handle scanned food when it changes
     LaunchedEffect(scannedFood) {
@@ -216,16 +225,16 @@ fun AddMealScreen(
                 // Use per-serving nutrients if available, otherwise scale from per 100g
                 if (food.nutrientsPerServing != null && food.caloriesPerServing != null) {
                     calories = food.caloriesPerServing.toInt().toString()
-                    carbs = String.format("%.1f", food.nutrientsPerServing.carbs)
-                    fat = String.format("%.1f", food.nutrientsPerServing.fat)
-                    protein = String.format("%.1f", food.nutrientsPerServing.protein)
+                    carbs = String.format(Locale.US, "%.1f", food.nutrientsPerServing.carbs)
+                    fat = String.format(Locale.US, "%.1f", food.nutrientsPerServing.fat)
+                    protein = String.format(Locale.US, "%.1f", food.nutrientsPerServing.protein)
                 } else {
                     // Scale from per 100g values
                     val scale = quantity / 100.0
                     calories = (food.calories * scale).toInt().toString()
-                    carbs = String.format("%.1f", food.nutrients.carbs * scale)
-                    fat = String.format("%.1f", food.nutrients.fat * scale)
-                    protein = String.format("%.1f", food.nutrients.protein * scale)
+                    carbs = String.format(Locale.US, "%.1f", food.nutrients.carbs * scale)
+                    fat = String.format(Locale.US, "%.1f", food.nutrients.fat * scale)
+                    protein = String.format(Locale.US, "%.1f", food.nutrients.protein * scale)
                 }
             } else {
                 // No serving size info - use per 100g as default
@@ -234,9 +243,9 @@ fun AddMealScreen(
                 baseServingQuantity = 100.0
                 unitCategory = "weight" // Default to weight
                 calories = food.calories.toInt().toString()
-                carbs = String.format("%.1f", food.nutrients.carbs)
-                fat = String.format("%.1f", food.nutrients.fat)
-                protein = String.format("%.1f", food.nutrients.protein)
+                carbs = String.format(Locale.US, "%.1f", food.nutrients.carbs)
+                fat = String.format(Locale.US, "%.1f", food.nutrients.fat)
+                protein = String.format(Locale.US, "%.1f", food.nutrients.protein)
             }
 
             // Store base values for scaling
@@ -281,16 +290,16 @@ fun AddMealScreen(
                 // Use per-serving nutrients if available
                 if (food.nutrientsPerServing != null && food.caloriesPerServing != null) {
                     calories = food.caloriesPerServing.toInt().toString()
-                    carbs = String.format("%.1f", food.nutrientsPerServing.carbs)
-                    fat = String.format("%.1f", food.nutrientsPerServing.fat)
-                    protein = String.format("%.1f", food.nutrientsPerServing.protein)
+                    carbs = String.format(Locale.US, "%.1f", food.nutrientsPerServing.carbs)
+                    fat = String.format(Locale.US, "%.1f", food.nutrientsPerServing.fat)
+                    protein = String.format(Locale.US, "%.1f", food.nutrientsPerServing.protein)
                 } else {
                     // Scale from per 100g values
                     val scale = quantity / 100.0
                     calories = ((food.calories ?: 0.0) * scale).toInt().toString()
-                    carbs = String.format("%.1f", food.nutrients.carbs * scale)
-                    fat = String.format("%.1f", food.nutrients.fat * scale)
-                    protein = String.format("%.1f", food.nutrients.protein * scale)
+                    carbs = String.format(Locale.US, "%.1f", food.nutrients.carbs * scale)
+                    fat = String.format(Locale.US, "%.1f", food.nutrients.fat * scale)
+                    protein = String.format(Locale.US, "%.1f", food.nutrients.protein * scale)
                 }
             } else {
                 // No serving size info - use per 100g as default
@@ -299,9 +308,9 @@ fun AddMealScreen(
                 baseServingQuantity = 100.0
                 unitCategory = "weight" // Default to weight
                 calories = (food.calories ?: 0.0).toInt().toString()
-                carbs = String.format("%.1f", food.nutrients.carbs)
-                fat = String.format("%.1f", food.nutrients.fat)
-                protein = String.format("%.1f", food.nutrients.protein)
+                carbs = String.format(Locale.US, "%.1f", food.nutrients.carbs)
+                fat = String.format(Locale.US, "%.1f", food.nutrients.fat)
+                protein = String.format(Locale.US, "%.1f", food.nutrients.protein)
             }
 
             // Store base values for scaling
@@ -374,9 +383,9 @@ fun AddMealScreen(
                         else -> newQuantity / 100.0          // Already in base unit (g or ml)
                     }
                     calories = (baseCaloriesPer100g * scale).toInt().toString()
-                    carbs = String.format("%.1f", baseCarbsPer100g * scale)
-                    fat = String.format("%.1f", baseFatPer100g * scale)
-                    protein = String.format("%.1f", baseProteinPer100g * scale)
+                    carbs = String.format(Locale.US, "%.1f", baseCarbsPer100g * scale)
+                    fat = String.format(Locale.US, "%.1f", baseFatPer100g * scale)
+                    protein = String.format(Locale.US, "%.1f", baseProteinPer100g * scale)
                 }
             },
             onMeasuringUnitChange = { newUnit ->
@@ -402,7 +411,7 @@ fun AddMealScreen(
 
                 // Update serving size with converted value if conversion happened
                 if (convertedValue != currentValue && convertedValue > 0) {
-                    servingSize = String.format("%.2f", convertedValue).trimEnd('0').trimEnd('.')
+                    servingSize = String.format(Locale.US, "%.2f", convertedValue).trimEnd('0').trimEnd('.')
 
                     // Recalculate nutrients with the converted value
                     if (baseCaloriesPer100g > 0) {
@@ -412,9 +421,9 @@ fun AddMealScreen(
                             else -> convertedValue / 100.0
                         }
                         calories = (baseCaloriesPer100g * scale).toInt().toString()
-                        carbs = String.format("%.1f", baseCarbsPer100g * scale)
-                        fat = String.format("%.1f", baseFatPer100g * scale)
-                        protein = String.format("%.1f", baseProteinPer100g * scale)
+                        carbs = String.format(Locale.US, "%.1f", baseCarbsPer100g * scale)
+                        fat = String.format(Locale.US, "%.1f", baseFatPer100g * scale)
+                        protein = String.format(Locale.US, "%.1f", baseProteinPer100g * scale)
                     }
                 }
             },
@@ -509,6 +518,12 @@ fun AddFoodMainScreen(
             return
         }
 
+        if (!isOnline) {
+            showSearchResults = false
+            searchResults = emptyList()
+            return
+        }
+
         scope.launch {
             isSearching = true
             try {
@@ -562,11 +577,16 @@ fun AddFoodMainScreen(
     }
 
     // Handle search query changes
-    LaunchedEffect(searchQuery) {
+    LaunchedEffect(searchQuery, isOnline) {
         if (searchQuery.isNotBlank()) {
-            // Debounce search - wait 500ms after user stops typing
-            kotlinx.coroutines.delay(500)
-            performSearch(searchQuery)
+            if (isOnline) {
+                // Debounce search - wait 500ms after user stops typing
+                kotlinx.coroutines.delay(500)
+                performSearch(searchQuery)
+            } else {
+                showSearchResults = false
+                searchResults = emptyList()
+            }
         } else {
             showSearchResults = false
             searchResults = emptyList()
@@ -577,19 +597,24 @@ fun AddFoodMainScreen(
     suspend fun loadFoodHistory() {
         isLoading = true
         try {
-            // First try to get from API
-            val response = RetrofitClient.api.getFoodLogs(userId = userId)
-            var allFoodLogs = emptyList<FoodLog>()
-            
-            if (response.isSuccessful && response.body()?.success == true) {
-                val apiFoodLogs = response.body()?.data ?: emptyList()
-                // For API food logs, we need to add localId field (use id as localId for API logs)
-                allFoodLogs = apiFoodLogs.map { log ->
-                    log.copy(localId = log.id) // Use id as localId for API logs
+            var apiFoodLogs: List<FoodLog> = emptyList()
+            if (isOnline) {
+                try {
+                    val response = RetrofitClient.api.getFoodLogs(userId = userId)
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        val apiFoodLogsResponse = response.body()?.data ?: emptyList()
+                        apiFoodLogs = apiFoodLogsResponse.map { log ->
+                            log.copy(localId = log.id)
+                        }
+                        Log.d("AddMealActivity", "Loaded ${apiFoodLogs.size} food logs from API")
+                    } else {
+                        Log.w("AddMealActivity", "API call failed: ${response.message()}")
+                    }
+                } catch (e: Exception) {
+                    Log.w("AddMealActivity", "Unable to load food logs from API: ${e.message}")
                 }
-                Log.d("AddMealActivity", "Loaded ${allFoodLogs.size} food logs from API")
             } else {
-                Log.w("AddMealActivity", "API call failed: ${response.message()}")
+                Log.d("AddMealActivity", "Offline - using local food history only")
             }
             
             // Always try local database as well to get the most complete data
@@ -617,17 +642,17 @@ fun AddFoodMainScreen(
             Log.d("AddMealActivity", "Loaded ${localFoodLogsConverted.size} food logs from local database")
             
             // Combine API and local data, preferring local data for duplicates
-            val combinedFoodLogs = if (allFoodLogs.isNotEmpty()) {
+            val combinedFoodLogs = if (apiFoodLogs.isNotEmpty()) {
                 // Merge API and local data, with local data taking precedence
-                val apiIds = allFoodLogs.map { it.id }.toSet()
+                val apiIds = apiFoodLogs.map { it.id }.toSet()
                 val localOnly = localFoodLogsConverted.filter { it.id !in apiIds }
-                allFoodLogs + localOnly
+                apiFoodLogs + localOnly
             } else {
                 localFoodLogsConverted
             }
             
-            allFoodLogs = combinedFoodLogs
-            Log.d("AddMealActivity", "Combined total: ${allFoodLogs.size} food logs (API: ${if (response.isSuccessful) (response.body()?.data?.size ?: 0) else 0}, Local: ${localFoodLogsConverted.size})")
+            val allFoodLogs = combinedFoodLogs
+            Log.d("AddMealActivity", "Combined total: ${allFoodLogs.size} food logs (API: ${apiFoodLogs.size}, Local: ${localFoodLogsConverted.size})")
 
             // Group by food name (case-insensitive) and take the most recent entry for each unique food
             historyItems = allFoodLogs
@@ -672,6 +697,13 @@ fun AddFoodMainScreen(
     LaunchedEffect(refreshTrigger) {
         if (refreshTrigger > 0) {
             Log.d("AddMealActivity", "Refreshing My Foods due to trigger: $refreshTrigger")
+            loadFoodHistory()
+        }
+    }
+
+    LaunchedEffect(isOnline) {
+        if (isOnline) {
+            Log.d("AddMealActivity", "Connectivity restored - refreshing My Foods from server")
             loadFoodHistory()
         }
     }
@@ -725,38 +757,38 @@ fun AddFoodMainScreen(
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Show offline message if not online
+                // Show offline banner but keep features available
                 if (!isOnline) {
-                    Box(
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 32.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(vertical = 16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                     ) {
                         Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = "🌐",
-                                fontSize = 64.sp
-                            )
-                            Text(
-                                text = "Meals require internet connection",
-                                fontSize = 20.sp,
+                                text = stringResource(R.string.offline_mode_banner),
+                                fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium,
                                 textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onBackground
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Meal logging features require an internet connection to search for foods and log your meals.",
-                                fontSize = 14.sp,
+                                text = stringResource(R.string.saved_offline),
+                                fontSize = 13.sp,
                                 textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                } else {
+                }
 
                 // Search bar
                 Box(
@@ -790,6 +822,7 @@ fun AddFoodMainScreen(
                             onValueChange = onSearchQueryChange,
                             placeholder = { Text(stringResource(R.string.search_food), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                             modifier = Modifier.weight(1f),
+                            enabled = isOnline,
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
                                 unfocusedContainerColor = Color.Transparent,
@@ -874,14 +907,6 @@ fun AddFoodMainScreen(
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
-                        if (!isOnline) {
-                            Text(
-                                text = "🌐 My Foods requires internet connection",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
-                        }
                     }
 
                     // Loading, Error, or History items
@@ -1092,7 +1117,6 @@ fun AddFoodMainScreen(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                } // Close the else block for online content
             }
         }
     }

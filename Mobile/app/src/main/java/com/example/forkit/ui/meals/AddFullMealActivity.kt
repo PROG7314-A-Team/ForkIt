@@ -2,8 +2,8 @@ package com.example.forkit.ui.meals
 
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.background
@@ -53,7 +53,7 @@ private const val TAG = "MealsDebug"
 // Shared list reference so launcher can access composable state
 private var ingredientsListState: MutableList<UIMealIngredient>? = null
 
-class AddFullMealActivity : ComponentActivity() {
+class AddFullMealActivity : AppCompatActivity() {
 
     // ActivityResultLauncher declared inside the class
     // Ingredient launcher: receives MealIngredient from AddIngredientActivity and appends to list

@@ -3,9 +3,10 @@ package com.example.forkit
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,8 +33,11 @@ import com.example.forkit.data.RetrofitClient
 import com.example.forkit.data.models.UpdateUserProfileRequest
 import kotlinx.coroutines.launch
 import android.widget.Toast
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.navigationBarsPadding
 
-class TellUsAboutYourselfActivity : ComponentActivity() {
+class TellUsAboutYourselfActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -142,7 +146,9 @@ fun TellUsAboutYourselfScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp),
+            .padding(horizontal = 24.dp)
+            .verticalScroll(rememberScrollState())
+            .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
             Spacer(modifier = Modifier.height(32.dp))
@@ -383,6 +389,7 @@ fun TellUsAboutYourselfScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp)
+            .navigationBarsPadding()
                     .background(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
