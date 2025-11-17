@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.forkit.data.RetrofitClient
+import com.example.forkit.data.models.StreakData
 import com.example.forkit.ui.theme.ForkItTheme
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
@@ -192,6 +193,9 @@ fun DashboardScreen(
     var isRefreshing by remember { mutableStateOf(false) }
     var lastRefreshAt by remember { mutableStateOf(0L) }
     var errorMessage by remember { mutableStateOf("") }
+    var streakData by remember { mutableStateOf<StreakData?>(null) }
+    var isStreakLoading by remember { mutableStateOf(false) }
+    var streakErrorMessage by remember { mutableStateOf<String?>(null) }
     
     // User goals - fetched from API
     var dailyGoal by remember { mutableStateOf(2000) }
@@ -343,6 +347,8 @@ fun DashboardScreen(
                     
                     // **OPTIMIZED: Fetch all data in parallel using async**
                     android.util.Log.d("DashboardActivity", "Starting parallel API calls...")
+                    isStreakLoading = true
+                    streakErrorMessage = null
                     val startTime = System.currentTimeMillis()
                     
                     // Launch all API calls simultaneously
@@ -401,6 +407,21 @@ fun DashboardScreen(
                         }
                     }
                     
+                    val streakDeferred = if (isOnline) {
+                        async {
+                            try {
+                                com.example.forkit.data.RetrofitClient.api.getUserStreak(userId)
+                            } catch (e: Exception) {
+                                android.util.Log.e("DashboardActivity", "Error fetching streak: ${e.message}", e)
+                                null
+                            }
+                        }
+                    } else {
+                        streakErrorMessage = context.getString(R.string.streak_offline_message)
+                        isStreakLoading = false
+                        null
+                    }
+                    
                     // Wait for goals API call to complete
                     val goalsResponse = goalsDeferred.await()
                     
@@ -417,6 +438,23 @@ fun DashboardScreen(
                             weeklyExercisesGoal = goals?.weeklyExercises ?: 3
                             android.util.Log.d("DashboardActivity", "✅ Goals loaded: Calories=$dailyGoal, Water=$dailyWaterGoal ml")
                         }
+                    }
+                    
+                    streakDeferred?.await()?.let { response ->
+                        if (response.isSuccessful) {
+                            streakData = response.body()?.data
+                            streakErrorMessage = null
+                        } else {
+                            streakErrorMessage = response.body()?.message
+                                ?: response.message()
+                                ?: context.getString(R.string.streak_error_generic)
+                        }
+                        isStreakLoading = false
+                    } ?: run {
+                        if (isOnline) {
+                            streakErrorMessage = context.getString(R.string.streak_error_generic)
+                        }
+                        isStreakLoading = false
                     }
 
 // ─────────────────────────────────────────────
@@ -733,6 +771,9 @@ fun DashboardScreen(
                             isOverBudget = isOverBudget,
                             isWithinBudget = isWithinBudget,
                             animatedProgress = animatedProgress,
+                            streakData = streakData,
+                            isStreakLoading = isStreakLoading,
+                            streakErrorMessage = streakErrorMessage,
                             refreshData = refreshData,
                             onMealDelete = { meal -> 
                                 scope.launch {

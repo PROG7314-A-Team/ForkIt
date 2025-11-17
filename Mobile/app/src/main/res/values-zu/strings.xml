@@ -1,4 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="daily_streak_title">Uchungechunge lwansuku zonke</string>
+    <string name="streak_days_label">Uchungechunge lwezinsuku ezingu-%1$d</string>
+    <string name="streak_longest_format">Okuhle kakhulu: izinsuku ezingu-%1$d</string>
+    <string name="streak_since_format">Kuqale ngo-%1$s</string>
+    <string name="streak_last_logged_format">Okokugcina kubhaliwe ngo-%1$s</string>
+    <string name="streak_not_started">Bhalisa ukudla kwakho njalo ukuze uqale uchungechunge.</string>
+    <string name="streak_error_generic">Ayikwazi ukulayisha idatha yeuchungechunge manje.</string>
+    <string name="streak_offline_message">Idatha yeuchungechunge ayitholakali uma ungekho ku-inthanethi.</string>
+    <string name="streak_status_active">Iyasebenza</string>
+    <string name="streak_status_paused">Imisiwe</string>
     <!-- App Name & Tagline -->
     <string name="app_name">ForkIt</string>
     <string name="app_tagline">Thatha ukulandelela kwakho kwamakhalori kuzingeni elilandelayo</string>

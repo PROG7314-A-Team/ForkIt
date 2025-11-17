@@ -1,13 +1,17 @@
 package com.example.forkit
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.ComponentActivity
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -37,25 +41,37 @@ import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.lifecycleScope
-import com.example.forkit.data.RetrofitClient
-import com.example.forkit.data.models.GoogleLoginRequest
-import com.example.forkit.data.models.LoginRequest
-import com.example.forkit.data.models.LoginResponse
 import com.example.forkit.ui.theme.ForkItTheme
-import com.example.forkit.utils.AuthPreferences
+import com.example.forkit.utils.navigateToDashboard
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+private const val GOOGLE_TAG = "GoogleSignIn"
 
 class SignInActivity : AppCompatActivity() {
+    private lateinit var googleFallbackLauncher: ActivityResultLauncher<Intent>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        googleFallbackLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            handleLegacyGoogleResult(result)
+        }
         
         // Load theme preference
         ThemeManager.loadThemeMode(this)
@@ -68,6 +84,13 @@ class SignInActivity : AppCompatActivity() {
             }
         }
     }
+
+    fun startGoogleSignInFlow() {
+        lifecycleScope.launch {
+            Log.d(GOOGLE_TAG, "Starting Credential Manager Google sign-in flow")
+            signInWithGoogle(this@SignInActivity, googleFallbackLauncher)
+        }
+    }
 }
 
 @Composable
@@ -78,8 +101,7 @@ fun SignInScreen(prefilledEmail: String = "") {
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
-
-    val scope = rememberCoroutineScope()
+    val firebaseAuth = remember { FirebaseAuth.getInstance() }
 
     Box(
         modifier = Modifier
@@ -191,42 +213,51 @@ fun SignInScreen(prefilledEmail: String = "") {
                         shape = RoundedCornerShape(12.dp)
                     )
                     .clickable {
+                        val trimmedEmail = email.trim()
+                        if (trimmedEmail.isEmpty() || password.isEmpty()) {
+                            message = "Please enter both your email address and password"
+                            return@clickable
+                        }
+
                         isLoading = true
                         message = ""
 
-                        scope.launch {
-                            try {
-                                val response = RetrofitClient.api.loginUser(
-                                    LoginRequest(email, password)
-                                )
-                                if (response.isSuccessful) {
-                                    val body: LoginResponse? = response.body()
-                                    message = body?.message ?: "Welcome back! You have successfully signed in"
-                                    
-                                    // Save login credentials for auto sign-in
-                                    val authPreferences = AuthPreferences(context)
-                                    body?.userId?.let { userId ->
-                                        body.idToken?.let { idToken ->
-                                            authPreferences.saveLoginData(userId, idToken, email)
+                        firebaseAuth.signInWithEmailAndPassword(trimmedEmail, password)
+                            .addOnSuccessListener { result ->
+                                val user = result.user
+                                if (user != null) {
+                                    user.getIdToken(true)
+                                        .addOnSuccessListener { tokenResult ->
+                                            val token = tokenResult.token
+                                            if (token.isNullOrBlank()) {
+                                                message = "Unable to verify your credentials. Please try again."
+                                                isLoading = false
+                                                return@addOnSuccessListener
+                                            }
+
+                                            context.navigateToDashboard(
+                                                user.uid,
+                                                token,
+                                                trimmedEmail
+                                            )
+                                            message = "Welcome back! You have successfully signed in"
+                                            isLoading = false
                                         }
-                                    }
-                                    
-                                    // Navigate to DashboardActivity with userId
-                                    val intent = Intent(context, DashboardActivity::class.java)
-                                    intent.putExtra("USER_ID", body?.userId)
-                                    intent.putExtra("ID_TOKEN", body?.idToken)
-                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                    context.startActivity(intent)
-                                    (context as? ComponentActivity)?.finish()
+                                        .addOnFailureListener { tokenError ->
+                                            Log.e("Auth", "Failed to fetch Firebase ID token", tokenError)
+                                            message = "Unable to verify your credentials. Please try again."
+                                            isLoading = false
+                                        }
                                 } else {
-                                    message = "The email or password you entered is incorrect. Please check your credentials and try again"
+                                    message = "Unable to complete sign-in. Please try again."
+                                    isLoading = false
                                 }
-                            } catch (e: Exception) {
-                                message = "Unable to connect to the server. Please check your internet connection and try again"
-                            } finally {
+                            }
+                            .addOnFailureListener { error ->
+                                Log.e("Auth", "Email sign-in failed", error)
+                                message = error.toReadableMessage()
                                 isLoading = false
                             }
-                        }
                     },
                 contentAlignment = Alignment.Center
             ) {
@@ -295,11 +326,8 @@ fun SignInScreen(prefilledEmail: String = "") {
                         shape = RoundedCornerShape(12.dp)
                     )
                     .clickable {
-                        (context as? ComponentActivity)?.let { activity ->
-                            activity.lifecycleScope.launch {
-                                signInWithGoogle(context)
-                            }
-                        }
+                        (context as? SignInActivity)?.startGoogleSignInFlow()
+                            ?: Toast.makeText(context, "Unable to start Google sign-in", Toast.LENGTH_SHORT).show()
                     },
                 contentAlignment = Alignment.Center
             ) {
@@ -326,11 +354,14 @@ fun SignInScreen(prefilledEmail: String = "") {
 }
 
 
-private suspend fun signInWithGoogle(context: Context) {
-    val credentialManager = CredentialManager.create(context)
+private suspend fun signInWithGoogle(
+    activity: SignInActivity,
+    fallbackLauncher: ActivityResultLauncher<Intent>
+) {
+    val credentialManager = CredentialManager.create(activity)
 
     val googleIdOption = GetGoogleIdOption.Builder()
-        .setServerClientId(context.getString(R.string.default_web_client_id))
+        .setServerClientId(activity.getString(R.string.default_web_client_id))
         .setFilterByAuthorizedAccounts(false)
         .build()
 
@@ -339,7 +370,10 @@ private suspend fun signInWithGoogle(context: Context) {
         .build()
 
     try {
-        val result = credentialManager.getCredential(context, request)
+        Log.d(GOOGLE_TAG, "Requesting Google credential via Credential Manager")
+        val result = withContext(Dispatchers.IO) {
+            credentialManager.getCredential(activity, request)
+        }
 
         val googleIdTokenCredential =
             GoogleIdTokenCredential.createFrom(result.credential.data)
@@ -347,100 +381,24 @@ private suspend fun signInWithGoogle(context: Context) {
 
         @Suppress("SENSELESS_COMPARISON")
         if (idToken == null) {
-            Toast.makeText(context, "Google sign-in failed: No ID token", Toast.LENGTH_SHORT).show()
+            Toast.makeText(activity, "Google sign-in failed: No ID token", Toast.LENGTH_SHORT).show()
+            Log.w(GOOGLE_TAG, "Credential Manager returned null ID token")
             return
         }
 
+        Log.d(GOOGLE_TAG, "Received Google ID token from Credential Manager")
         val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
-        Firebase.auth.signInWithCredential(firebaseCredential)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    val user = FirebaseAuth.getInstance().currentUser
-                    val email = user?.email
+        activity.completeGoogleSignIn(firebaseCredential)
 
-                    if (email != null) {
-                        Log.d("Auth", "Firebase Google sign-in successful for $email")
-
-                        // Get a Firebase ID token to verify identity on backend
-                        user.getIdToken(true)
-                            .addOnSuccessListener { result ->
-                                val firebaseIdToken = result.token
-                                if (firebaseIdToken == null) {
-                                    Toast.makeText(context, "Google sign-in failed. Please try again or use email sign-in", Toast.LENGTH_SHORT).show()
-                                    return@addOnSuccessListener
-                                }
-
-                                // Send ID token and email to backend
-                                (context as? ComponentActivity)?.lifecycleScope?.launch {
-                                    try {
-                                        val response = RetrofitClient.api.loginGoogleUser(
-                                            GoogleLoginRequest(
-                                                email = email,
-                                                idToken = firebaseIdToken
-                                            )
-                                        )
-
-                                        if (response.isSuccessful) {
-                                            val body = response.body()
-                                            Log.d("Auth", "Backend login response: $body")
-
-                                            if (body != null) {
-                                                // Optionally save locally for persistence
-                                                val authPreferences = AuthPreferences(context)
-                                                body.userId?.let { userId ->
-                                                    body.idToken?.let { token ->
-                                                        authPreferences.saveLoginData(userId, token, email)
-                                                    }
-                                                }
-
-                                                Toast.makeText(context, "Welcome back! You have successfully signed in with Google", Toast.LENGTH_SHORT).show()
-
-                                                // Navigate to DashboardActivity with userId
-                                                val intent = Intent(context, DashboardActivity::class.java)
-                                                intent.putExtra("USER_ID", body?.userId)
-                                                intent.putExtra("ID_TOKEN", body?.idToken)
-                                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                                context.startActivity(intent)
-                                                (context as? ComponentActivity)?.finish()
-
-                                            } else {
-                                                Log.e("Auth", "Backend returned empty body")
-                                                Toast.makeText(context, "Unexpected backend response", Toast.LENGTH_LONG).show()
-                                            }
-                                        } else {
-                                            val errorMsg = response.errorBody()?.string() ?: "Backend login failed"
-                                            Log.e("Auth", "Login failed: $errorMsg")
-                                            Toast.makeText(context, "Login failed: $errorMsg", Toast.LENGTH_LONG).show()
-                                        }
-                                    } catch (e: Exception) {
-                                        Log.e("Auth", "Error logging in with Google", e)
-                                        Toast.makeText(
-                                            context,
-                                            "❌ Couldn't sign in with Google. Please try again.",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                }
-                            }
-                            .addOnFailureListener { e ->
-                                Log.e("Auth", "Failed to get Firebase ID token", e)
-                                Toast.makeText(context, "❌ Authentication failed. Please try again.", Toast.LENGTH_SHORT).show()
-                            }
-                    } else {
-                        Toast.makeText(context, "❌ No email found in Google account", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Toast.makeText(context, "❌ Google sign-in failed. Please try again.", Toast.LENGTH_SHORT).show()
-                    Log.e("Auth", "Firebase Google sign-in failed", task.exception)
-                }
-            }
-
+    } catch (e: NoCredentialException) {
+        Log.w(GOOGLE_TAG, "Credential Manager had no stored credentials, launching fallback", e)
+        activity.launchLegacyGoogleSignIn(fallbackLauncher)
     } catch (e: GetCredentialException) {
-        Toast.makeText(context, "❌ Google sign-in failed. Please try again.", Toast.LENGTH_SHORT).show()
-        Log.e("Auth", "Google Sign-In failed", e)
+        Toast.makeText(activity, "❌ Google sign-in failed. Please try again.", Toast.LENGTH_SHORT).show()
+        Log.e(GOOGLE_TAG, "Google Sign-In failed via Credential Manager", e)
     } catch (e: Exception) {
-        Toast.makeText(context, "❌ Something went wrong. Please try again.", Toast.LENGTH_SHORT).show()
-        Log.e("Auth", "Unexpected error during Google sign-in", e)
+        Toast.makeText(activity, "❌ Something went wrong. Please try again.", Toast.LENGTH_SHORT).show()
+        Log.e(GOOGLE_TAG, "Unexpected error during Google sign-in", e)
     }
 }
 
@@ -450,4 +408,98 @@ fun SignInScreenPreview() {
     ForkItTheme {
         SignInScreen()
     }
+}
+
+private fun Exception.toReadableMessage(): String {
+    return when (this) {
+        is FirebaseAuthInvalidUserException -> "We couldn't find an account with that email address."
+        is FirebaseAuthInvalidCredentialsException -> "The email or password you entered is incorrect. Please try again."
+        else -> localizedMessage ?: "Something went wrong. Please try again."
+    }
+}
+
+private fun SignInActivity.launchLegacyGoogleSignIn(launcher: ActivityResultLauncher<Intent>) {
+    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        .requestIdToken(getString(R.string.default_web_client_id))
+        .requestEmail()
+        .build()
+    val googleSignInClient = GoogleSignIn.getClient(this, gso)
+    Log.d(GOOGLE_TAG, "Launching legacy Google Sign-In intent")
+    googleSignInClient.signOut()
+    launcher.launch(googleSignInClient.signInIntent)
+}
+
+private fun SignInActivity.handleLegacyGoogleResult(result: ActivityResult) {
+    if (result.resultCode != Activity.RESULT_OK) {
+        Log.w(GOOGLE_TAG, "Legacy Google Sign-In cancelled, resultCode=${result.resultCode}")
+        Toast.makeText(this, "Google sign-in was cancelled", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    val data = result.data ?: run {
+        Log.w(GOOGLE_TAG, "Legacy Google Sign-In returned null intent")
+        Toast.makeText(this, "Google sign-in was cancelled", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+    try {
+        val account = task.getResult(ApiException::class.java)
+        val idToken = account.idToken
+        if (idToken.isNullOrBlank()) {
+            Log.e(GOOGLE_TAG, "Legacy Google Sign-In returned empty ID token")
+            Toast.makeText(this, "Google sign-in failed. Please try again.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        Log.d(GOOGLE_TAG, "Legacy Google Sign-In succeeded, passing credential to Firebase")
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        completeGoogleSignIn(credential)
+    } catch (e: ApiException) {
+        Log.e(GOOGLE_TAG, "Legacy Google sign-in failed", e)
+        Toast.makeText(this, "Google sign-in failed. Please try again.", Toast.LENGTH_SHORT).show()
+    }
+}
+
+private fun SignInActivity.completeGoogleSignIn(credential: AuthCredential) {
+    Firebase.auth.signInWithCredential(credential)
+        .addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val user = FirebaseAuth.getInstance().currentUser
+                if (user != null) {
+                    val emailAddress = user.email
+                    if (emailAddress.isNullOrBlank()) {
+                        Log.e(GOOGLE_TAG, "Firebase user missing email after Google sign-in")
+                        Toast.makeText(this, "❌ No email found in Google account", Toast.LENGTH_SHORT).show()
+                        return@addOnCompleteListener
+                    }
+                    Log.d(GOOGLE_TAG, "Firebase sign-in success, fetching ID token")
+                    user.getIdToken(true)
+                        .addOnSuccessListener { tokenResult ->
+                            val firebaseIdToken = tokenResult.token
+                            if (firebaseIdToken.isNullOrBlank()) {
+                                Log.e(GOOGLE_TAG, "Firebase returned empty ID token after Google sign-in")
+                                Toast.makeText(this, "Google sign-in failed. Please try again.", Toast.LENGTH_SHORT).show()
+                                return@addOnSuccessListener
+                            }
+                            Log.d(GOOGLE_TAG, "Firebase ID token retrieved, navigating to dashboard")
+                            navigateToDashboard(
+                                user.uid,
+                                firebaseIdToken,
+                                emailAddress
+                            )
+                            Toast.makeText(this, "Welcome back! You have successfully signed in with Google", Toast.LENGTH_SHORT).show()
+                        }
+                        .addOnFailureListener { tokenError ->
+                            Log.e(GOOGLE_TAG, "Failed to get Firebase ID token", tokenError)
+                            Toast.makeText(this, "❌ Authentication failed. Please try again.", Toast.LENGTH_SHORT).show()
+                        }
+                } else {
+                    Log.e(GOOGLE_TAG, "Firebase sign-in task succeeded but currentUser is null")
+                    Toast.makeText(this, "❌ No account information returned from Google", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(this, "❌ Google sign-in failed. Please try again.", Toast.LENGTH_SHORT).show()
+                Log.e(GOOGLE_TAG, "Firebase Google sign-in task failed", task.exception)
+            }
+        }
 }
