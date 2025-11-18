@@ -3,15 +3,16 @@
 **Portfolio of Evidence for PROG7314 - Advanced Programming**
 
 A comprehensive Android application for calorie counting, exercise tracking, and dietary habit management designed to empower users in achieving their health and fitness goals.
+
 - **Video demonstration**: https://youtu.be/3Tp-dZ8jtqI?si=I1yy1ue7-Uae11AM
 
 ## Project Overview
 
 ForkIt is a modern health tracking application built with Android Jetpack Compose and a robust Node.js backend. The application provides a complete solution for monitoring daily calorie intake, exercise activities, water consumption, and step tracking with an intuitive dashboard, detailed analytics, and customizable goal tracking.
 
-### Key Features
+## Key Features
 
-## User Defined Feature 1: Food Logging & Nutrition Tracking
+### User Defined Feature 1: Food Logging & Nutrition Tracking
 
 - **Barcode Scanner Integration**: ML Kit-powered barcode scanning with OpenFoodFacts API integration
 - **Comprehensive Food Database**: Search from extensive database with detailed nutritional information
@@ -19,83 +20,130 @@ ForkIt is a modern health tracking application built with Android Jetpack Compos
 - **Meal Management**: Create and save custom meals with adjustable serving sizes
 - **Smart Calorie Calculator**: Real-time macronutrient-to-calorie conversion
 
-## User Defined Feature 2: Exercise & Activity Tracking
+### User Defined Feature 2: Exercise & Activity Tracking
 
 - **Exercise Logging**: Record workouts with duration, calories burned, and exercise type
 - **Step Tracking**: Native Android step tracking using Health Connect and sensor fallback
 - **Activity Recognition**: Automatic step counting with permission management
 - **Goal-Based Tracking**: Set and monitor progress toward daily and weekly targets
 
-## User Defined Feature 3: Water & Hydration Monitoring
+### User Defined Feature 3: Water & Hydration Monitoring
 
 - **Water Intake Tracking**: Monitor daily water consumption with progress indicators
 - **Hydration Goals**: Set personalized daily water intake targets
 - **Visual Progress**: Real-time progress bars and completion tracking
 
-## User Defined Feature 4: Analytics & Insights
+### User Defined Feature 4: Analytics & Insights
 
 - **Visual Data Analysis**: Comprehensive charts using Vico library
 - **Meal Distribution**: Pie chart breakdowns across breakfast, lunch, dinner, and snacks
 - **Macro Tracking**: Monitor protein, carbohydrates, and fat intake
 - **Trend Analysis**: Historical data visualization and progress tracking
 
-## User Defined Feature 5: Habit creation
+### User Defined Feature 5: Habit creation
 
 - **Custom Habit Creation**: Set personalized health habits
 - **Flexible Notifications**: Custom reminders with specific days and times
 - **Progress Monitoring**: Track daily, weekly, and monthly completion rates
-  
-## User defined Deafture 6: Streak tracking
 
-- **Streak Tracking**: Gamified consistency tracking
+### User Defined Feature 6: Streak Tracking
 
-## User Defined Feature 7: Step Tracking
+- **Streak Tracking**: Gamified consistency tracking surfaced on the dashboard via the backend `streakService`
+  and visual cards.
 
--**Step tracking**: ability to connect to health connect app and monitor steps 
+### User Defined Feature 7: Offline Sync & Connectivity
 
-## Additional Features: Security & User Experience
+- **Room-backed Offline Logs**: Food, meal, water, exercise and habit logs persist in `AppDatabase`
+  so users can keep logging while offline.
+- **Background Sync**: `SyncManager` + `DataSyncWorker` push unsynced entities to the API whenever
+  connectivity returns.
+- **Connectivity Awareness**: `NetworkConnectivityManager` and `ConnectivityObserver` drive the UI
+  offline banners and automatic cache refreshes.
+
+### User Defined Feature 8: Step Tracking
+
+- **Dual Source Tracking**: `StepTracker` pulls daily totals from Health Connect when available and falls back
+  to on-device step counter / detector sensors with ACTIVITY_RECOGNITION permissions on Android 10+.
+- **Permission-aware UX**: The dashboard requests Health Connect permissions via
+  `PermissionController.createRequestPermissionResultContract()` and handles sensor permissions for older
+  devices so users always get feedback.
+- **Live Dashboard Cards**: `DashboardScreen` streams step updates into the Compose home tab, showing
+  progress toward `dailyStepsGoal` beside calorie and water stats.
+
+### Additional Features: Security & User Experience
 
 - **Biometric Authentication**: Fingerprint and facial recognition support
 - **Firebase Authentication**: Secure Google SSO integration
 - **Offline Functionality**: Continue logging without internet connection
 - **Material Design 3**: Modern, accessible UI following Google's design guidelines
 
-## Features implemented for POE:
-### Feature 1:
-•	The ability to create a meal template and log foods as meal groups.
-### Feature 2:
-•	Streak tracking for days logged.
-### Release notes: 
-The release notes for the POE version of this application include but is not limited to: 
-•	Multi-Language support for Afrikaans, Zulu and English.
-•	Biometric authentication to access account settings.
-•	Offline mode with sync to online database.
-•	Real-time notifications for habits.
-•	Streak tracking 
-•	Meal template creation for logging meals
+### Change Log
+
+- **Feature 1**: Added functionality to create a meal template and log foods as meal groups.
+- **Feature 2**: Added functionality to track daily logging streak.
+
+### Release notes:
+
+**The release notes for the POE version of this application include but is not limited to:**
+
+- Multi-Language support for Afrikaans, Zulu and English.
+- Biometric authentication to access account settings.
+- Offline mode with sync to online database.
+- Real-time notifications for habits.
+- Streak tracking
+- Meal template creation for logging meals
 
 ## Technical Architecture
 
 ### Frontend (Android)
 
-- **Platform**: Android 13+ (API Level 33+)
-- **UI Framework**: Jetpack Compose with Material Design 3
-- **Architecture**: MVVM with StateFlow and ViewModel
+- **Platform**: Android 12+ (minSdk 31) targeting API 36 with Kotlin 2.0, Compose enabled via `buildFeatures.compose`.
+- **UI Layer**: Jetpack Compose + Material Design 3 content hosted from `AppCompatActivity` entry points
+  such as `DashboardActivity`, `HomeScreen`, `MealsScreen`, `HabitsScreen`, and `CoachScreen`.
+- **Architecture**: Offline-first repository pattern. Compose screens collect Flow/Room data exposed by
+  repositories (`FoodLogRepository`, `MealLogRepository`, `WaterLogRepository`, `ExerciseLogRepository`,
+  `HabitRepository`) that coordinate Remote (Retrofit) + Local (Room) state with coroutines.
+- **Local Persistence**: `AppDatabase` (Room) with DAOs and entities for each log/habit type plus
+  migrations for templates, streaks, and habit schedules.
+- **Sync & Connectivity**: `SyncManager`, `DataSyncWorker`, `NetworkConnectivityManager`, and
+  `ConnectivityObserver` detect network changes, push unsynced entities, and keep Compose state fresh.
+- **Sensors & Health**: `StepTracker` integrates Health Connect where available and falls back to
+  Activity Recognition + sensor-based step counters.
+- **Localization & Preferences**: `LanguageManager`, `ThemeManager`, and `AuthPreferences` manage
+  Afrikaans, isiZulu, and English strings, appearance, and credentials.
+- **Notifications**: `HabitNotificationScheduler`, `HabitNotificationService`, and helpers schedule
+  in-app reminders and Android notifications for habits.
 - **Dependencies**:
-  - Retrofit 2.9.0 for API communication
-  - ML Kit 17.2.0 for barcode scanning
-  - CameraX 1.3.1 for camera functionality
-  - Health Connect 1.1.0 for step tracking
-  - Vico 2.0.0 for data visualization
+  - Retrofit 2.9.0 + Gson + OkHttp for API calls to `https://forkit-api.onrender.com`
+  - Room 2.6.1 + WorkManager 2.9.0 for local storage and background sync
+  - ML Kit 17.2.0 + CameraX 1.3.1 for barcode scanning
+  - Health Connect 1.1.0-alpha07 + Sensor APIs for step tracking
+  - Vico 2.0.0 for charting, Firebase Auth + Credential Manager for authentication and SSO
   - Biometric 1.2.0 for authentication
 
 ### Backend (Node.js)
 
-- **Framework**: Express.js with comprehensive REST API
-- **Database**: Firebase Firestore for real-time data synchronization
-- **Authentication**: Firebase Admin SDK
-- **Testing**: Jest with 90%+ test coverage
-- **External APIs**: OpenFoodFacts integration for food data
+- **Framework**: Express.js app defined in `src/server.js`, wiring modular route files for food, users,
+  logs, calorie calculator, and habits.
+- **Service Layer**: Controllers call reusable services such as `firebaseService`, `habitSchedulingService`,
+  `streakService`, and `foodSearchService` to keep business logic out of routes.
+- **Database**: Firebase Firestore with collection-specific helpers that encapsulate CRUD + query logic.
+- **Authentication**: Firebase Admin SDK powers user management as well as JWT validation for API calls.
+- **External APIs**: OpenFoodFacts barcode + search integration via Axios enhances nutrition data.
+- **Testing**: Jest + Supertest suites in `src/tests` (11 files) with coverage artifacts stored in `coverage/`.
+- **Documentation**: `API_ENDPOINTS_DOCUMENTATION.md` enumerates the 50+ REST endpoints with payload samples.
+
+### Data Flow & Offline Sync
+
+1. Compose screens (for example `HomeScreen`) request data through repositories injected inside
+   `DashboardActivity`.
+2. Repositories talk to both Room DAOs and the Retrofit-driven `ApiService`. When offline, new logs are
+   written locally with `isSynced=false`.
+3. `NetworkConnectivityManager` and `ConnectivityObserver` watch connectivity. When the device is back
+   online, `SyncManager` triggers `DataSyncWorker` to push unsynced entities via the API and refresh the
+   Room cache with fresh server data.
+4. Updated Room data flows back into Compose via Flows/State, keeping the dashboard, charts, and history
+   screens accurate regardless of network state.
 
 ### Testing & Quality Assurance
 
@@ -107,28 +155,37 @@ The release notes for the POE version of this application include but is not lim
 ## The App Has been Prepared for Publication in the Play Store
 
 ### Generated Signed APK:
+
 **Initiated Process:**
-![Image](https://github.com/user-attachments/assets/47123e97-1c92-4f98-96c3-0906bc111103)
+
+- ![Image](https://github.com/user-attachments/assets/47123e97-1c92-4f98-96c3-0906bc111103)
 
 **Continued:**
-![Image](https://github.com/user-attachments/assets/bc106bef-e78e-438d-ad99-4d496bbe4096)
+
+- ![Image](https://github.com/user-attachments/assets/bc106bef-e78e-438d-ad99-4d496bbe4096)
 
 **Made it release version and created:**
-![Image](https://github.com/user-attachments/assets/9e284ca6-1ab8-4fa3-a7c8-8c007070252f)
+
+- ![Image](https://github.com/user-attachments/assets/9e284ca6-1ab8-4fa3-a7c8-8c007070252f)
 
 ### Submitted to Google Play Store
+
 **In Review Status**
-![Image](https://github.com/user-attachments/assets/3d8cfec0-7cac-49ca-b2c6-5e9bbc408b94)
+
+- ![Image](https://github.com/user-attachments/assets/3d8cfec0-7cac-49ca-b2c6-5e9bbc408b94)
 
 **Steps succeeded : Published a closeed testing release**
-![Image](https://github.com/user-attachments/assets/2c3913a2-4282-4145-a801-173c7032ea38)
+
+- ![Image](https://github.com/user-attachments/assets/2c3913a2-4282-4145-a801-173c7032ea38)
 
 ### Screenshots Submitted to Google Play Store
 
 **Screenshots Overview:**
-![Image](https://github.com/user-attachments/assets/37658768-e60a-4d93-965e-113122fcffec)
+
+- ![Image](https://github.com/user-attachments/assets/37658768-e60a-4d93-965e-113122fcffec)
 
 ### HD Quality Google Play Store Submitted Screenshots:
+
 <br/>
 <img width="316" height="2778" alt="Image" src="https://github.com/user-attachments/assets/970d62fe-4d46-4a22-babc-67afb4f1827e" />
 <img width="316" height="2778" alt="Image" src="https://github.com/user-attachments/assets/53a550ec-e100-4933-a8b9-a81f4b055798" />
@@ -139,7 +196,7 @@ The release notes for the POE version of this application include but is not lim
 
 ## Development Tools & AI Assistance
 
-This application was developed using AI tools to aid in the development process: 
+This application was developed using AI tools to aid in the development process:
 
 - **Boiler Plate Code Generation**: Assisting with boilerplate code
 - **Debugging Support**: Identifying and resolving code issues and errors
@@ -147,28 +204,40 @@ This application was developed using AI tools to aid in the development process:
 - **Documentation**: Helping generate comprehensive code comments and documentation
 - **Testing**: Assisting with test case development and coverage optimization
 
-
 ## Project Structure
 
 ```
 ForkIt/
-├── API/forkit-api/                 # Node.js Backend
-│   ├── src/
-│   │   ├── controllers/           # API route handlers
-│   │   ├── services/             # Business logic layer
-│   │   ├── routes/               # Express route definitions
-│   │   └── tests/                # Comprehensive test suites
-│   ├── coverage/                 # Test coverage reports
-│   └── API_ENDPOINTS_DOCUMENTATION.md
-├── Mobile/app/                    # Android Frontend
-│   ├── src/main/java/com/example/forkit/
-│   │   ├── activities/           # UI Activities
-│   │   ├── business/             # Business logic
-│   │   ├── models/               # Data models
-│   │   └── utils/                # Utility classes
-│   ├── src/test/                 # Unit tests
-│   └── build.gradle.kts          # Dependencies & configuration
-└── README.md
+├── README.md
+├── runApi.bat
+├── API/forkit-api/                       # Node.js backend
+│   ├── API_ENDPOINTS_DOCUMENTATION.md
+│   ├── coverage/                         # Jest + Supertest coverage artifacts
+│   └── src/
+│       ├── config/                       # Firebase/Env bootstrap
+│       ├── controllers/                  # Express controllers (food, logs, habits…)
+│       ├── middleware/
+│       ├── routes/                       # Route modules mounted in server.js
+│       ├── services/                     # Firebase, streak, habit scheduling helpers
+│       └── tests/                        # 11 controller/service suites
+└── Mobile/
+    ├── build.gradle.kts & gradle/        # Android project configuration
+    └── app/
+        ├── build.gradle.kts
+        └── src/
+            ├── main/java/com/example/forkit/
+            │   ├── data/                 # ApiService, RetrofitClient, repositories, Room
+            │   │   ├── local/{dao,entities,AppDatabase}
+            │   │   ├── models/          # DTOs & request/response payloads
+            │   │   └── repository/       # Offline-first repositories per feature
+            │   ├── services/             # Habit notification scheduling helpers
+            │   ├── sync/                 # SyncManager & DataSyncWorker
+            │   ├── ui/                   # Compose screens, meals flow, theme
+            │   ├── utils/                # Connectivity, auth prefs, language/theme mgmt
+            │   ├── activities/*.kt       # Hosts Compose destinations & flows
+            │   └── StepTracker.kt, LanguageManager.kt, ThemeManager.kt
+            ├── main/res/values(-af,-zu)  # Multi-language resources
+            └── test/ + androidTest/      # Kotlin unit tests & instrumentation scaffolding
 ```
 
 ## Testing & Quality Assurance
