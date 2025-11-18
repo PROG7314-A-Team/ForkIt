@@ -9,9 +9,9 @@ A comprehensive Android application for calorie counting, exercise tracking, and
 
 ForkIt is a modern health tracking application built with Android Jetpack Compose and a robust Node.js backend. The application provides a complete solution for monitoring daily calorie intake, exercise activities, water consumption, and step tracking with an intuitive dashboard, detailed analytics, and customizable goal tracking.
 
-###Key Features
+### Key Features
 
-##User Defined Feature 1: Food Logging & Nutrition Tracking
+## User Defined Feature 1: Food Logging & Nutrition Tracking
 
 - **Barcode Scanner Integration**: ML Kit-powered barcode scanning with OpenFoodFacts API integration
 - **Comprehensive Food Database**: Search from extensive database with detailed nutritional information
@@ -19,53 +19,53 @@ ForkIt is a modern health tracking application built with Android Jetpack Compos
 - **Meal Management**: Create and save custom meals with adjustable serving sizes
 - **Smart Calorie Calculator**: Real-time macronutrient-to-calorie conversion
 
-##User Defined Feature 2: Exercise & Activity Tracking
+## User Defined Feature 2: Exercise & Activity Tracking
 
 - **Exercise Logging**: Record workouts with duration, calories burned, and exercise type
 - **Step Tracking**: Native Android step tracking using Health Connect and sensor fallback
 - **Activity Recognition**: Automatic step counting with permission management
 - **Goal-Based Tracking**: Set and monitor progress toward daily and weekly targets
 
-##User Defined Feature 3: Water & Hydration Monitoring
+## User Defined Feature 3: Water & Hydration Monitoring
 
 - **Water Intake Tracking**: Monitor daily water consumption with progress indicators
 - **Hydration Goals**: Set personalized daily water intake targets
 - **Visual Progress**: Real-time progress bars and completion tracking
 
-##User Defined Feature 4: Analytics & Insights
+## User Defined Feature 4: Analytics & Insights
 
 - **Visual Data Analysis**: Comprehensive charts using Vico library
 - **Meal Distribution**: Pie chart breakdowns across breakfast, lunch, dinner, and snacks
 - **Macro Tracking**: Monitor protein, carbohydrates, and fat intake
 - **Trend Analysis**: Historical data visualization and progress tracking
 
-##User Defined Feature 5: Habit creation
+## User Defined Feature 5: Habit creation
 
 - **Custom Habit Creation**: Set personalized health habits
 - **Flexible Notifications**: Custom reminders with specific days and times
 - **Progress Monitoring**: Track daily, weekly, and monthly completion rates
   
-##User defined Deafture 6: Streak tracking
+## User defined Deafture 6: Streak tracking
 
 - **Streak Tracking**: Gamified consistency tracking
 
-##User Defined Feature 7: Step Tracking
+## User Defined Feature 7: Step Tracking
 
 -**Step tracking**: ability to connect to health connect app and monitor steps 
 
-##Additional Features: Security & User Experience
+## Additional Features: Security & User Experience
 
 - **Biometric Authentication**: Fingerprint and facial recognition support
 - **Firebase Authentication**: Secure Google SSO integration
 - **Offline Functionality**: Continue logging without internet connection
 - **Material Design 3**: Modern, accessible UI following Google's design guidelines
 
-##Features implemented for POE:
-###Feature 1:
+## Features implemented for POE:
+### Feature 1:
 •	The ability to create a meal template and log foods as meal groups.
-###Feature 2:
+### Feature 2:
 •	Streak tracking for days logged.
-###Release notes: 
+### Release notes: 
 The release notes for the POE version of this application include but is not limited to: 
 •	Multi-Language support for Afrikaans, Zulu and English.
 •	Biometric authentication to access account settings.
