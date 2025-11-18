@@ -83,6 +83,50 @@ ForkIt is a modern health tracking application built with Android Jetpack Compos
 - **Test Coverage**: 90%+ backend coverage with detailed reporting
 - **API Documentation**: Complete endpoint documentation with examples
 
+## The App Has been Prepared for Publication in the Play Store
+
+### Generated Signed APK:
+**Initiated Process:**
+![Image](https://github.com/user-attachments/assets/47123e97-1c92-4f98-96c3-0906bc111103)
+
+**Continued:**
+![Image](https://github.com/user-attachments/assets/bc106bef-e78e-438d-ad99-4d496bbe4096)
+
+**Made it release version and created:**
+![Image](https://github.com/user-attachments/assets/9e284ca6-1ab8-4fa3-a7c8-8c007070252f)
+
+### Submitted to Google Play Store
+**In Review Status**
+![Image](https://github.com/user-attachments/assets/3d8cfec0-7cac-49ca-b2c6-5e9bbc408b94)
+
+**Steps succeeded : Published a closeed testing release**
+![Image](https://github.com/user-attachments/assets/2c3913a2-4282-4145-a801-173c7032ea38)
+
+### Screenshots Submitted to Google Play Store
+
+**Screenshots Overview:**
+![Image](https://github.com/user-attachments/assets/37658768-e60a-4d93-965e-113122fcffec)
+
+### HD Quality Google Play Store Submitted Screenshots:
+<br/>
+<img width="316" height="2778" alt="Image" src="https://github.com/user-attachments/assets/970d62fe-4d46-4a22-babc-67afb4f1827e" />
+<img width="316" height="2778" alt="Image" src="https://github.com/user-attachments/assets/53a550ec-e100-4933-a8b9-a81f4b055798" />
+<img width="316" height="2778" alt="Image" src="https://github.com/user-attachments/assets/363a4980-588d-4877-93ca-5c1795f3e276" />
+<img width="316" height="2778" alt="Image" src="https://github.com/user-attachments/assets/c8669e3b-ab4c-41f6-a3ac-08dd375c3b1b" />
+<img width="316" height="2778" alt="Image" src="https://github.com/user-attachments/assets/41cb3815-0f61-4d02-93da-bd4778141675" />
+<img width="316" height="2778" alt="Image" src="https://github.com/user-attachments/assets/4dafff43-d2db-44d9-8e55-8dcd2c0f0280" />
+
+## Development Tools & AI Assistance
+
+This application was developed using **Cursor AI** as an integrated development environment and coding assistant. Cursor's AI-powered features were utilized throughout the development process for:
+
+- **Boiler Plate Code Generation**: Assisting with boilerplate code
+- **Debugging Support**: Identifying and resolving code issues and errors
+- **Architecture Guidance**: Providing recommendations for best practices and design patterns
+- **Documentation**: Helping generate comprehensive code comments and documentation
+- **Testing**: Assisting with test case development and coverage optimization
+
+
 ## Project Structure
 
 ```
@@ -208,16 +252,6 @@ This project serves as a **Portfolio of Evidence for PROG7314 - Advanced Program
 - **Mobile Development**: Native Android features including biometrics and health tracking
 - **Testing & Quality Assurance**: Comprehensive test coverage and documentation
 - **Software Architecture**: MVVM pattern with clean separation of concerns
-
-## Development Tools & AI Assistance
-
-This application was developed using **Cursor AI** as an integrated development environment and coding assistant. Cursor's AI-powered features were utilized throughout the development process for:
-
-- **Boiler Plate Code Generation**: Assisting with boilerplate code
-- **Debugging Support**: Identifying and resolving code issues and errors
-- **Architecture Guidance**: Providing recommendations for best practices and design patterns
-- **Documentation**: Helping generate comprehensive code comments and documentation
-- **Testing**: Assisting with test case development and coverage optimization
 
 ## Documentation
 
